@@ -1,0 +1,64 @@
+# Zyklus: build on GitHub's runners, publish on the Hetzner box.
+#
+# The app is a static PWA, so the server only receives the finished dist and
+# swaps it in. The publish job runs on a self-hosted runner inside the server,
+# so it has no pull_request path and refuses anything but main.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Verify and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # typecheck, lint and the domain unit tests
+      - name: Verify
+        run: pnpm verify
+
+      - name: Build
+        run: pnpm build
+
+      - name: The build produced a real app
+        run: test -f dist/index.html && test -f dist/sw.js && test -f dist/manifest.webmanifest
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: site
+          path: dist
+          retention-days: 3
+          if-no-files-found: error
+
+  publish:
+    name: Publish to Hetzner
+    needs: [build]
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, hetzner, deploy]
+    concurrency:
+      group: deploy-zyklus
+      cancel-in-progress: false
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: site
+          path: site
+
+      # rsync into staging, swap in with a rename, roll back if TLS probe fails
+      - name: Publish
+        env:
+          DEPLOY_SHA: ${{ github.sha }}
+        run: /opt/ci/bin/deploy zyklus --from "$GITHUB_WORKSPACE/site"
