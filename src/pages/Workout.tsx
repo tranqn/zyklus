@@ -3,9 +3,10 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import { hasEquipment, MUSCLE_LABEL } from '../domain/exercises'
 import { prsInSession, sessionSets, sessionVolume } from '../domain/stats'
 import type { Exercise, SessionExercise, SetEntry } from '../domain/types'
-import { fmt } from '../domain/util'
+import { fmt, nowMs } from '../domain/util'
 import { allExercises, exerciseMap, useStore } from '../store'
-import { confirmAction, Icon, Sheet, toast } from '../ui/kit'
+import { Icon, Sheet } from '../ui/kit'
+import { confirmAction, toast } from '../ui/notify'
 
 export default function Workout() {
   const s = useStore()
@@ -45,7 +46,7 @@ export default function Workout() {
     const partner = se.superset ? active.exercises.find((e) => e.superset === se.superset && e.key !== se.key) : undefined
     const partnerFirst = partner && active.exercises.indexOf(partner) > active.exercises.indexOf(se)
     const secs = set.kind === 'aufwaermen' ? 60 : partnerFirst ? 0 : se.restSec
-    if (secs > 0) setRest({ end: Date.now() + secs * 1000, total: secs })
+    if (secs > 0) setRest({ end: nowMs() + secs * 1000, total: secs })
   }
 
   return (
@@ -245,16 +246,22 @@ function NumInput({ value, placeholder, onChange, label, decimal }: { value?: nu
 }
 
 function Elapsed({ since }: { since: string }) {
-  const [, tick] = useState(0)
-  useEffect(() => {
-    const id = window.setInterval(() => tick((x) => x + 1), 1000)
-    return () => window.clearInterval(id)
-  }, [])
-  const secs = Math.max(0, Math.floor((Date.now() - new Date(since).getTime()) / 1000))
+  const now = useNow(1000)
+  const secs = Math.max(0, Math.floor((now - new Date(since).getTime()) / 1000))
   const h = Math.floor(secs / 3600)
   const m = Math.floor((secs % 3600) / 60)
   const ss = secs % 60
   return <>{h ? `${h}:${String(m).padStart(2, '0')}` : m}:{String(ss).padStart(2, '0')}</>
+}
+
+/** Epoch ms that re-renders every `interval` ms. */
+function useNow(interval: number): number {
+  const [now, setNow] = useState(() => nowMs())
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(nowMs()), interval)
+    return () => window.clearInterval(id)
+  }, [interval])
+  return now
 }
 
 function beep() {
@@ -276,12 +283,10 @@ function beep() {
 }
 
 function RestTimer({ rest, onChange, sound, vibrate }: { rest: { end: number; total: number }; onChange: (r: { end: number; total: number } | null) => void; sound: boolean; vibrate: boolean }) {
-  const [now, setNow] = useState(Date.now())
+  const now = useNow(250)
   const fired = useRef(false)
   useEffect(() => {
     fired.current = false
-    const id = window.setInterval(() => setNow(Date.now()), 250)
-    return () => window.clearInterval(id)
   }, [rest.end])
   const left = Math.max(0, Math.ceil((rest.end - now) / 1000))
   useEffect(() => {
@@ -413,19 +418,25 @@ function SwapSheet({ exKey, onClose }: { exKey: string | null; onClose: () => vo
 }
 
 function FinishSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  // mounted only while open, so the summary is computed once per opening
+  return open ? <FinishContent onClose={onClose} /> : null
+}
+
+function FinishContent({ onClose }: { onClose: () => void }) {
   const s = useStore()
+  const [now] = useState(() => nowMs())
   const nav = useNavigate()
   const lib = useMemo(() => exerciseMap(s), [s])
   const [rating, setRating] = useState(4)
   const [notes, setNotes] = useState('')
   const active = s.active
   if (!active) return null
-  const preview = { ...active, finishedAt: new Date().toISOString(), exercises: active.exercises.map((e) => ({ ...e, sets: e.sets.filter((x) => x.done) })) }
+  const preview = { ...active, finishedAt: new Date(now).toISOString(), exercises: active.exercises.map((e) => ({ ...e, sets: e.sets.filter((x) => x.done) })) }
   const open_ = active.exercises.reduce((a, e) => a + e.sets.filter((x) => !x.done && x.kind !== 'aufwaermen').length, 0)
   const prs = prsInSession([...s.sessions, preview], preview)
-  const mins = Math.round((Date.now() - new Date(active.startedAt).getTime()) / 60000)
+  const mins = Math.round((now - new Date(active.startedAt).getTime()) / 60000)
   return (
-    <Sheet open={open} onClose={onClose} title="Training abschließen">
+    <Sheet open onClose={onClose} title="Training abschließen">
       <div className="stack lg">
         <div className="grid3">
           <div className="card tight stat">

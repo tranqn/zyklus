@@ -5,9 +5,10 @@ import { estimateMinutes, isDeload, targetRir } from '../domain/planner'
 import { buildSession, cyclePosition } from '../domain/progression'
 import { streak } from '../domain/stats'
 import type { CheckIn, Muscle } from '../domain/types'
-import { addDays, formatDate, startOfWeek, today, WEEKDAYS_SHORT, weekdayIndex } from '../domain/util'
+import { addDays, currentHour, formatDate, startOfWeek, today, WEEKDAYS_SHORT, weekdayIndex } from '../domain/util'
 import { exerciseMap, useStore } from '../store'
-import { Bar, Icon, Ring, Sheet, Stepper, toast } from '../ui/kit'
+import { Bar, Icon, Ring, Sheet, Stepper } from '../ui/kit'
+import { toast } from '../ui/notify'
 import { CheckInSheet } from './CheckInSheet'
 
 export default function Today() {
@@ -33,7 +34,7 @@ export default function Today() {
   const weekStart = startOfWeek(d)
   const doneDates = new Set(s.sessions.filter((x) => x.finishedAt).map((x) => x.date))
   const lastWeight = s.weights[s.weights.length - 1]
-  const hour = new Date().getHours()
+  const hour = currentHour()
   const hello = hour < 11 ? 'Guten Morgen' : hour < 18 ? 'Hallo' : 'Guten Abend'
 
   const start = (c: CheckIn | undefined) => {

@@ -35,6 +35,20 @@ jobs:
       - name: The build produced a real app
         run: test -f dist/index.html && test -f dist/sw.js && test -f dist/manifest.webmanifest
 
+      # mobile end-to-end smoke: onboarding, workout, nutrition, all routes
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: End-to-end tests
+        run: pnpm e2e
+
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-traces
+          path: test-results
+          retention-days: 7
+
       - uses: actions/upload-artifact@v7
         with:
           name: site

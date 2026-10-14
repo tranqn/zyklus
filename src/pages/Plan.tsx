@@ -5,7 +5,8 @@ import { cyclePosition } from '../domain/progression'
 import type { Equipment, Exercise, Muscle, PlanDay, PlanSlot, Slot } from '../domain/types'
 import { uid } from '../domain/util'
 import { allExercises, exerciseMap, useStore } from '../store'
-import { confirmAction, Icon, Segmented, Sheet, Stepper, toast } from '../ui/kit'
+import { Icon, Segmented, Sheet, Stepper } from '../ui/kit'
+import { confirmAction, toast } from '../ui/notify'
 import { ExerciseInfo } from './Workout'
 
 export default function Plan() {

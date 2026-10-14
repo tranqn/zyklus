@@ -734,3 +734,8 @@ textarea.input {
 a {
   color: var(--accent);
 }
+/* text-like buttons line up with the card's content edge */
+.btn.ghost.sm {
+  padding: 0 10px;
+  margin-left: -10px;
+}

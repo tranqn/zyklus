@@ -9,6 +9,8 @@ export interface ActivitySources {
   foods: { date: string }[]
   weights: { date: string }[]
   frozenDays: string[]
+  measurements?: { date: string }[]
+  supplementLog?: Record<string, string[]>
 }
 
 export function activityDays(s: ActivitySources): Set<string> {
@@ -18,6 +20,8 @@ export function activityDays(s: ActivitySources): Set<string> {
   s.cardio.forEach((x) => days.add(x.date))
   s.foods.forEach((x) => days.add(x.date))
   s.weights.forEach((x) => days.add(x.date))
+  s.measurements?.forEach((x) => days.add(x.date))
+  Object.entries(s.supplementLog ?? {}).forEach(([d, ids]) => ids.length && days.add(d))
   return days
 }
 
