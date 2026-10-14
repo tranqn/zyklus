@@ -10,10 +10,13 @@ import { exerciseMap, useStore } from '../store'
 import { Bar, Icon, Ring, Sheet, Stepper } from '../ui/kit'
 import { toast } from '../ui/notify'
 import { CheckInSheet } from './CheckInSheet'
+import { VerifyBanner } from './Account'
+import { useSync } from '../sync/engine'
 
 export default function Today() {
   const s = useStore()
   const nav = useNavigate()
+  const user = useSync((x) => x.user)
   const [checkIn, setCheckIn] = useState(false)
   const [weightOpen, setWeightOpen] = useState(false)
   const profile = s.profile!
@@ -70,6 +73,8 @@ export default function Today() {
           <Icon name="flame" size={16} /> {streakN}
         </div>
       </div>
+
+      {user && !user.verified && <VerifyBanner />}
 
       {s.settings.mode !== 'normal' && (
         <div className="card" style={{ background: 'var(--warn-soft)', borderColor: 'transparent' }}>

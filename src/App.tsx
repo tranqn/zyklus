@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { HashRouter, NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { useStore } from './store'
 import { Icon, ToastHost } from './ui/kit'
@@ -9,6 +10,10 @@ import Nutrition from './pages/Nutrition'
 import Progress from './pages/Progress'
 import MesoReview from './pages/MesoReview'
 import More, { Cardio, Knowledge, Mobility, ModePage, SettingsPage } from './pages/More'
+import { AccountPage } from './pages/Account'
+import { AuthScreen, ResetPage, VerifyPage } from './pages/Auth'
+import { Datenschutz, Impressum } from './pages/Legal'
+import { checkSession, startSync, useSync } from './sync/engine'
 
 const TABS = [
   { to: '/', icon: 'home', label: 'Heute' },
@@ -37,6 +42,7 @@ function Shell() {
           <Route path="/einstellungen" element={<SettingsPage />} />
           <Route path="/modus" element={<ModePage />} />
           <Route path="/wissen" element={<Knowledge />} />
+          <Route path="/konto" element={<AccountPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
@@ -56,11 +62,40 @@ function Shell() {
   )
 }
 
-export default function App() {
+/** Pages reachable from e-mail links and the footer, signed in or not. */
+const PUBLIC = ['/konto/bestaetigen', '/konto/passwort', '/impressum', '/datenschutz']
+
+function Gate() {
+  const loc = useLocation()
   const ready = useStore((s) => !!s.profile && !!s.meso)
+  const { user, localOnly, checked } = useSync()
+  if (PUBLIC.includes(loc.pathname)) {
+    return (
+      <Routes>
+        <Route path="/konto/bestaetigen" element={<VerifyPage />} />
+        <Route path="/konto/passwort" element={<ResetPage />} />
+        <Route path="/impressum" element={<Impressum />} />
+        <Route path="/datenschutz" element={<Datenschutz />} />
+      </Routes>
+    )
+  }
+  if (!user && !localOnly) {
+    // a cached user opens instantly; otherwise wait for the session check
+    if (!checked) return <div className="app" aria-busy="true" />
+    return <AuthScreen />
+  }
+  return ready ? <Shell /> : <Onboarding />
+}
+
+export default function App() {
+  useEffect(() => {
+    const stop = startSync()
+    checkSession()
+    return stop
+  }, [])
   return (
     <HashRouter>
-      {ready ? <Shell /> : <Onboarding />}
+      <Gate />
       <ToastHost />
     </HashRouter>
   )

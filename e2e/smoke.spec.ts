@@ -1,7 +1,10 @@
 import { expect, test, type Page } from '@playwright/test'
 
-async function onboard(page: Page) {
-  await page.goto('/')
+async function onboard(page: Page, local = true) {
+  if (local) {
+    await page.goto('/')
+    await page.getByRole('button', { name: 'Ohne Konto nutzen' }).click()
+  }
   await page.getByLabel('Wie dürfen wir dich nennen? (optional)').fill('Testi')
   await page.getByRole('button', { name: 'Plan erstellen' }).click()
   await page.getByRole('button', { name: /Muskelaufbau/ }).click()
@@ -81,4 +84,44 @@ test('every main route renders without console errors', async ({ page }) => {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)
   expect(overflow).toBe(false)
   expect(errors).toEqual([])
+})
+
+test('account: register, data syncs to a second device, logout clears it', async ({ browser }) => {
+  const email = `e2e-${Date.now()}@example.test`
+  const password = 'ein-langes-test-passwort'
+
+  const phone = await browser.newPage()
+  await phone.goto('/')
+  await phone.getByRole('button', { name: 'Registrieren' }).click()
+  await phone.getByLabel('E-Mail').fill(email)
+  await phone.getByLabel('Passwort').fill(password)
+  await phone.getByRole('checkbox').check()
+  await phone.getByRole('button', { name: 'Konto erstellen' }).click()
+  await onboard(phone, false)
+  await expect(phone.getByText('Bitte bestätige deine E-Mail-Adresse')).toBeVisible()
+
+  // log something and wait for the upload
+  await phone.getByRole('link', { name: 'Mehr' }).click()
+  await phone.getByRole('link', { name: /Cardio/ }).click()
+  await phone.getByRole('button', { name: 'Eintragen' }).click()
+  await phone.goto('/#/konto')
+  await expect(phone.getByText('Synchronisiert', { exact: true })).toBeVisible({ timeout: 10_000 })
+
+  // a second device signs in and gets the same plan and the cardio entry
+  const laptop = await browser.newPage()
+  await laptop.goto('/')
+  await laptop.getByLabel('E-Mail').fill(email)
+  await laptop.getByLabel('Passwort').fill(password)
+  await laptop.locator('form').getByRole('button', { name: 'Anmelden' }).click()
+  await expect(laptop.getByRole('heading', { name: /Testi/ })).toBeVisible()
+  await laptop.goto('/#/cardio')
+  await expect(laptop.getByText('Spazieren / Gehen').last()).toBeVisible()
+
+  // logging out with "remove data" brings back the sign-in screen and an empty device
+  await laptop.goto('/#/konto')
+  await laptop.getByRole('button', { name: 'Abmelden' }).click()
+  await laptop.getByRole('button', { name: 'Abmelden und Daten vom Gerät entfernen' }).click()
+  await expect(laptop.getByRole('heading', { name: 'Willkommen zurück' })).toBeVisible()
+  const stored = await laptop.evaluate(() => JSON.parse(localStorage.getItem('zyklus-v1') ?? '{}').state?.profile ?? null)
+  expect(stored).toBeNull()
 })
