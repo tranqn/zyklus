@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import react from '@vitejs/plugin-react'
 import { defineConfig, type ProxyOptions } from 'vite'
 
@@ -16,4 +17,6 @@ export default defineConfig({
   plugins: [react()],
   server: { proxy: off },
   preview: { proxy: off },
+  // Playwright specs in e2e/ are not vitest tests
+  test: { include: ['src/**/*.test.ts'] },
 })
