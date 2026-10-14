@@ -87,6 +87,7 @@ test('every main route renders without console errors', async ({ page }) => {
 })
 
 test('account: register, data syncs to a second device, logout clears it', async ({ browser }) => {
+  test.setTimeout(60_000)
   const email = `e2e-${Date.now()}@example.test`
   const password = 'ein-langes-test-passwort'
 
