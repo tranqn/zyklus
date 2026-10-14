@@ -12,11 +12,14 @@ const off: Record<string, ProxyOptions> = {
   },
 }
 
+// local API: cd server && pnpm dev (port 8787)
+const api: Record<string, ProxyOptions> = { '/api': { target: 'http://localhost:8787', changeOrigin: false } }
+
 export default defineConfig({
   base: './',
   plugins: [react()],
-  server: { proxy: off },
-  preview: { proxy: off },
+  server: { proxy: { ...off, ...api } },
+  preview: { proxy: { ...off, ...api } },
   // Playwright specs in e2e/ are not vitest tests
   test: { include: ['src/**/*.test.ts'] },
 })

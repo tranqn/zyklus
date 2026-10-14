@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { CARDIO, cardioKcal, MOBILITY, routineSeconds, type MobilityRoutine } from '../domain/activities'
 import { allExercises, useStore } from '../store'
+import { useSync } from '../sync/engine'
 import { EQUIPMENT_LABEL, GYM_EQUIPMENT, HOME_EQUIPMENT_CHOICES } from '../domain/exercises'
 import { targets, tdee } from '../domain/nutrition'
 import type { Equipment, Goal, Level } from '../domain/types'
@@ -11,7 +12,9 @@ import { confirmAction, toast } from '../ui/notify'
 
 export default function More() {
   const mode = useStore((s) => s.settings.mode)
+  const user = useSync((s) => s.user)
   const items = [
+    { to: '/konto', icon: 'heart', t: user ? 'Konto' : 'Konto erstellen', d: user ? `${user.email}${user.verified ? '' : ' · nicht bestätigt'}` : 'Daten sichern und auf allen Geräten nutzen' },
     { to: '/mobility', icon: 'stretch', t: 'Mobility', d: 'Geführte Routinen mit Timer' },
     { to: '/cardio', icon: 'run', t: 'Cardio', d: 'Ausdauer eintragen, Kalorien zählen' },
     { to: '/einstellungen', icon: 'settings', t: 'Profil und Einstellungen', d: 'Ziel, Trainingstage, Ausstattung, Daten' },
@@ -480,7 +483,7 @@ export function SettingsPage() {
 
       <section className="card stack">
         <h3>Deine Daten</h3>
-        <p className="small muted">Alles wird nur auf diesem Gerät gespeichert. Sichere regelmäßig, besonders vor einem Gerätewechsel.</p>
+        <p className="small muted">Mit Konto werden deine Daten automatisch gesichert und synchronisiert. Ohne Konto liegen sie nur auf diesem Gerät, dann sichere regelmäßig per Datei.</p>
         <button className="btn" onClick={exportData}>
           Sicherung herunterladen
         </button>

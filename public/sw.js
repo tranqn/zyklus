@@ -1,5 +1,5 @@
 // Offline cache: app shell network-first, hashed assets cache-first.
-const CACHE = 'zyklus-v1'
+const CACHE = 'zyklus-v2'
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(['./', './index.html', './manifest.webmanifest', './icon.svg'])))
   self.skipWaiting()
@@ -11,6 +11,8 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url)
   if (e.request.method !== 'GET' || url.origin !== location.origin) return
+  // account data and food search must never come from the cache
+  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/off/')) return
   if (url.pathname.includes('/assets/')) {
     e.respondWith(
       caches.match(e.request).then(

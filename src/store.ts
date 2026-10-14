@@ -48,6 +48,8 @@ export interface State {
   settings: Settings
   /** Days frozen by vacation/sick mode, so the streak survives them. */
   frozenDays: string[]
+  /** Change stamps and tombstones for account sync (see sync/merge.ts). */
+  syncMeta: { stamps: Record<string, number>; tombstones: Record<string, number> }
 }
 
 interface Actions {
@@ -137,6 +139,7 @@ const initial: State = {
     mode: 'normal',
   },
   frozenDays: [],
+  syncMeta: { stamps: {}, tombstones: {} },
 }
 
 function mapActive(s: State, exKey: string, fn: (sets: SetEntry[]) => SetEntry[]): Partial<State> {
@@ -432,6 +435,14 @@ export const useStore = create<State & Actions>()(
     },
   ),
 )
+
+/** Keys that make up the user's data (everything persisted except sync bookkeeping). */
+export const DATA_KEYS = [...Object.keys(initial).filter((k) => k !== 'syncMeta'), 'profile', 'meso', 'active'] as (keyof State)[]
+
+/** A fresh, empty state (used when switching accounts). */
+export function emptyState(): State {
+  return structuredClone(initial)
+}
 
 export function allExercises(s: Pick<State, 'customExercises'>): Exercise[] {
   return [...EXERCISES, ...s.customExercises]

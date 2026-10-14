@@ -1,0 +1,10 @@
+# Host overlay (untracked as compose.hetzner.yml, server only; copy in /opt/ci/overlays/zyklus-api/).
+services:
+  api:
+    ports:
+      - "127.0.0.1:8006:8080"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

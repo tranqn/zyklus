@@ -24,6 +24,11 @@ jobs:
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir server install --frozen-lockfile
+
+      # API: typecheck and tests (auth, sync, rate limits)
+      - name: Server checks
+        run: pnpm --dir server typecheck && pnpm --dir server test
 
       # typecheck, lint and the domain unit tests
       - name: Verify
@@ -56,9 +61,27 @@ jobs:
           retention-days: 3
           if-no-files-found: error
 
+  deploy-api:
+    name: Deploy API to Hetzner
+    needs: [build]
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, hetzner, deploy]
+    concurrency:
+      group: deploy-zyklus-api
+      cancel-in-progress: false
+    timeout-minutes: 20
+    steps:
+      # no checkout: the root-owned deploy script fetches the commit itself and refuses
+      # anything that is not on origin/main, then builds, probes and rolls back if unhealthy
+      - name: Deploy
+        env:
+          SHA: ${{ github.sha }}
+        run: /opt/ci/bin/deploy zyklus-api "$SHA"
+
   publish:
     name: Publish to Hetzner
-    needs: [build]
+    # the new frontend may rely on new API routes, so the API goes first
+    needs: [build, deploy-api]
     if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
     runs-on: [self-hosted, hetzner, deploy]
     concurrency:

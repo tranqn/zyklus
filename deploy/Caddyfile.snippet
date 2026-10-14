@@ -11,6 +11,11 @@ mci.quocnamtran.com {
 		}
 	}
 
+	# accounts and sync (zyklus-api container)
+	handle /api/* {
+		reverse_proxy 127.0.0.1:8006
+	}
+
 	handle {
 		root * /opt/zyklus/site
 		# the service worker and the shell must never be stale
