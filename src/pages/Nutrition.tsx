@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 import { macrosOf, parseMealText, suggestAdjustment, targets, totals, burnedToday, type ParsedItem } from '../domain/nutrition'
 import type { BarcodeDetector as Ponyfill } from 'barcode-detector/ponyfill'
 import { lookupBarcode, searchOff } from '../domain/openfoodfacts'
 import type { Food, FoodEntry, Meal } from '../domain/types'
 import { addDays, fmt, formatDate, today, uid } from '../domain/util'
 import { allFoods, recentFoods, useStore } from '../store'
-import { Bar, Icon, Ring, Segmented, Sheet, toast } from '../ui/kit'
+import { Bar, Icon, Ring, Segmented, Sheet } from '../ui/kit'
+import { toast } from '../ui/notify'
+import { MealActions, RecipeTab, SaveRecipeSheet, SupplementsCard } from './NutritionExtras'
 
 const MEALS: { v: Meal; t: string }[] = [
   { v: 'fruehstueck', t: 'Frühstück' },
@@ -24,6 +26,7 @@ export default function Nutrition() {
   const [day, setDay] = useState(today())
   const [addMeal, setAddMeal] = useState<Meal | null>(null)
   const [editEntry, setEditEntry] = useState<FoodEntry | null>(null)
+  const [recipeItems, setRecipeItems] = useState<FoodEntry[] | null>(null)
   const profile = s.profile!
   const t = targets(profile, s.settings.kcalOverride, s.kcalAdjustment)
   const entries = s.foods.filter((f) => f.date === day)
@@ -116,9 +119,12 @@ export default function Nutrition() {
                 })}
               </div>
             )}
+            <MealActions day={day} meal={m.v} items={items} onSaveRecipe={setRecipeItems} />
           </section>
         )
       })}
+
+      <SupplementsCard day={day} />
 
       <div className="card stack">
         <div className="row between">
@@ -144,8 +150,9 @@ export default function Nutrition() {
         )}
       </div>
 
-      <AddFoodSheet meal={addMeal} day={day} onClose={() => setAddMeal(null)} />
-      <EditEntrySheet entry={editEntry} onClose={() => setEditEntry(null)} />
+      <AddFoodSheet key={addMeal ?? 'zu'} meal={addMeal} day={day} onClose={() => setAddMeal(null)} />
+      <SaveRecipeSheet key={recipeItems ? 'offen' : 'zu'} items={recipeItems} onClose={() => setRecipeItems(null)} />
+      <EditEntrySheet key={editEntry?.id ?? 'zu'} entry={editEntry} onClose={() => setEditEntry(null)} />
     </div>
   )
 }
@@ -167,19 +174,13 @@ function MacroCol({ label, v, max, color }: { label: string; v: number; max: num
   )
 }
 
-type Tab = 'suche' | 'text' | 'scan' | 'eigen'
+type Tab = 'suche' | 'text' | 'scan' | 'rezepte' | 'eigen'
 
 function AddFoodSheet({ meal, day, onClose }: { meal: Meal | null; day: string; onClose: () => void }) {
   const s = useStore()
   const [tab, setTab] = useState<Tab>('suche')
   const [picked, setPicked] = useState<Food | null>(null)
   const [mealSel, setMealSel] = useState<Meal>(meal ?? defaultMeal())
-  useEffect(() => {
-    if (meal) {
-      setMealSel(meal)
-      setPicked(null)
-    }
-  }, [meal])
   if (!meal) return null
   const add = (f: Food, grams: number) => {
     s.addFood({ date: day, meal: mealSel, foodId: f.id, name: f.brand ? `${f.name} (${f.brand})` : f.name, grams, per100: f.per100 })
@@ -214,8 +215,9 @@ function AddFoodSheet({ meal, day, onClose }: { meal: Meal | null; day: string; 
               label="Eingabeart"
               options={[
                 { value: 'suche', label: 'Suche' },
-                { value: 'text', label: 'Freitext' },
-                { value: 'scan', label: 'Barcode' },
+                { value: 'text', label: 'Text' },
+                { value: 'scan', label: 'Scan' },
+                { value: 'rezepte', label: 'Rezepte' },
                 { value: 'eigen', label: 'Eigenes' },
               ]}
             />
@@ -229,6 +231,7 @@ function AddFoodSheet({ meal, day, onClose }: { meal: Meal | null; day: string; 
               />
             )}
             {tab === 'scan' && <ScanTab onFound={setPicked} />}
+            {tab === 'rezepte' && <RecipeTab day={day} meal={mealSel} onDone={onClose} />}
             {tab === 'eigen' && (
               <CustomFoodForm
                 onSave={(f) => {
@@ -386,10 +389,7 @@ function TextTab({ onAdd }: { onAdd: (items: ParsedItem[]) => void }) {
   const s = useStore()
   const foods = useMemo(() => allFoods(s), [s])
   const [text, setText] = useState('')
-  const [items, setItems] = useState<ParsedItem[]>([])
-  useEffect(() => {
-    setItems(parseMealText(text, foods))
-  }, [text, foods])
+  const items = useMemo(() => parseMealText(text, foods), [text, foods])
   const found = items.filter((i) => i.food)
   return (
     <div className="stack">
@@ -435,6 +435,10 @@ function ScanTab({ onFound }: { onFound: (f: Food) => void }) {
       setStatus('Keine Verbindung zu Open Food Facts.')
     }
   }
+  // the camera loop only depends on `scanning`; this always sees the latest lookup
+  const onScanned = useEffectEvent((c: string) => {
+    lookup(c)
+  })
 
   useEffect(() => {
     if (!scanning) return
@@ -457,7 +461,7 @@ function ScanTab({ onFound }: { onFound: (f: Food) => void }) {
             setScanning(false)
             setCode(c)
             if ('vibrate' in navigator) navigator.vibrate(80)
-            lookup(c)
+            onScanned(c)
             break
           }
           await new Promise((r) => setTimeout(r, 250))
@@ -549,9 +553,6 @@ function CustomFoodForm({ onSave }: { onSave: (f: Food) => void }) {
 function EditEntrySheet({ entry, onClose }: { entry: FoodEntry | null; onClose: () => void }) {
   const s = useStore()
   const [grams, setGrams] = useState(entry?.grams ?? 100)
-  useEffect(() => {
-    if (entry) setGrams(entry.grams)
-  }, [entry])
   if (!entry) return null
   const m = macrosOf({ grams, per100: entry.per100 })
   return (

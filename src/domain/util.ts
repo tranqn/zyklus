@@ -1,3 +1,12 @@
+/** Current epoch ms. Read it in handlers and effects, not during render. */
+export function nowMs(): number {
+  return Date.now()
+}
+
+export function currentHour(): number {
+  return new Date().getHours()
+}
+
 export function uid(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID()
   return Math.random().toString(36).slice(2) + Date.now().toString(36)

@@ -3,7 +3,7 @@ import { EQUIPMENT_LABEL, GYM_EQUIPMENT, HOME_EQUIPMENT_CHOICES } from '../domai
 import { targets } from '../domain/nutrition'
 import { generateMesocycle } from '../domain/planner'
 import type { Equipment, Goal, Level, Location, Profile, Sex } from '../domain/types'
-import { WEEKDAYS_SHORT } from '../domain/util'
+import { nowMs, WEEKDAYS_SHORT } from '../domain/util'
 import { useStore } from '../store'
 import { Icon, Segmented, Stepper } from '../ui/kit'
 
@@ -67,7 +67,7 @@ export default function Onboarding() {
       daysPerWeek: days,
       sessionMinutes: minutes,
       trainingDays: weekdays,
-      createdAt: new Date().toISOString(),
+      createdAt: '',
     }),
     [name, sex, age, height, weight, activity, goal, level, location, homeEq, days, minutes, weekdays],
   )
@@ -288,7 +288,7 @@ export default function Onboarding() {
 
         <div style={{ marginTop: 'auto', paddingTop: 8 }}>
           {current === 'fertig' ? (
-            <button className="btn primary block" onClick={() => complete(profile)}>
+            <button className="btn primary block" onClick={() => complete({ ...profile, createdAt: new Date(nowMs()).toISOString() })}>
               Los geht's
             </button>
           ) : (

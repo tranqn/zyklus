@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { onToast } from './notify'
 
 const PATHS: Record<string, string> = {
   home: 'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
@@ -131,23 +132,18 @@ export function Bar({ value, max, color }: { value: number; max: number; color?:
   )
 }
 
-let toastSetter: ((s: string | null) => void) | null = null
-export function toast(msg: string) {
-  toastSetter?.(msg)
-}
 export function ToastHost() {
   const [msg, setMsg] = useState<string | null>(null)
   const t = useRef<number | undefined>(undefined)
-  useEffect(() => {
-    toastSetter = (m) => {
-      setMsg(m)
-      window.clearTimeout(t.current)
-      t.current = window.setTimeout(() => setMsg(null), 2400)
-    }
-    return () => {
-      toastSetter = null
-    }
-  }, [])
+  useEffect(
+    () =>
+      onToast((m) => {
+        setMsg(m)
+        window.clearTimeout(t.current)
+        t.current = window.setTimeout(() => setMsg(null), 2400)
+      }),
+    [],
+  )
   if (!msg) return null
   return (
     <div className="toast" role="status">
@@ -236,8 +232,4 @@ export function LineChart({ data, unit = '', height = 160, label }: { data: Poin
       </svg>
     </figure>
   )
-}
-
-export function confirmAction(msg: string): boolean {
-  return window.confirm(msg)
 }

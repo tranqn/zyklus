@@ -5,8 +5,9 @@ import { allExercises, useStore } from '../store'
 import { EQUIPMENT_LABEL, GYM_EQUIPMENT, HOME_EQUIPMENT_CHOICES } from '../domain/exercises'
 import { targets, tdee } from '../domain/nutrition'
 import type { Equipment, Goal, Level } from '../domain/types'
-import { formatDate, today, WEEKDAYS_SHORT } from '../domain/util'
-import { confirmAction, Icon, Segmented, Sheet, Stepper, toast } from '../ui/kit'
+import { formatDate, nowMs, today, WEEKDAYS_SHORT } from '../domain/util'
+import { Icon, Segmented, Sheet, Stepper } from '../ui/kit'
+import { confirmAction, toast } from '../ui/notify'
 
 export default function More() {
   const mode = useStore((s) => s.settings.mode)
@@ -106,29 +107,29 @@ function MobilityPlayer({ routine, onClose }: { routine: MobilityRoutine; onClos
   const addMobility = useStore((s) => s.addMobility)
   // flatten moves into timed steps (both sides become two steps)
   const steps = routine.moves.flatMap((m) => (m.sides ? [{ ...m, side: 'Links' }, { ...m, side: 'Rechts' }] : [{ ...m, side: '' }]))
-  const [i, setI] = useState(0)
-  const [left, setLeft] = useState(steps[0].seconds)
+  // one state object, so a tick can move to the next step atomically
+  const [pos, setPos] = useState({ i: 0, left: steps[0].seconds, finished: false })
   const [paused, setPaused] = useState(false)
-  const [finished, setFinished] = useState(false)
-  const started = useRef(Date.now())
+  const [started] = useState(() => nowMs())
+  const { i, left, finished } = pos
+  const goTo = (n: number) => {
+    if ('vibrate' in navigator) navigator.vibrate(120)
+    setPos(n >= steps.length ? { i, left: 0, finished: true } : { i: n, left: steps[n].seconds, finished: false })
+  }
   useEffect(() => {
     if (paused || finished) return
-    const id = window.setInterval(() => setLeft((l) => l - 1), 1000)
+    const id = window.setInterval(() => {
+      setPos((p) => {
+        if (p.left > 1) return { ...p, left: p.left - 1 }
+        if ('vibrate' in navigator) navigator.vibrate(120)
+        return p.i + 1 >= steps.length ? { ...p, left: 0, finished: true } : { i: p.i + 1, left: steps[p.i + 1].seconds, finished: false }
+      })
+    }, 1000)
     return () => window.clearInterval(id)
-  }, [paused, finished])
-  useEffect(() => {
-    if (left > 0) return
-    if ('vibrate' in navigator) navigator.vibrate(120)
-    if (i + 1 >= steps.length) {
-      setFinished(true)
-      return
-    }
-    setI(i + 1)
-    setLeft(steps[i + 1].seconds)
-  }, [left, i, steps])
+  }, [paused, finished, steps])
   const step = steps[i]
   const save = () => {
-    addMobility({ date: today(), routineId: routine.id, minutes: Math.max(1, Math.round((Date.now() - started.current) / 60000)) })
+    addMobility({ date: today(), routineId: routine.id, minutes: Math.max(1, Math.round((nowMs() - started) / 60000)) })
     toast('Mobility gespeichert')
     onClose()
   }
@@ -161,19 +162,14 @@ function MobilityPlayer({ routine, onClose }: { routine: MobilityRoutine; onClos
           <div className="row">
             <button
               className="btn grow"
-              onClick={() => {
-                if (i > 0) {
-                  setI(i - 1)
-                  setLeft(steps[i - 1].seconds)
-                }
-              }}
+              onClick={() => i > 0 && goTo(i - 1)}
             >
               Zurück
             </button>
             <button className="btn primary grow" onClick={() => setPaused(!paused)}>
               <Icon name={paused ? 'play' : 'pause'} size={18} /> {paused ? 'Weiter' : 'Pause'}
             </button>
-            <button className="btn grow" onClick={() => setLeft(0)}>
+            <button className="btn grow" onClick={() => goTo(i + 1)}>
               Weiter
             </button>
           </div>

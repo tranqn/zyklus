@@ -3,10 +3,11 @@ import { MUSCLE_LABEL } from '../domain/exercises'
 import { weightTrend } from '../domain/nutrition'
 import { workSets } from '../domain/progression'
 import { personalRecords, sessionMinutes, sessionSets, sessionVolume, streak, weeklyMuscleSets } from '../domain/stats'
-import type { Muscle, WorkoutSession } from '../domain/types'
+import type { MeasureSite, Muscle, WorkoutSession } from '../domain/types'
 import { addDays, fmt, formatDate, parseDay, startOfWeek, today, WEEKDAYS_SHORT } from '../domain/util'
 import { e1rmHistory, exerciseMap, useStore } from '../store'
-import { Bar, confirmAction, Icon, LineChart, Segmented, Sheet } from '../ui/kit'
+import { Bar, Icon, LineChart, Segmented, Sheet } from '../ui/kit'
+import { confirmAction, toast } from '../ui/notify'
 import { WeightSheet } from './Today'
 
 type Tab = 'uebersicht' | 'kraft' | 'koerper' | 'verlauf'
@@ -255,6 +256,7 @@ function Body() {
           </div>
         )}
       </div>
+      <Measurements />
       <div className="card list" style={{ padding: '0 16px' }}>
         {[...s.weights].reverse().slice(0, 30).map((w) => (
           <div key={w.date} className="list-item">
@@ -268,6 +270,110 @@ function Body() {
       </div>
       <WeightSheet open={open} onClose={() => setOpen(false)} />
     </>
+  )
+}
+
+const SITES: { k: MeasureSite; l: string; unit: string }[] = [
+  { k: 'taille', l: 'Taille', unit: 'cm' },
+  { k: 'huefte', l: 'Hüfte', unit: 'cm' },
+  { k: 'brust', l: 'Brust', unit: 'cm' },
+  { k: 'oberarm', l: 'Oberarm', unit: 'cm' },
+  { k: 'oberschenkel', l: 'Oberschenkel', unit: 'cm' },
+  { k: 'wade', l: 'Wade', unit: 'cm' },
+  { k: 'koerperfett', l: 'Körperfett', unit: '%' },
+]
+
+function Measurements() {
+  const s = useStore()
+  const [site, setSite] = useState<MeasureSite>('taille')
+  const [open, setOpen] = useState(false)
+  const series = s.measurements.filter((m) => m.values[site] != null).map((m) => ({ x: formatDate(m.date), y: m.values[site]! }))
+  const first = (k: MeasureSite) => s.measurements.find((m) => m.values[k] != null)?.values[k]
+  const last = (k: MeasureSite) => [...s.measurements].reverse().find((m) => m.values[k] != null)?.values[k]
+  const meta = SITES.find((x) => x.k === site)!
+  return (
+    <div className="card stack">
+      <div className="row between">
+        <div>
+          <h3>Körpermaße</h3>
+          <p className="tiny muted">Alle 2 bis 4 Wochen messen, morgens, gleiche Stelle.</p>
+        </div>
+        <button className="btn primary sm" onClick={() => setOpen(true)}>
+          <Icon name="plus" size={16} /> Messen
+        </button>
+      </div>
+      {s.measurements.length === 0 ? (
+        <p className="small muted">Noch keine Maße. Taillenumfang ist oft aussagekräftiger als das Gewicht.</p>
+      ) : (
+        <>
+          <div className="grid3">
+            {SITES.filter((x) => last(x.k) != null).map((x) => {
+              const d = last(x.k)! - first(x.k)!
+              return (
+                <button key={x.k} className={`card tight stat ${site === x.k ? 'on' : ''}`} style={{ textAlign: 'left', borderColor: site === x.k ? 'var(--accent)' : undefined }} onClick={() => setSite(x.k)} aria-pressed={site === x.k}>
+                  <span className="l">{x.l}</span>
+                  <span className="v" style={{ fontSize: '1.1rem' }}>
+                    {fmt(last(x.k)!, 1)}
+                    <span className="tiny muted"> {x.unit}</span>
+                  </span>
+                  {d !== 0 && (
+                    <span className="tiny num" style={{ color: 'var(--muted)' }}>
+                      {d > 0 ? '+' : ''}
+                      {fmt(d, 1)}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+          <LineChart data={series} unit={meta.unit} label={`Verlauf ${meta.l}`} />
+        </>
+      )}
+      {open && <MeasureSheet onClose={() => setOpen(false)} />}
+    </div>
+  )
+}
+
+function MeasureSheet({ onClose }: { onClose: () => void }) {
+  const s = useStore()
+  const prev = s.measurements[s.measurements.length - 1]?.values ?? {}
+  const [vals, setVals] = useState<Record<string, string>>({})
+  const num = (v: string) => parseFloat(v.replace(',', '.'))
+  const filled = Object.entries(vals).filter(([, v]) => Number.isFinite(num(v)))
+  return (
+    <Sheet open onClose={onClose} title="Körpermaße eintragen">
+      <div className="stack lg">
+        <p className="small muted">Nur ausfüllen, was du gemessen hast. Grau steht dein letzter Wert.</p>
+        <div className="grid2">
+          {SITES.map((x) => (
+            <div key={x.k} className="field">
+              <label htmlFor={`m-${x.k}`}>
+                {x.l} ({x.unit})
+              </label>
+              <input
+                id={`m-${x.k}`}
+                className="input"
+                inputMode="decimal"
+                placeholder={prev[x.k] != null ? fmt(prev[x.k]!, 1) : ''}
+                value={vals[x.k] ?? ''}
+                onChange={(e) => setVals({ ...vals, [x.k]: e.target.value.replace(/[^0-9.,]/g, '') })}
+              />
+            </div>
+          ))}
+        </div>
+        <button
+          className="btn primary block"
+          disabled={!filled.length}
+          onClick={() => {
+            s.logMeasurement({ date: today(), values: Object.fromEntries(filled.map(([k, v]) => [k, num(v)])) })
+            toast('Maße gespeichert')
+            onClose()
+          }}
+        >
+          Speichern
+        </button>
+      </div>
+    </Sheet>
   )
 }
 

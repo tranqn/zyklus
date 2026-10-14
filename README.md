@@ -11,8 +11,8 @@ Mobile-first Trainings-PWA, inspiriert vom Funktionsumfang der MCI-App (MCI Solu
 - **Tagesform-Check-in**: Schlaf, Energie, Stress, Muskelkater pro Muskel steuern Sätze und RIR
 - **Training**: Satz-Logging (kg, Wdh., RIR), Satzpausen-Timer mit Ton und Vibration, Übung tauschen (einmalig oder dauerhaft), Bildschirm bleibt an
 - **Plan editieren**: Sätze, Wdh.-Bereich, Pausen, Reihenfolge, Übungen hinzufügen, entfernen, ausschließen, eigene Übungen
-- **Ernährung**: Kalorien- und Makroziele (Mifflin-St Jeor), Mahlzeiten, 95 Grundnahrungsmittel offline, Open Food Facts Suche und Barcode-Scanner, Freitext-Eingabe ("150g Hähnchen, 2 Eier"), eigene Lebensmittel, smarte Kalorienanpassung nach Gewichtstrend
-- **Fortschritt**: Kalender, Serie, Muskel-Map (Sätze pro Muskel und Woche), 1RM-Verlauf, Bestleistungen, Gewichtstrend, Trainingsverlauf
+- **Ernährung**: Kalorien- und Makroziele (Mifflin-St Jeor), Mahlzeiten, 95 Grundnahrungsmittel offline, Open Food Facts Suche und Barcode-Scanner, Freitext-Eingabe ("150g Hähnchen, 2 Eier"), eigene Lebensmittel, Rezepte (Mahlzeit speichern, portionsweise eintragen), „Wie gestern", Supplement-Tracker, smarte Kalorienanpassung nach Gewichtstrend
+- **Fortschritt**: Kalender, Serie, Muskel-Map (Sätze pro Muskel und Woche), 1RM-Verlauf, Bestleistungen, Gewichtstrend, Körpermaße (Taille, Hüfte, Arme, Körperfett), Trainingsverlauf
 - **Mobility und Cardio**: 7 geführte Routinen mit Timer, 22 Cardio-Aktivitäten mit MET-basiertem Kalorienverbrauch
 - **Urlaubs- und Krankheitsmodus**: Plan und Serie pausieren, leichter Wiedereinstieg
 - **PWA**: installierbar, offline nutzbar, Daten bleiben lokal im Browser (Sicherung als JSON)
@@ -23,6 +23,7 @@ Mobile-first Trainings-PWA, inspiriert vom Funktionsumfang der MCI-App (MCI Solu
 pnpm install
 pnpm dev        # http://localhost:5173
 pnpm verify     # tsc, oxlint, vitest
+pnpm e2e        # Playwright, mobiles Viewport (Pixel 7)
 pnpm build
 ```
 

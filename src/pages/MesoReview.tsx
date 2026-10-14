@@ -3,7 +3,8 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import { bestE1rm } from '../domain/progression'
 import { fmt } from '../domain/util'
 import { exerciseMap, useStore } from '../store'
-import { Icon, toast } from '../ui/kit'
+import { Icon } from '../ui/kit'
+import { toast } from '../ui/notify'
 
 export default function MesoReview() {
   const s = useStore()

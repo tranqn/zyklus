@@ -235,3 +235,31 @@ export interface Settings {
   /** First session after vacation/sick mode runs lighter. */
   reentryPending?: boolean
 }
+
+export interface RecipeItem {
+  foodId?: string
+  name: string
+  grams: number
+  per100: Macros
+}
+
+/** A saved meal; logging one portion adds every item scaled by 1/servings. */
+export interface Recipe {
+  id: string
+  name: string
+  servings: number
+  items: RecipeItem[]
+}
+
+export interface Supplement {
+  id: string
+  name: string
+  dose: string
+}
+
+export type MeasureSite = 'taille' | 'huefte' | 'brust' | 'oberarm' | 'oberschenkel' | 'wade' | 'koerperfett'
+
+export interface Measurement {
+  date: string
+  values: Partial<Record<MeasureSite, number>>
+}

@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { createJSONStorage, persist } from 'zustand/middleware'
+import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware'
 import { EXERCISES } from './domain/exercises'
 import { FOODS } from './domain/foods'
 import { generateMesocycle } from './domain/planner'
@@ -10,8 +10,11 @@ import type {
   Exercise,
   Food,
   FoodEntry,
+  Measurement,
   Mesocycle,
   MobilityEntry,
+  Recipe,
+  Supplement,
   Mode,
   PlanSlot,
   Profile,
@@ -37,6 +40,11 @@ export interface State {
   cardio: CardioEntry[]
   mobility: MobilityEntry[]
   kcalAdjustment: number
+  recipes: Recipe[]
+  supplements: Supplement[]
+  /** date -> ids of supplements taken that day */
+  supplementLog: Record<string, string[]>
+  measurements: Measurement[]
   settings: Settings
   /** Days frozen by vacation/sick mode, so the streak survives them. */
   frozenDays: string[]
@@ -71,10 +79,38 @@ interface Actions {
   removeCardio(id: string): void
   addMobility(e: Omit<MobilityEntry, 'id'>): void
   setKcalAdjustment(delta: number): void
+  saveRecipe(r: Recipe): void
+  removeRecipe(id: string): void
+  logRecipe(r: Recipe, portions: number, date: string, meal: FoodEntry['meal']): void
+  copyMeal(fromDate: string, toDate: string, meal: FoodEntry['meal']): number
+  addSupplement(s: Omit<Supplement, 'id'>): void
+  removeSupplement(id: string): void
+  toggleSupplement(id: string, date?: string): void
+  logMeasurement(m: Measurement): void
+  removeMeasurement(date: string): void
   updateSettings(s: Partial<Settings>): void
   setMode(mode: Mode): void
   importData(json: string): void
   reset(): void
+}
+
+/** localStorage, or an in-memory stand-in when it is missing or blocked (private mode, tests). */
+function safeStorage(): StateStorage {
+  try {
+    const ls = globalThis.localStorage
+    if (ls) {
+      ls.getItem('zyklus-probe')
+      return ls
+    }
+  } catch {
+    /* blocked */
+  }
+  const mem = new Map<string, string>()
+  return {
+    getItem: (k) => mem.get(k) ?? null,
+    setItem: (k, v) => void mem.set(k, v),
+    removeItem: (k) => void mem.delete(k),
+  }
 }
 
 const initial: State = {
@@ -89,6 +125,10 @@ const initial: State = {
   cardio: [],
   mobility: [],
   kcalAdjustment: 0,
+  recipes: [],
+  supplements: [],
+  supplementLog: {},
+  measurements: [],
   settings: {
     restTimerSound: true,
     restTimerVibrate: true,
@@ -307,6 +347,48 @@ export const useStore = create<State & Actions>()(
         set({ kcalAdjustment: delta })
       },
 
+      saveRecipe(r) {
+        set((s) => ({ recipes: [...s.recipes.filter((x) => x.id !== r.id), r] }))
+      },
+      removeRecipe(id) {
+        set((s) => ({ recipes: s.recipes.filter((x) => x.id !== id) }))
+      },
+      logRecipe(r, portions, date, meal) {
+        const factor = portions / Math.max(1, r.servings)
+        set((s) => ({
+          foods: [
+            ...s.foods,
+            ...r.items.map((it) => ({ id: uid(), date, meal, foodId: it.foodId, name: it.name, grams: Math.round(it.grams * factor), per100: it.per100 })),
+          ],
+        }))
+      },
+      copyMeal(fromDate, toDate, meal) {
+        const src = get().foods.filter((f) => f.date === fromDate && f.meal === meal)
+        set((s) => ({ foods: [...s.foods, ...src.map((f) => ({ ...f, id: uid(), date: toDate }))] }))
+        return src.length
+      },
+
+      addSupplement(sup) {
+        set((s) => ({ supplements: [...s.supplements, { ...sup, id: uid() }] }))
+      },
+      removeSupplement(id) {
+        set((s) => ({ supplements: s.supplements.filter((x) => x.id !== id) }))
+      },
+      toggleSupplement(id, date = today()) {
+        set((s) => {
+          const taken = s.supplementLog[date] ?? []
+          const next = taken.includes(id) ? taken.filter((x) => x !== id) : [...taken, id]
+          return { supplementLog: { ...s.supplementLog, [date]: next } }
+        })
+      },
+
+      logMeasurement(m) {
+        set((s) => ({ measurements: [...s.measurements.filter((x) => x.date !== m.date), m].sort((a, b) => a.date.localeCompare(b.date)) }))
+      },
+      removeMeasurement(date) {
+        set((s) => ({ measurements: s.measurements.filter((x) => x.date !== date) }))
+      },
+
       updateSettings(patch) {
         set((s) => ({ settings: { ...s.settings, ...patch } }))
       },
@@ -338,7 +420,7 @@ export const useStore = create<State & Actions>()(
     }),
     {
       name: 'zyklus-v1',
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(safeStorage),
       version: 1,
       partialize: (s) => {
         const out: Partial<State> = {}
