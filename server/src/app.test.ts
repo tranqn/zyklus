@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { cleanup, createApp } from './app.ts'
 import type { Config } from './config.ts'
+import { DatabaseSync } from 'node:sqlite'
+import { mkdtempSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { openDb, type DB } from './db.ts'
 import type { Mail } from './mail.ts'
 
@@ -58,7 +62,7 @@ describe('registration and login', () => {
 
   it('rejects weak input and missing consent', async () => {
     expect((await call('POST', '/auth/register', { body: { email: 'x', password: 'langes-passwort-1', consent: true } })).status).toBe(400)
-    expect((await call('POST', '/auth/register', { body: { email: 'a@b.de', password: 'kurz', consent: true } })).body.error).toBe('password')
+    expect((await call('POST', '/auth/register', { body: { email: 'a@b.de', password: 'kurz', consent: true } })).body.error).toBe('password_short')
     expect((await call('POST', '/auth/register', { body: { email: 'a@b.de', password: 'langes-passwort-1' } })).body.error).toBe('consent')
   })
 
@@ -211,5 +215,39 @@ describe('account', () => {
     expect((await call('GET', '/auth/me', { cookie })).body.user).toBeNull()
     expect(db.prepare('SELECT COUNT(*) AS n FROM states').get()).toEqual({ n: 0 })
     expect((await call('POST', '/auth/login', { body: { email: 'nam@example.test', password: 'langes-passwort-1' } })).status).toBe(401)
+  })
+})
+
+describe('language', () => {
+  it('stores the locale at registration and mails in that language', async () => {
+    const r = await call('POST', '/auth/register', { body: { email: 'vi@example.test', password: 'langes-passwort-1', consent: true, locale: 'vi' } })
+    expect((r.body.user as { locale: string }).locale).toBe('vi')
+    expect(mails[0].subject).toContain('xác nhận')
+    await call('POST', '/auth/forgot', { body: { email: 'vi@example.test' } })
+    expect(mails[1].subject).toBe('Zyklus: đặt lại mật khẩu')
+  })
+
+  it('falls back to German for unknown locales', async () => {
+    const r = await call('POST', '/auth/register', { body: { email: 'xx@example.test', password: 'langes-passwort-1', consent: true, locale: 'fr' } })
+    expect((r.body.user as { locale: string }).locale).toBe('de')
+    expect(mails[0].subject).toContain('bestätige')
+  })
+
+  it('switches the mail language via /account/locale', async () => {
+    const { cookie } = await register()
+    expect((await call('POST', '/account/locale', { cookie, body: { locale: 'en' } })).status).toBe(200)
+    expect(((await call('GET', '/auth/me', { cookie })).body.user as { locale: string }).locale).toBe('en')
+    await call('POST', '/auth/change-password', { cookie, body: { current: 'langes-passwort-1', next: 'ganz-neues-passwort' } })
+    expect(mails.at(-1)!.subject).toBe('Zyklus: your password was changed')
+  })
+
+  it('adds the locale column to databases from the previous version', () => {
+    const file = join(mkdtempSync(join(tmpdir(), 'zyklus-')), 'old.db')
+    const old = new DatabaseSync(file)
+    old.exec('CREATE TABLE users (id INTEGER PRIMARY KEY, email TEXT NOT NULL UNIQUE COLLATE NOCASE, password_hash TEXT NOT NULL, email_verified_at INTEGER, consent_at INTEGER NOT NULL, created_at INTEGER NOT NULL)')
+    old.exec("INSERT INTO users (email, password_hash, consent_at, created_at) VALUES ('alt@example.test', 'x', 1, 1)")
+    old.close()
+    const db2 = openDb(file)
+    expect(db2.prepare('SELECT locale FROM users').get()).toEqual({ locale: 'de' })
   })
 })

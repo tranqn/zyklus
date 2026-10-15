@@ -11,7 +11,8 @@
     "verify": "tsc -b && oxlint && vitest run",
     "preview": "vite preview",
     "e2e": "playwright test",
-    "anim": "node tools/anim/build.mjs"
+    "anim": "node tools/anim/build.mjs",
+    "i18n:review": "GENERATE_REVIEW=1 vitest run src/domain/__tests__/i18n-review.test.ts"
   },
   "dependencies": {
     "barcode-detector": "^3.2.2",

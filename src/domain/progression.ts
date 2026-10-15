@@ -53,7 +53,9 @@ export interface Target {
   reps: number
   /** True when no history exists: the first set calibrates the load. */
   test: boolean
+  /** program.note.* key and its parameters */
   reason: string
+  params?: Record<string, number>
 }
 
 /**
@@ -72,14 +74,14 @@ export function nextTarget(
   const done = last ? workSets(last) : []
 
   if (ex.loadType === 'koerpergewicht') {
-    if (!done.length) return { reps: repMin + 2, test: false, reason: 'Starte locker und taste dich heran.' }
+    if (!done.length) return { reps: repMin + 2, test: false, reason: 'start_easy' }
     const minReps = Math.min(...done.map((s) => s.reps ?? 0))
-    if (deload) return { reps: Math.max(repMin, minReps - 2), test: false, reason: 'Deload: bewusst leichter.' }
-    return { reps: Math.min(repMax + 5, minReps + 1), test: false, reason: 'Eine Wiederholung mehr als letztes Mal.' }
+    if (deload) return { reps: Math.max(repMin, minReps - 2), test: false, reason: 'deload_bw' }
+    return { reps: Math.min(repMax + 5, minReps + 1), test: false, reason: 'one_more_rep_bw' }
   }
 
   if (!done.length) {
-    return { reps: repMax, test: true, reason: `Krafttest: wähle ein Gewicht für ca. ${repMax} Wdh. mit 2 Wdh. Reserve.` }
+    return { reps: repMax, test: true, reason: 'test', params: { reps: repMax } }
   }
 
   const weights = done.map((s) => s.weight ?? 0)
@@ -89,21 +91,21 @@ export function nextTarget(
   const est = bestE1rm(last!) ?? e1rm(topWeight, minReps)
 
   if (deload) {
-    return { weight: roundLoad(topWeight * 0.85, ex.increment), reps: repMin, test: false, reason: 'Deload: 85 % Last, halbe Sätze.' }
+    return { weight: roundLoad(topWeight * 0.85, ex.increment), reps: repMin, test: false, reason: 'deload' }
   }
   if (minReps >= repMax) {
     return {
       weight: roundLoad(topWeight + ex.increment, ex.increment) || topWeight + ex.increment,
       reps: repMin,
       test: false,
-      reason: `Alle Sätze bei ${repMax} Wdh. geschafft: mehr Gewicht.`,
+      reason: 'more_weight', params: { reps: repMax },
     }
   }
   if (minReps < repMin - 1) {
     const w = roundLoad(est * pctFor(repMin, rir), ex.increment)
-    return { weight: Math.min(w, topWeight), reps: repMin, test: false, reason: 'Letztes Mal unter dem Zielbereich: Gewicht angepasst.' }
+    return { weight: Math.min(w, topWeight), reps: repMin, test: false, reason: 'below_range' }
   }
-  return { weight: topWeight, reps: clamp(minReps + 1, repMin, repMax), test: false, reason: 'Gleiches Gewicht, eine Wiederholung mehr.' }
+  return { weight: topWeight, reps: clamp(minReps + 1, repMin, repMax), test: false, reason: 'same_weight' }
 }
 
 export function readinessScore(c: CheckIn, muscles: Muscle[]): number {
@@ -199,7 +201,8 @@ export function buildSession(a: BuildArgs): WorkoutSession {
         repMax: slot.repMax,
         restSec: slot.restSec,
         superset: slot.superset,
-        note: t.reason,
+        noteKey: t.reason,
+        noteParams: t.params,
         sets: entries,
       },
     ]
@@ -210,6 +213,7 @@ export function buildSession(a: BuildArgs): WorkoutSession {
     id: uid(),
     mesoId: a.meso.id,
     planDayId: a.day.id,
+    dayKey: a.day.key,
     dayName: a.day.name,
     week: a.week,
     deload,

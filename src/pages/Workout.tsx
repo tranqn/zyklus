@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
-import { hasEquipment, MUSCLE_LABEL } from '../domain/exercises'
+import { hasEquipment } from '../domain/exercises'
 import { prsInSession, sessionSets, sessionVolume } from '../domain/stats'
 import type { Exercise, SessionExercise, SetEntry } from '../domain/types'
 import { fmt, nowMs } from '../domain/util'
@@ -8,6 +8,9 @@ import { allExercises, exerciseMap, useStore } from '../store'
 import { Icon, Sheet } from '../ui/kit'
 import { confirmAction, toast } from '../ui/notify'
 import { ExerciseAnimation } from '../ui/ExerciseAnimation'
+import { t as tr, useT } from '../i18n'
+import { exerciseCues, exerciseName } from '../i18n/content/exercises'
+import { noteText, sessionDayName } from '../i18n/display'
 
 export default function Workout() {
   const s = useStore()
@@ -18,6 +21,8 @@ export default function Workout() {
   const [info, setInfo] = useState<Exercise | null>(null)
   const [swapKey, setSwapKey] = useState<string | null>(null)
   const [finishOpen, setFinishOpen] = useState(false)
+  // subscribe to the language so the whole screen re-renders on a switch
+  useT()
   useWakeLock(!!active)
 
   if (!active) return <Navigate to="/" replace />
@@ -39,7 +44,7 @@ export default function Workout() {
     }
     const ex = lib.get(se.exerciseId)
     if (ex?.loadType === 'gewicht' && patch.weight == null && set.kind !== 'aufwaermen') {
-      toast('Bitte zuerst das Gewicht eintragen')
+      toast(tr('workout.weightFirst'))
       return
     }
     s.updateSet(se.key, idx, patch)
@@ -53,17 +58,17 @@ export default function Workout() {
   return (
     <div className="page" style={{ paddingBottom: 'calc(120px + var(--safe-b))' }}>
       <div className="row between" style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg)', margin: '-16px -16px 0', padding: 'calc(8px + var(--safe-t)) 16px 8px' }}>
-        <button className="icon-btn" onClick={() => nav('/')} aria-label="Zurück zur Übersicht (Training läuft weiter)">
+        <button className="icon-btn" onClick={() => nav('/')} aria-label={tr('workout.backOverview')}>
           <Icon name="back" />
         </button>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontWeight: 700 }}>{active.dayName}</div>
+          <div style={{ fontWeight: 700 }}>{sessionDayName(active)}</div>
           <div className="tiny muted num">
-            <Elapsed since={active.startedAt} /> · {doneWork}/{totalWork} Sätze
+            <Elapsed since={active.startedAt} /> · {tr('workout.setsDone', { done: doneWork, total: totalWork })}
           </div>
         </div>
         <button className="btn primary sm" onClick={() => setFinishOpen(true)}>
-          Fertig
+          {tr('workout.finish')}
         </button>
       </div>
       <div className="bar" aria-hidden="true">
@@ -72,9 +77,9 @@ export default function Workout() {
 
       {(active.readiness != null || active.deload) && (
         <div className="row wrap">
-          {active.deload && <span className="badge warn">Deload-Woche: locker bleiben</span>}
+          {active.deload && <span className="badge warn">{tr('workout.deloadWeek')}</span>}
           {active.readiness != null && (
-            <span className={`badge ${active.readiness >= 70 ? 'ok' : active.readiness >= 45 ? '' : 'warn'}`}>Tagesform {active.readiness}/100</span>
+            <span className={`badge ${active.readiness >= 70 ? 'ok' : active.readiness >= 45 ? '' : 'warn'}`}>{tr('workout.readiness', { n: active.readiness })}</span>
           )}
         </div>
       )}
@@ -100,13 +105,13 @@ export default function Workout() {
       <button
         className="btn ghost danger block"
         onClick={() => {
-          if (confirmAction('Training verwerfen? Eingetragene Sätze gehen verloren.')) {
+          if (confirmAction(tr('workout.discardConfirm'))) {
             s.discardSession()
             nav('/')
           }
         }}
       >
-        Training verwerfen
+        {tr('workout.discard')}
       </button>
 
       {rest && <RestTimer rest={rest} onChange={setRest} sound={s.settings.restTimerSound} vibrate={s.settings.restTimerVibrate} />}
@@ -138,44 +143,45 @@ function ExerciseCard({
 }) {
   const bw = ex.loadType === 'koerpergewicht'
   const work = se.sets.filter((x) => x.kind !== 'aufwaermen')
+  const { t } = useT()
+  const name = exerciseName(ex)
+  const note = noteText(se)
   const allDone = se.sets.length > 0 && se.sets.every((x) => x.done)
   let n = 0
   return (
-    <section className="card stack" style={{ gap: 10, opacity: allDone ? 0.75 : 1 }} aria-label={ex.name}>
+    <section className="card stack" style={{ gap: 10, opacity: allDone ? 0.75 : 1 }} aria-label={name}>
       <div className="row" style={{ alignItems: 'flex-start' }}>
         <button className="grow" onClick={onInfo} style={{ background: 'none', border: 0, padding: 0, textAlign: 'left' }}>
-          {se.superset && <span className="ss-tag">SUPERSATZ {se.superset} · </span>}
-          <h3 style={{ display: 'inline' }}>{ex.name}</h3>
-          <div className="small muted">
-            {work.length} × {se.repMin}–{se.repMax} Wdh. · {work[0]?.targetRir ?? 2} RIR · Pause {fmt(se.restSec / 60, 1)} min
-          </div>
+          {se.superset && <span className="ss-tag">{t('workout.superset', { tag: se.superset })}</span>}
+          <h3 style={{ display: 'inline' }}>{name}</h3>
+          <div className="small muted">{t('workout.target', { sets: work.length, min: se.repMin, max: se.repMax, rir: (work.find((x) => x.kind === 'arbeit') ?? work[0])?.targetRir ?? 2, rest: fmt(se.restSec / 60, 1) })}</div>
         </button>
-        <button className="icon-btn plain" onClick={onSwap} aria-label={`${ex.name} tauschen`}>
+        <button className="icon-btn plain" onClick={onSwap} aria-label={t('workout.swapLabel', { name })}>
           <Icon name="swap" size={20} />
         </button>
       </div>
-      {se.note && (
+      {note && (
         <p className="small" style={{ background: 'var(--surface-2)', padding: '8px 10px', borderRadius: 10 }}>
-          {se.note}
+          {note}
         </p>
       )}
       <div className="set-row head">
-        <span>Satz</span>
-        <span style={{ textAlign: 'center' }}>{bw ? 'Zusatz kg' : 'kg'}</span>
-        <span style={{ textAlign: 'center' }}>Wdh.</span>
-        <span style={{ textAlign: 'center' }}>RIR</span>
+        <span>{t('workout.colSet')}</span>
+        <span style={{ textAlign: 'center' }}>{bw ? t('workout.colExtraKg') : t('workout.colKg')}</span>
+        <span style={{ textAlign: 'center' }}>{t('workout.colReps')}</span>
+        <span style={{ textAlign: 'center' }}>{t('workout.colRir')}</span>
         <span />
       </div>
       {se.sets.map((set, i) => {
-        const label = set.kind === 'aufwaermen' ? 'W' : set.kind === 'test' ? 'T' : String(++n)
+        const label = set.kind === 'aufwaermen' ? t('workout.warmLetter') : set.kind === 'test' ? t('workout.testLetter') : String(++n)
         return (
           <div key={i} className={`set-row ${set.done ? 'done' : ''}`}>
             <button
               className={`set-idx ${set.kind === 'aufwaermen' ? 'warm' : set.kind === 'test' ? 'test' : ''}`}
-              aria-label={`Satz ${label} entfernen`}
-              title={set.kind === 'aufwaermen' ? 'Aufwärmsatz' : set.kind === 'test' ? 'Krafttest-Satz' : 'Arbeitssatz'}
+              aria-label={t('workout.removeSet', { label })}
+              title={set.kind === 'aufwaermen' ? t('workout.warmSet') : set.kind === 'test' ? t('workout.testSet') : t('workout.workSet')}
               onClick={() => {
-                if (confirmAction('Diesen Satz entfernen?')) onRemove(i)
+                if (confirmAction(t('workout.removeConfirm'))) onRemove(i)
               }}
             >
               {label}
@@ -184,14 +190,14 @@ function ExerciseCard({
               value={set.weight}
               placeholder={set.targetWeight != null ? fmt(set.targetWeight, 2) : bw ? '0' : '?'}
               onChange={(v) => onChange(i, { weight: v })}
-              label={`Gewicht Satz ${label}`}
+              label={t('workout.weightOf', { label })}
               decimal
             />
-            <NumInput value={set.reps} placeholder={String(set.targetReps)} onChange={(v) => onChange(i, { reps: v })} label={`Wiederholungen Satz ${label}`} />
+            <NumInput value={set.reps} placeholder={String(set.targetReps)} onChange={(v) => onChange(i, { reps: v })} label={t('workout.repsOf', { label })} />
             <select
               className="set-input"
               style={{ padding: 0, fontSize: 15, color: set.rir == null && !set.done ? 'var(--muted)' : undefined }}
-              aria-label={`Wiederholungen in Reserve Satz ${label}`}
+              aria-label={t('workout.rirOf', { label })}
               value={set.rir ?? ''}
               onChange={(e) => onChange(i, { rir: e.target.value === '' ? undefined : Number(e.target.value) })}
               disabled={set.kind === 'aufwaermen'}
@@ -203,17 +209,17 @@ function ExerciseCard({
                 </option>
               ))}
             </select>
-            <button className={`check ${set.done ? 'on' : ''}`} onClick={() => onDone(i)} aria-pressed={set.done} aria-label={`Satz ${label} ${set.done ? 'als offen markieren' : 'abhaken'}`}>
+            <button className={`check ${set.done ? 'on' : ''}`} onClick={() => onDone(i)} aria-pressed={set.done} aria-label={set.done ? t('workout.uncheckSet', { label }) : t('workout.checkSet', { label })}>
               <Icon name="check" size={20} stroke={2.6} />
             </button>
           </div>
         )
       })}
       {se.sets.some((x) => x.kind === 'test' && !x.done) && (
-        <p className="tiny muted">T = Krafttest: Arbeite dich an ein Gewicht heran, bei dem du ca. {se.sets.find((x) => x.kind === 'test')?.targetReps} saubere Wdh. schaffst und noch 2 im Tank hast. Daraus berechnet die App alle weiteren Sätze.</p>
+        <p className="tiny muted">{t('workout.testHint', { reps: se.sets.find((x) => x.kind === 'test')?.targetReps ?? 10 })}</p>
       )}
       <button className="btn ghost sm" style={{ alignSelf: 'flex-start' }} onClick={onAdd}>
-        <Icon name="plus" size={16} /> Satz hinzufügen
+        <Icon name="plus" size={16} /> {t('workout.addSet')}
       </button>
     </section>
   )
@@ -302,16 +308,16 @@ function RestTimer({ rest, onChange, sound, vibrate }: { rest: { end: number; to
   const m = Math.floor(left / 60)
   const sec = left % 60
   return (
-    <div className="timer-bar" role="timer" aria-live="off" aria-label="Satzpause">
+    <div className="timer-bar" role="timer" aria-live="off" aria-label={tr('workout.rest')}>
       <Icon name="timer" />
-      <span className="t">{left === 0 ? 'Los!' : `${m}:${String(sec).padStart(2, '0')}`}</span>
-      <button onClick={() => onChange({ ...rest, end: rest.end - 15000 })} aria-label="15 Sekunden weniger">
+      <span className="t">{left === 0 ? tr('workout.go') : `${m}:${String(sec).padStart(2, '0')}`}</span>
+      <button onClick={() => onChange({ ...rest, end: rest.end - 15000 })} aria-label={tr('workout.minus15')}>
         −15
       </button>
-      <button onClick={() => onChange({ end: rest.end + 15000, total: rest.total + 15 })} aria-label="15 Sekunden mehr">
+      <button onClick={() => onChange({ end: rest.end + 15000, total: rest.total + 15 })} aria-label={tr('workout.plus15')}>
         +15
       </button>
-      <button onClick={() => onChange(null)} aria-label="Pause überspringen">
+      <button onClick={() => onChange(null)} aria-label={tr('workout.skipRest')}>
         <Icon name="close" size={18} />
       </button>
       <div className="timer-progress">
@@ -342,29 +348,31 @@ function useWakeLock(on: boolean) {
 }
 
 export function ExerciseInfo({ ex, onClose }: { ex: Exercise | null; onClose: () => void }) {
+  const { t, tk } = useT()
+  const name = ex ? exerciseName(ex) : undefined
   return (
-    <Sheet open={!!ex} onClose={onClose} title={ex?.name}>
+    <Sheet open={!!ex} onClose={onClose} title={name}>
       {ex && (
         <div className="stack lg">
-          <ExerciseAnimation exerciseId={ex.id} label={ex.name} />
+          <ExerciseAnimation exerciseId={ex.id} label={name!} />
           <div className="row wrap">
-            <span className="badge accent">{MUSCLE_LABEL[ex.primary]}</span>
+            <span className="badge accent">{tk(`labels.muscle.${ex.primary}`)}</span>
             {ex.secondary.map((m) => (
               <span key={m} className="badge">
-                {MUSCLE_LABEL[m]}
+                {tk(`labels.muscle.${m}`)}
               </span>
             ))}
           </div>
           <div className="stack">
-            <h3>Ausführung</h3>
+            <h3>{t('workout.howTo')}</h3>
             <ol style={{ margin: 0, paddingLeft: 20 }} className="stack">
-              {ex.cues.map((c) => (
+              {exerciseCues(ex).map((c) => (
                 <li key={c}>{c}</li>
               ))}
             </ol>
           </div>
-          <a className="btn block" href={`https://www.youtube.com/results?search_query=${encodeURIComponent(ex.name + ' Ausführung')}`} target="_blank" rel="noreferrer">
-            Video-Anleitungen suchen
+          <a className="btn block" href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${name} ${t('workout.videoSuffix')}`)}`} target="_blank" rel="noreferrer">
+            {t('workout.videos')}
           </a>
         </div>
       )}
@@ -381,33 +389,33 @@ function SwapSheet({ exKey, onClose }: { exKey: string | null; onClose: () => vo
     ? allExercises(s).filter((e) => e.slot === se.slot && e.id !== se.exerciseId && (anyEquipment || hasEquipment(s.profile!.equipment, e)))
     : []
   return (
-    <Sheet open={!!se} onClose={onClose} title="Übung tauschen">
+    <Sheet open={!!se} onClose={onClose} title={tr('workout.swapTitle')}>
       <div className="stack lg">
-        <p className="muted small">Alternativen für dasselbe Bewegungsmuster. Das erste Gewicht wird per Testsatz neu ermittelt.</p>
+        <p className="muted small">{tr('workout.swapIntro')}</p>
         <label className="row" style={{ gap: 10 }}>
           <input type="checkbox" checked={permanent} onChange={(e) => setPermanent(e.target.checked)} style={{ width: 20, height: 20 }} />
-          <span>Auch im Plan dauerhaft ersetzen</span>
+          <span>{tr('workout.swapPermanent')}</span>
         </label>
         <label className="row" style={{ gap: 10 }}>
           <input type="checkbox" checked={anyEquipment} onChange={(e) => setAnyEquipment(e.target.checked)} style={{ width: 20, height: 20 }} />
-          <span>Auch Übungen mit anderer Ausstattung zeigen</span>
+          <span>{tr('workout.swapAnyEquipment')}</span>
         </label>
         <div className="card list" style={{ padding: '0 16px' }}>
-          {options.length === 0 && <p className="empty">Keine Alternativen mit deiner Ausstattung.</p>}
+          {options.length === 0 && <p className="empty">{tr('workout.noAlternatives')}</p>}
           {options.map((o) => (
             <button
               key={o.id}
               className="list-item"
               onClick={() => {
                 s.swapExercise(exKey!, o.id, permanent)
-                toast(`Getauscht: ${o.name}`)
+                toast(tr('workout.swapped', { name: exerciseName(o) }))
                 onClose()
               }}
             >
               <span className="grow">
-                <strong>{o.name}</strong>
+                <strong>{exerciseName(o)}</strong>
                 <span className="small muted" style={{ display: 'block' }}>
-                  {o.cues[0]}
+                  {exerciseCues(o)[0]}
                 </span>
               </span>
               <Icon name="chevron" size={18} />
@@ -438,52 +446,52 @@ function FinishContent({ onClose }: { onClose: () => void }) {
   const prs = prsInSession([...s.sessions, preview], preview)
   const mins = Math.round((now - new Date(active.startedAt).getTime()) / 60000)
   return (
-    <Sheet open onClose={onClose} title="Training abschließen">
+    <Sheet open onClose={onClose} title={tr('workout.finishTitle')}>
       <div className="stack lg">
         <div className="grid3">
           <div className="card tight stat">
             <span className="v">{mins}</span>
-            <span className="l">Minuten</span>
+            <span className="l">{tr('common.minutes')}</span>
           </div>
           <div className="card tight stat">
             <span className="v">{sessionSets(preview)}</span>
-            <span className="l">Sätze</span>
+            <span className="l">{tr('common.sets')}</span>
           </div>
           <div className="card tight stat">
             <span className="v">{fmt(sessionVolume(preview) / 1000, 1)} t</span>
-            <span className="l">Volumen</span>
+            <span className="l">{tr('workout.volume')}</span>
           </div>
         </div>
         {prs.length > 0 && (
           <div className="card" style={{ background: 'var(--ok-soft)', borderColor: 'transparent' }}>
-            <strong>Neue Bestleistung{prs.length > 1 ? 'en' : ''}!</strong>
-            <p className="small">{prs.map((id) => lib.get(id)?.name).join(', ')}</p>
+            <strong>{tr('workout.newPr', { n: prs.length })}</strong>
+            <p className="small">{prs.map((id) => (lib.get(id) ? exerciseName(lib.get(id)!) : id)).join(', ')}</p>
           </div>
         )}
-        {open_ > 0 && <p className="small" style={{ color: 'var(--warn)' }}>{open_} Sätze sind noch offen. Sie werden nicht gespeichert.</p>}
+        {open_ > 0 && <p className="small" style={{ color: 'var(--warn)' }}>{tr('workout.openSets', { n: open_ })}</p>}
         <div className="stack">
-          <span className="label">Wie war das Training?</span>
+          <span className="label">{tr('workout.howWasIt')}</span>
           <div className="grid3" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
             {['😫', '😕', '😐', '🙂', '🔥'].map((e, i) => (
-              <button key={e} className="chip" style={{ justifyContent: 'center', fontSize: '1.3rem', minHeight: 52 }} aria-pressed={rating === i + 1} aria-label={`Bewertung ${i + 1} von 5`} onClick={() => setRating(i + 1)}>
+              <button key={e} className="chip" style={{ justifyContent: 'center', fontSize: '1.3rem', minHeight: 52 }} aria-pressed={rating === i + 1} aria-label={tr('workout.ratingOf', { n: i + 1 })} onClick={() => setRating(i + 1)}>
                 {e}
               </button>
             ))}
           </div>
         </div>
         <div className="field">
-          <label htmlFor="notes">Notiz (optional)</label>
-          <textarea id="notes" className="input" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="z. B. Schulter gezwickt, neue Maschine ausprobiert" />
+          <label htmlFor="notes">{tr('workout.note')}</label>
+          <textarea id="notes" className="input" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={tr('workout.notePlaceholder')} />
         </div>
         <button
           className="btn primary block"
           onClick={() => {
             s.finishSession(rating, notes.trim() || undefined)
-            toast('Training gespeichert 💪')
+            toast(tr('workout.saved'))
             nav('/')
           }}
         >
-          Speichern
+          {tr('common.save')}
         </button>
       </div>
     </Sheet>

@@ -1,0 +1,14 @@
+import { common } from './ns/common'
+import { labels } from './ns/labels'
+import { program } from './ns/program'
+import { shell } from './ns/shell'
+import { onboarding } from './ns/onboarding'
+import { today } from './ns/today'
+import { workout } from './ns/workout'
+import { plan } from './ns/plan'
+import { nutrition } from './ns/nutrition'
+import { progress } from './ns/progress'
+import { more } from './ns/more'
+import { account } from './ns/account'
+
+export const MESSAGES = { common, labels, program, shell, onboarding, today, workout, plan, nutrition, progress, more, account }

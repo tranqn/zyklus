@@ -12,6 +12,7 @@ interface TemplateSlot {
 }
 
 interface DayTemplate {
+  key: string
   name: string
   focus: string
   slots: TemplateSlot[]
@@ -20,68 +21,78 @@ interface DayTemplate {
 const s = (slot: Slot, prio: Prio, variant = 0): TemplateSlot => ({ slot, prio, variant })
 
 const GK_A: DayTemplate = {
+  key: 'gk_a',
   name: 'Ganzkörper A',
   focus: 'Kniebeuge, Drücken, Rudern',
   slots: [s('kniebeuge', 1), s('brust_compound', 1), s('ruecken_horizontal', 1), s('hinge', 2), s('seitheben', 2), s('bizeps', 3), s('trizeps', 3), s('waden', 3), s('bauch', 3)],
 }
 const GK_B: DayTemplate = {
+  key: 'gk_b',
   name: 'Ganzkörper B',
   focus: 'Hüfte, Schrägbank, Latzug',
   slots: [s('hinge', 1, 1), s('ruecken_vertikal', 1), s('brust_schraeg', 1), s('unilateral_bein', 2), s('schulter_press', 2), s('beinbeuger_iso', 3), s('hintere_schulter', 3), s('trizeps', 3, 1), s('bauch', 3, 1)],
 }
 const GK_C: DayTemplate = {
+  key: 'gk_c',
   name: 'Ganzkörper C',
   focus: 'Beine, Schultern, Arme',
   slots: [s('kniebeuge', 1, 1), s('schulter_press', 1), s('ruecken_horizontal', 1, 1), s('brust_iso', 2), s('quad_iso', 2), s('beinbeuger_iso', 3, 1), s('bizeps', 3, 1), s('gesaess_iso', 3), s('waden', 3, 1)],
 }
 const OK_A: DayTemplate = {
+  key: 'ok_a',
   name: 'Oberkörper A',
   focus: 'Brust und Rücken schwer',
   slots: [s('brust_compound', 1), s('ruecken_horizontal', 1), s('schulter_press', 2), s('ruecken_vertikal', 2), s('seitheben', 2), s('bizeps', 3), s('trizeps', 3), s('unterarme', 3)],
 }
 const OK_B: DayTemplate = {
+  key: 'ok_b',
   name: 'Oberkörper B',
   focus: 'Obere Brust, Latzug, Schultern',
   slots: [s('ruecken_vertikal', 1, 1), s('brust_schraeg', 1), s('ruecken_horizontal', 2, 1), s('brust_iso', 2), s('hintere_schulter', 2), s('seitheben', 3, 1), s('trizeps', 3, 1), s('bizeps', 3, 1)],
 }
 const UK_A: DayTemplate = {
+  key: 'uk_a',
   name: 'Unterkörper A',
   focus: 'Kniebeuge-Fokus',
   slots: [s('kniebeuge', 1), s('hinge', 1), s('quad_iso', 2), s('beinbeuger_iso', 2), s('waden', 3), s('bauch', 3)],
 }
 const UK_B: DayTemplate = {
+  key: 'uk_b',
   name: 'Unterkörper B',
   focus: 'Hüft-Fokus',
   slots: [s('hinge', 1, 1), s('unilateral_bein', 1), s('beinbeuger_iso', 2, 1), s('kniebeuge', 2, 1), s('gesaess_iso', 3), s('waden', 3, 1), s('bauch', 3, 1)],
 }
 const PUSH = (v: number): DayTemplate => ({
+  key: v ? 'push_b' : 'push_a',
   name: `Push ${v ? 'B' : 'A'}`,
   focus: 'Brust, Schultern, Trizeps',
   slots: [s(v ? 'brust_schraeg' : 'brust_compound', 1), s('schulter_press', 1, v), s(v ? 'brust_compound' : 'brust_schraeg', 2, v), s('seitheben', 2, v), s('brust_iso', 3, v), s('trizeps', 2, v), s('trizeps', 3, v + 1)],
 })
 const PULL = (v: number): DayTemplate => ({
+  key: v ? 'pull_b' : 'pull_a',
   name: `Pull ${v ? 'B' : 'A'}`,
   focus: 'Rücken, hintere Schulter, Bizeps',
   slots: [s('ruecken_vertikal', 1, v), s('ruecken_horizontal', 1, v), s('ruecken_horizontal', 2, v + 1), s('hintere_schulter', 2, v), s('bizeps', 2, v), s('bizeps', 3, v + 1), s('unterarme', 3, v)],
 })
 const LEGS = (v: number): DayTemplate => ({
+  key: v ? 'legs_b' : 'legs_a',
   name: `Beine ${v ? 'B' : 'A'}`,
   focus: 'Quadrizeps, Beinbeuger, Gesäß',
   slots: [s(v ? 'hinge' : 'kniebeuge', 1, v), s(v ? 'kniebeuge' : 'hinge', 1, v), s('unilateral_bein', 2, v), s('quad_iso', 2, v), s('beinbeuger_iso', 2, v), s('waden', 3, v), s('bauch', 3, v)],
 })
 
-export function splitFor(days: number): { name: string; templates: DayTemplate[] } {
+export function splitFor(days: number): { key: string; name: string; templates: DayTemplate[] } {
   switch (days) {
     case 2:
-      return { name: 'Ganzkörper (2x)', templates: [GK_A, GK_B] }
+      return { key: 's2', name: 'Ganzkörper (2x)', templates: [GK_A, GK_B] }
     case 3:
-      return { name: 'Ganzkörper (3x)', templates: [GK_A, GK_B, GK_C] }
+      return { key: 's3', name: 'Ganzkörper (3x)', templates: [GK_A, GK_B, GK_C] }
     case 4:
-      return { name: 'Oberkörper / Unterkörper', templates: [OK_A, UK_A, OK_B, UK_B] }
+      return { key: 's4', name: 'Oberkörper / Unterkörper', templates: [OK_A, UK_A, OK_B, UK_B] }
     case 5:
-      return { name: 'OK/UK + Push/Pull/Beine', templates: [OK_A, UK_A, PUSH(0), PULL(0), LEGS(1)] }
+      return { key: 's5', name: 'OK/UK + Push/Pull/Beine', templates: [OK_A, UK_A, PUSH(0), PULL(0), LEGS(1)] }
     default:
-      return { name: 'Push / Pull / Beine (2x)', templates: [PUSH(0), PULL(0), LEGS(0), PUSH(1), PULL(1), LEGS(1)] }
+      return { key: 's6', name: 'Push / Pull / Beine (2x)', templates: [PUSH(0), PULL(0), LEGS(0), PUSH(1), PULL(1), LEGS(1)] }
   }
 }
 
@@ -238,6 +249,7 @@ export function generateMesocycle(profile: Profile, opts: GenerateOptions = {}):
 
     return {
       id: uid(),
+      key: tpl.key,
       name: tpl.name,
       focus: tpl.focus,
       slots: chosen.map(({ prio: _prio, ...rest }) => rest),
@@ -249,6 +261,7 @@ export function generateMesocycle(profile: Profile, opts: GenerateOptions = {}):
     number: mesoNumber,
     startDate: new Date().toISOString(),
     weeks: mesoWeeks(profile.level),
+    splitKey: split.key,
     split: split.name,
     days,
     completed: false,

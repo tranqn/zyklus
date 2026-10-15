@@ -1,7 +1,8 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { DATA_KEYS, emptyState, useStore, type State } from '../store'
-import { api, ApiError, type PublicUser } from './api'
+import { api, ApiError, apiMessage, type PublicUser } from './api'
+import { tk } from '../i18n'
 import { merge, track, type SyncDoc } from './merge'
 
 type Status = 'idle' | 'pending' | 'syncing' | 'ok' | 'offline' | 'error'
@@ -63,7 +64,7 @@ function handleError(e: unknown) {
     return
   }
   const offline = e instanceof ApiError && e.status === 0
-  useSync.setState({ status: offline ? 'offline' : 'error', error: e instanceof Error ? e.message : String(e) })
+  useSync.setState({ status: offline ? 'offline' : 'error', error: apiMessage(e) })
 }
 
 /** Upload local data; on a conflict merge the server copy in and try again. */
@@ -85,7 +86,7 @@ async function pushNow(): Promise<void> {
       rev = Number(e.body.rev)
     }
   }
-  useSync.setState({ status: 'error', error: 'Synchronisierung kollidiert wiederholt. Versuch es gleich nochmal.' })
+  useSync.setState({ status: 'error', error: tk('account.apiError.conflict') })
 }
 
 /** Fetch the server copy, merge it in, upload if this device had something new. */
@@ -171,8 +172,8 @@ export async function login(email: string, password: string) {
   await adopt(user)
 }
 
-export async function register(email: string, password: string, consent: boolean) {
-  const { user } = await api<{ user: PublicUser }>('POST', '/auth/register', { email, password, consent })
+export async function register(email: string, password: string, consent: boolean, locale: string) {
+  const { user } = await api<{ user: PublicUser }>('POST', '/auth/register', { email, password, consent, locale })
   await adopt(user)
 }
 
@@ -196,6 +197,12 @@ export async function logout(clearDevice: boolean) {
     useSync.setState({ ownerId: undefined, rev: 0 })
   }
   useSync.setState({ user: undefined, status: 'idle', lastSyncedAt: undefined })
+}
+
+/** Tell the server which language to use for e-mails (best effort, retried on next change). */
+export async function setAccountLocale(locale: string) {
+  if (!useSync.getState().user) return
+  await api('POST', '/account/locale', { locale }).catch(() => undefined)
 }
 
 /** After the account was deleted on the server. */

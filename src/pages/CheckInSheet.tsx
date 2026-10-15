@@ -1,33 +1,34 @@
 import { useState } from 'react'
-import { MUSCLE_LABEL } from '../domain/exercises'
 import type { CheckIn, Muscle } from '../domain/types'
 import { today } from '../domain/util'
 import { Sheet } from '../ui/kit'
+import { useT } from '../i18n'
 
-const SCALE = ['Sehr schlecht', 'Schlecht', 'Okay', 'Gut', 'Sehr gut']
-const SORE = ['Kein', 'Leicht', 'Deutlich', 'Stark']
 
 export function CheckInSheet({ open, muscles, onClose, onDone }: { open: boolean; muscles: Muscle[]; onClose: () => void; onDone: (c: CheckIn | undefined) => void }) {
   const [sleep, setSleep] = useState(3)
   const [energy, setEnergy] = useState(3)
   const [stress, setStress] = useState(3)
   const [soreness, setSoreness] = useState<Partial<Record<Muscle, number>>>({})
+  const { t, tk } = useT()
+  const scale = t('today.checkin.scale').split(',')
+  const sore = t('today.checkin.soreScale').split(',')
 
   return (
-    <Sheet open={open} onClose={onClose} title="Wie fühlst du dich heute?">
+    <Sheet open={open} onClose={onClose} title={t('today.checkin.title')}>
       <div className="stack lg">
-        <p className="muted small">Dein Check-in steuert die heutige Belastung: bei schlechtem Schlaf oder starkem Muskelkater nimmt die App Sätze und Intensität zurück.</p>
-        <Scale label="Schlaf letzte Nacht" value={sleep} onChange={setSleep} />
-        <Scale label="Energie" value={energy} onChange={setEnergy} />
-        <Scale label="Stress" value={stress} onChange={setStress} labels={['Sehr niedrig', 'Niedrig', 'Mittel', 'Hoch', 'Sehr hoch']} />
+        <p className="muted small">{t('today.checkin.intro')}</p>
+        <Scale label={t('today.checkin.sleep')} value={sleep} onChange={setSleep} labels={scale} />
+        <Scale label={t('today.checkin.energy')} value={energy} onChange={setEnergy} labels={scale} />
+        <Scale label={t('today.checkin.stress')} value={stress} onChange={setStress} labels={t('today.checkin.stressScale').split(',')} />
         <div className="stack">
-          <span className="label">Muskelkater in den heutigen Muskeln</span>
+          <span className="label">{t('today.checkin.sore')}</span>
           <div className="card tight list">
             {muscles.map((m) => (
               <div key={m} className="row between" style={{ padding: '8px 0' }}>
-                <span style={{ fontWeight: 600 }}>{MUSCLE_LABEL[m]}</span>
-                <div className="row" style={{ gap: 4 }} role="group" aria-label={`Muskelkater ${MUSCLE_LABEL[m]}`}>
-                  {SORE.map((l, i) => (
+                <span style={{ fontWeight: 600 }}>{tk(`labels.muscle.${m}`)}</span>
+                <div className="row" style={{ gap: 4 }} role="group" aria-label={t('today.checkin.soreFor', { muscle: tk(`labels.muscle.${m}`) })}>
+                  {sore.map((l, i) => (
                     <button key={l} className="chip" style={{ minHeight: 34, padding: '0 10px', fontSize: '0.8rem' }} aria-pressed={(soreness[m] ?? 0) === i} onClick={() => setSoreness((s) => ({ ...s, [m]: i }))}>
                       {l}
                     </button>
@@ -38,17 +39,17 @@ export function CheckInSheet({ open, muscles, onClose, onDone }: { open: boolean
           </div>
         </div>
         <button className="btn primary block" onClick={() => onDone({ date: today(), sleep, energy, stress, soreness })}>
-          Training starten
+          {t('today.checkin.start')}
         </button>
         <button className="btn ghost block" onClick={() => onDone(undefined)}>
-          Ohne Check-in starten
+          {t('today.checkin.skip')}
         </button>
       </div>
     </Sheet>
   )
 }
 
-function Scale({ label, value, onChange, labels = SCALE }: { label: string; value: number; onChange: (v: number) => void; labels?: string[] }) {
+function Scale({ label, value, onChange, labels }: { label: string; value: number; onChange: (v: number) => void; labels: string[] }) {
   return (
     <div className="stack">
       <div className="row between">

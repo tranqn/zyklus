@@ -3,7 +3,7 @@ import { bodyLimit } from 'hono/body-limit'
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
 import type { Config } from './config.ts'
 import { DUMMY_HASH, hashPassword, newToken, sha256, verifyPassword } from './crypto.ts'
-import type { DB, UserRow } from './db.ts'
+import { toLocale, type DB, type UserRow } from './db.ts'
 import { passwordChangedMail, resetMail, verifyMail, type Mailer } from './mail.ts'
 import { RateLimiter } from './ratelimit.ts'
 
@@ -39,7 +39,8 @@ export function createApp({ db, cfg, mail, now = Date.now }: Deps) {
   const q = {
     userByEmail: db.prepare('SELECT * FROM users WHERE email = ?'),
     userById: db.prepare('SELECT * FROM users WHERE id = ?'),
-    insertUser: db.prepare('INSERT INTO users (email, password_hash, consent_at, created_at) VALUES (?, ?, ?, ?)'),
+    insertUser: db.prepare('INSERT INTO users (email, password_hash, consent_at, created_at, locale) VALUES (?, ?, ?, ?, ?)'),
+    setLocale: db.prepare('UPDATE users SET locale = ? WHERE id = ?'),
     setPassword: db.prepare('UPDATE users SET password_hash = ? WHERE id = ?'),
     verifyUser: db.prepare('UPDATE users SET email_verified_at = ? WHERE id = ? AND email_verified_at IS NULL'),
     deleteUser: db.prepare('DELETE FROM users WHERE id = ?'),
@@ -59,7 +60,7 @@ export function createApp({ db, cfg, mail, now = Date.now }: Deps) {
   }
 
   const ip = (c: Context) => c.req.header('x-forwarded-for')?.split(',').pop()?.trim() || 'local'
-  const publicUser = (u: UserRow) => ({ id: u.id, email: u.email, verified: u.email_verified_at != null, createdAt: u.created_at })
+  const publicUser = (u: UserRow) => ({ id: u.id, email: u.email, verified: u.email_verified_at != null, createdAt: u.created_at, locale: u.locale })
   const fail = (c: Context, status: 400 | 401 | 403 | 404 | 409 | 413 | 429, error: string, message: string) => c.json({ error, message }, status)
 
   function startSession(c: Context, userId: number) {
@@ -73,13 +74,14 @@ export function createApp({ db, cfg, mail, now = Date.now }: Deps) {
     q.deleteUserTokens.run(user.id, kind)
     const token = newToken()
     q.insertToken.run(sha256(token), user.id, kind, now() + (kind === 'verify' ? VERIFY_TTL : RESET_TTL))
-    const m = kind === 'verify' ? verifyMail(cfg.appOrigin, token) : resetMail(cfg.appOrigin, token)
+    const m = kind === 'verify' ? verifyMail(cfg.appOrigin, token, user.locale) : resetMail(cfg.appOrigin, token, user.locale)
     await mail({ to: user.email, ...m })
   }
 
-  function passwordProblem(pw: unknown): string | null {
-    if (typeof pw !== 'string' || pw.length < 10) return 'Das Passwort braucht mindestens 10 Zeichen.'
-    if (pw.length > 200) return 'Das Passwort ist zu lang.'
+  /** error code and German fallback text; the client shows its own translation of the code */
+  function passwordProblem(pw: unknown): [code: string, message: string] | null {
+    if (typeof pw !== 'string' || pw.length < 10) return ['password_short', 'Das Passwort braucht mindestens 10 Zeichen.']
+    if (pw.length > 200) return ['password_long', 'Das Passwort ist zu lang.']
     return null
   }
 
@@ -137,12 +139,12 @@ export function createApp({ db, cfg, mail, now = Date.now }: Deps) {
     const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : ''
     if (!EMAIL_RE.test(email)) return fail(c, 400, 'email', 'Bitte gib eine gültige E-Mail-Adresse ein.')
     const pwErr = passwordProblem(body?.password)
-    if (pwErr) return fail(c, 400, 'password', pwErr)
+    if (pwErr) return fail(c, 400, ...pwErr)
     if (body?.consent !== true) return fail(c, 400, 'consent', 'Bitte stimme der Verarbeitung deiner Gesundheitsdaten zu.')
     if (q.userByEmail.get(email)) return fail(c, 409, 'exists', 'Für diese E-Mail gibt es schon ein Konto. Melde dich an oder setze dein Passwort zurück.')
     const t = now()
     const hash = await hashPassword(body!.password as string)
-    const res = q.insertUser.run(email, hash, t, t)
+    const res = q.insertUser.run(email, hash, t, t, toLocale(body?.locale))
     const user = q.userById.get(Number(res.lastInsertRowid)) as unknown as UserRow
     startSession(c, user.id)
     await sendToken(user, 'verify').catch((e) => console.error('verify mail failed', e))
@@ -217,7 +219,7 @@ export function createApp({ db, cfg, mail, now = Date.now }: Deps) {
     const body = await readJson(c)
     const token = typeof body?.token === 'string' ? body.token : ''
     const pwErr = passwordProblem(body?.password)
-    if (pwErr) return fail(c, 400, 'password', pwErr)
+    if (pwErr) return fail(c, 400, ...pwErr)
     const row = q.findToken.get(sha256(token), 'reset') as { user_id: number; expires_at: number; token_hash: string } | undefined
     if (!row || row.expires_at < now()) return fail(c, 400, 'token', 'Der Link ist ungültig oder abgelaufen. Fordere einen neuen an.')
     q.setPassword.run(await hashPassword(body!.password as string), row.user_id)
@@ -235,10 +237,17 @@ export function createApp({ db, cfg, mail, now = Date.now }: Deps) {
     const body = await readJson(c)
     if (!(await verifyPassword(String(body?.current ?? ''), user.password_hash))) return fail(c, 403, 'credentials', 'Das aktuelle Passwort stimmt nicht.')
     const pwErr = passwordProblem(body?.next)
-    if (pwErr) return fail(c, 400, 'password', pwErr)
+    if (pwErr) return fail(c, 400, ...pwErr)
     q.setPassword.run(await hashPassword(body!.next as string), user.id)
     q.deleteOtherSessions.run(user.id, c.get('sessionHash'))
-    await mail({ to: user.email, ...passwordChangedMail() }).catch((e) => console.error('mail failed', e))
+    await mail({ to: user.email, ...passwordChangedMail(user.locale) }).catch((e) => console.error('mail failed', e))
+    return c.json({ ok: true })
+  })
+
+  // language for e-mails; the app calls this whenever the user switches language
+  app.post('/account/locale', smallBody, requireUser, async (c) => {
+    const body = await readJson(c)
+    q.setLocale.run(toLocale(body?.locale), c.get('user').id)
     return c.json({ ok: true })
   })
 

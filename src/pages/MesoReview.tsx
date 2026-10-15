@@ -5,11 +5,14 @@ import { fmt } from '../domain/util'
 import { exerciseMap, useStore } from '../store'
 import { Icon } from '../ui/kit'
 import { toast } from '../ui/notify'
+import { useT } from '../i18n'
+import { exerciseName } from '../i18n/content/exercises'
 
 export default function MesoReview() {
   const s = useStore()
   const nav = useNavigate()
   const lib = useMemo(() => exerciseMap(s), [s])
+  const { t } = useT()
   const meso = s.meso
   if (!meso) return <Navigate to="/" replace />
   const sessions = s.sessions.filter((x) => x.mesoId === meso.id && x.finishedAt)
@@ -34,55 +37,55 @@ export default function MesoReview() {
 
   // more volume only when recovery and mood were good
   let bonus = 0
-  let advice = 'Gleiches Volumen wie bisher, neue Akzente bei den Zusatzübungen.'
+  let advice = t('progress.review.adviceSame')
   if ((avgReady ?? 60) >= 65 && (avgRating ?? 3.5) >= 3.5 && improved >= rows.length / 2) {
     bonus = 1
-    advice = 'Du hast dich gut erholt und bist stärker geworden: Grundübungen bekommen einen Satz mehr.'
+    advice = t('progress.review.adviceMore')
   } else if ((avgReady ?? 60) < 45) {
-    advice = 'Deine Tagesform war oft niedrig. Das Volumen bleibt gleich, achte auf Schlaf und Ernährung.'
+    advice = t('progress.review.adviceLow')
   }
 
   const start = (b: number) => {
     s.startNextMeso(b)
-    toast(`Mesozyklus ${meso.number + 1} gestartet`)
+    toast(t('progress.review.started', { n: meso.number + 1 }))
     nav('/plan')
   }
 
   return (
     <div className="page">
       <div className="row">
-        <button className="icon-btn" onClick={() => nav(-1)} aria-label="Zurück">
+        <button className="icon-btn" onClick={() => nav(-1)} aria-label={t('common.back')}>
           <Icon name="back" />
         </button>
       </div>
       <div className="stack">
-        <div className="eyebrow">Auswertung</div>
-        <h1>Mesozyklus {meso.number}</h1>
+        <div className="eyebrow">{t('progress.review.eyebrow')}</div>
+        <h1>{t('progress.review.title', { n: meso.number })}</h1>
       </div>
       <div className="grid3">
         <div className="card tight stat">
           <span className="v">{sessions.length}</span>
-          <span className="l">Einheiten</span>
+          <span className="l">{t('progress.review.sessions')}</span>
         </div>
         <div className="card tight stat">
           <span className="v">{avgReady != null ? Math.round(avgReady) : '–'}</span>
-          <span className="l">Ø Tagesform</span>
+          <span className="l">{t('progress.review.avgReadiness')}</span>
         </div>
         <div className="card tight stat">
           <span className="v">
             {improved}/{rows.length}
           </span>
-          <span className="l">Übungen stärker</span>
+          <span className="l">{t('progress.review.stronger')}</span>
         </div>
       </div>
       <div className="card stack" style={{ gap: 0 }}>
-        <h3 style={{ marginBottom: 8 }}>Kraftentwicklung (geschätztes 1RM)</h3>
+        <h3 style={{ marginBottom: 8 }}>{t('progress.review.strength')}</h3>
         <div className="list">
-          {rows.length === 0 && <p className="empty">Keine vergleichbaren Daten.</p>}
+          {rows.length === 0 && <p className="empty">{t('progress.review.noData')}</p>}
           {rows.map((r) => (
             <div key={r.id} className="list-item">
               <span className="grow">
-                <span style={{ fontWeight: 600 }}>{lib.get(r.id)?.name}</span>
+                <span style={{ fontWeight: 600 }}>{lib.get(r.id) ? exerciseName(lib.get(r.id)!) : r.id}</span>
                 <span className="small muted num" style={{ display: 'block' }}>
                   {fmt(r.first, 1)} → {fmt(r.last, 1)} kg
                 </span>
@@ -96,19 +99,19 @@ export default function MesoReview() {
         </div>
       </div>
       <div className="card accent stack">
-        <h2>Empfehlung</h2>
+        <h2>{t('progress.review.recommendation')}</h2>
         <p className="small">{advice}</p>
         <button className="btn" style={{ background: 'var(--accent-ink)', color: 'var(--accent)', border: 0 }} onClick={() => start(bonus)}>
-          Nächsten Zyklus starten
+          {t('progress.review.startNext')}
         </button>
       </div>
       {bonus === 1 ? (
         <button className="btn block" onClick={() => start(0)}>
-          Lieber ohne Zusatzsatz starten
+          {t('progress.review.withoutExtra')}
         </button>
       ) : (
         <button className="btn block" onClick={() => start(1)}>
-          Trotzdem mehr Volumen (+1 Satz)
+          {t('progress.review.withExtra')}
         </button>
       )}
     </div>

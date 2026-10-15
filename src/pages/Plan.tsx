@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { EQUIPMENT_LABEL, hasEquipment, MUSCLE_LABEL, SLOT_LABEL } from '../domain/exercises'
+import { hasEquipment } from '../domain/exercises'
 import { estimateMinutes, isDeload, targetRir } from '../domain/planner'
 import { cyclePosition } from '../domain/progression'
 import type { Equipment, Exercise, Muscle, PlanDay, PlanSlot, Slot } from '../domain/types'
@@ -8,6 +8,10 @@ import { allExercises, exerciseMap, useStore } from '../store'
 import { Icon, Segmented, Sheet, Stepper } from '../ui/kit'
 import { confirmAction, toast } from '../ui/notify'
 import { ExerciseInfo } from './Workout'
+import { t as tr, tk as tkr, useT } from '../i18n'
+import { exerciseName } from '../i18n/content/exercises'
+import { dayName, splitName } from '../i18n/display'
+import { normalize } from '../domain/nutrition'
 
 export default function Plan() {
   const s = useStore()
@@ -18,18 +22,19 @@ export default function Plan() {
   const [edit, setEdit] = useState<{ day: PlanDay; slot: PlanSlot } | null>(null)
   const [addTo, setAddTo] = useState<PlanDay | null>(null)
   const [info, setInfo] = useState<Exercise | null>(null)
+  const { t } = useT()
 
   return (
     <div className="page">
       <div className="page-head">
         <div>
-          <div className="eyebrow">Mesozyklus {meso.number}</div>
-          <h1>{meso.split}</h1>
+          <div className="eyebrow">{t('plan.meso', { n: meso.number })}</div>
+          <h1>{splitName(meso)}</h1>
         </div>
       </div>
 
       <div className="card stack">
-        <h3>Wochenverlauf</h3>
+        <h3>{t('plan.weeks')}</h3>
         <div className="row" style={{ gap: 6 }}>
           {Array.from({ length: meso.weeks }, (_, w) => {
             const dl = isDeload(w, meso.weeks)
@@ -51,14 +56,12 @@ export default function Plan() {
                 <span className="tiny" style={{ fontWeight: 700 }}>
                   W{w + 1}
                 </span>
-                <span className="tiny">{dl ? 'Deload' : `${targetRir(w, meso.weeks, profile.level)} RIR`}</span>
+                <span className="tiny">{dl ? t('common.deload') : `${targetRir(w, meso.weeks, profile.level)} RIR`}</span>
               </div>
             )
           })}
         </div>
-        <p className="small muted">
-          RIR = Wiederholungen in Reserve. Die Intensität steigt von Woche zu Woche, in der zweiten Hälfte kommt bei Grundübungen ein Satz dazu. Die Deload-Woche halbiert die Sätze, damit du erholt in den nächsten Zyklus startest.
-        </p>
+        <p className="small muted">{t('plan.rirExplain')}</p>
       </div>
 
       {meso.days.map((day, di) => (
@@ -66,11 +69,11 @@ export default function Plan() {
           <div className="row between">
             <div>
               <div className="eyebrow">
-                Einheit {di + 1} {di === pos.dayIndex && !meso.completed ? '· als Nächstes' : ''}
+                {t('plan.unit', { n: di + 1 })} {di === pos.dayIndex && !meso.completed ? t('plan.upNext') : ''}
               </div>
-              <h2>{day.name}</h2>
+              <h2>{dayName(day)}</h2>
             </div>
-            <span className="badge">ca. {estimateMinutes(day)} min</span>
+            <span className="badge">{t('plan.approxMin', { n: estimateMinutes(day) })}</span>
           </div>
           <div className="list">
             {day.slots.map((sl) => {
@@ -80,13 +83,11 @@ export default function Plan() {
                   <button style={{ background: 'none', border: 0, padding: 0, textAlign: 'left' }} className="grow" onClick={() => setEdit({ day, slot: sl })}>
                     <div style={{ fontWeight: 600 }}>
                       {sl.superset && <span className="ss-tag">{sl.superset} </span>}
-                      {ex?.name ?? 'Unbekannte Übung'}
+                      {ex ? exerciseName(ex) : t('plan.unknownExercise')}
                     </div>
-                    <div className="small muted">
-                      {sl.sets} × {sl.repMin}–{sl.repMax} · Pause {sl.restSec}s
-                    </div>
+                    <div className="small muted">{t('plan.slotMeta', { sets: sl.sets, min: sl.repMin, max: sl.repMax, rest: sl.restSec })}</div>
                   </button>
-                  <button className="icon-btn plain" aria-label={`Infos zu ${ex?.name}`} onClick={() => ex && setInfo(ex)}>
+                  <button className="icon-btn plain" aria-label={t('plan.infoFor', { name: ex ? exerciseName(ex) : '' })} onClick={() => ex && setInfo(ex)}>
                     <Icon name="info" size={20} />
                   </button>
                 </div>
@@ -94,24 +95,24 @@ export default function Plan() {
             })}
           </div>
           <button className="btn ghost sm" style={{ alignSelf: 'flex-start' }} onClick={() => setAddTo(day)}>
-            <Icon name="plus" size={16} /> Übung hinzufügen
+            <Icon name="plus" size={16} /> {t('plan.addExercise')}
           </button>
         </section>
       ))}
 
       <div className="card stack">
-        <h3>Plan neu erstellen</h3>
-        <p className="small muted">Erstellt den aktuellen Zyklus mit deinen Profildaten neu. Dein Verlauf bleibt erhalten.</p>
+        <h3>{t('plan.regenTitle')}</h3>
+        <p className="small muted">{t('plan.regenText')}</p>
         <button
           className="btn"
           onClick={() => {
-            if (confirmAction('Plan neu erstellen? Eigene Änderungen am Plan gehen verloren.')) {
+            if (confirmAction(t('plan.regenConfirm'))) {
               s.regeneratePlan()
-              toast('Plan neu erstellt')
+              toast(t('plan.regenDone'))
             }
           }}
         >
-          Neu erstellen
+          {t('plan.regenButton')}
         </button>
       </div>
 
@@ -131,31 +132,31 @@ function SlotEditor({ edit, onClose }: { edit: { day: PlanDay; slot: PlanSlot } 
   const patch = (p: Partial<PlanSlot>) => s.editPlanSlot(edit.day.id, live.key, p)
   const alternatives = allExercises(s).filter((e) => e.slot === live.slot && e.id !== live.exerciseId && hasEquipment(s.profile!.equipment, e))
   return (
-    <Sheet open onClose={onClose} title={ex?.name}>
+    <Sheet open onClose={onClose} title={ex ? exerciseName(ex) : undefined}>
       <div className="stack lg">
         <div className="card stack lg">
           <div className="stack">
-            <span className="label">Sätze pro Einheit</span>
-            <Stepper label="Sätze" value={live.sets} onChange={(v) => patch({ sets: v })} min={1} max={8} />
+            <span className="label">{tr('plan.setsPerSession')}</span>
+            <Stepper label={tr('common.sets')} value={live.sets} onChange={(v) => patch({ sets: v })} min={1} max={8} />
           </div>
           <div className="grid2">
             <div className="stack">
-              <span className="label">Wdh. min</span>
-              <Stepper label="Minimale Wiederholungen" value={live.repMin} onChange={(v) => patch({ repMin: v, repMax: Math.max(v, live.repMax) })} min={1} max={30} />
+              <span className="label">{tr('plan.repsMin')}</span>
+              <Stepper label={tr('plan.repsMinLabel')} value={live.repMin} onChange={(v) => patch({ repMin: v, repMax: Math.max(v, live.repMax) })} min={1} max={30} />
             </div>
             <div className="stack">
-              <span className="label">Wdh. max</span>
-              <Stepper label="Maximale Wiederholungen" value={live.repMax} onChange={(v) => patch({ repMax: v, repMin: Math.min(v, live.repMin) })} min={1} max={40} />
+              <span className="label">{tr('plan.repsMax')}</span>
+              <Stepper label={tr('plan.repsMaxLabel')} value={live.repMax} onChange={(v) => patch({ repMax: v, repMin: Math.min(v, live.repMin) })} min={1} max={40} />
             </div>
           </div>
           <div className="stack">
-            <span className="label">Satzpause</span>
-            <Stepper label="Satzpause" value={live.restSec} onChange={(v) => patch({ restSec: v })} step={15} min={30} max={420} suffix="s" />
+            <span className="label">{tr('plan.rest')}</span>
+            <Stepper label={tr('plan.rest')} value={live.restSec} onChange={(v) => patch({ restSec: v })} step={15} min={30} max={420} suffix="s" />
           </div>
         </div>
         {alternatives.length > 0 && (
           <div className="field">
-            <label htmlFor="alt">Übung ersetzen</label>
+            <label htmlFor="alt">{tr('plan.replace')}</label>
             <select
               id="alt"
               className="input"
@@ -163,14 +164,14 @@ function SlotEditor({ edit, onClose }: { edit: { day: PlanDay; slot: PlanSlot } 
               onChange={(e) => {
                 if (e.target.value) {
                   patch({ exerciseId: e.target.value })
-                  toast('Übung ersetzt')
+                  toast(tr('plan.replaced'))
                 }
               }}
             >
-              <option value="">Alternative wählen …</option>
+              <option value="">{tr('plan.pickAlternative')}</option>
               {alternatives.map((a) => (
                 <option key={a.id} value={a.id}>
-                  {a.name}
+                  {exerciseName(a)}
                 </option>
               ))}
             </select>
@@ -178,10 +179,10 @@ function SlotEditor({ edit, onClose }: { edit: { day: PlanDay; slot: PlanSlot } 
         )}
         <div className="row">
           <button className="btn grow" onClick={() => s.movePlanSlot(edit.day.id, live.key, -1)}>
-            <Icon name="up" size={18} /> Nach oben
+            <Icon name="up" size={18} /> {tr('plan.moveUp')}
           </button>
           <button className="btn grow" onClick={() => s.movePlanSlot(edit.day.id, live.key, 1)}>
-            <Icon name="down" size={18} /> Nach unten
+            <Icon name="down" size={18} /> {tr('plan.moveDown')}
           </button>
         </div>
         <button
@@ -191,16 +192,16 @@ function SlotEditor({ edit, onClose }: { edit: { day: PlanDay; slot: PlanSlot } 
             onClose()
           }}
         >
-          <Icon name="trash" size={18} /> Aus dieser Einheit entfernen
+          <Icon name="trash" size={18} /> {tr('plan.removeFromDay')}
         </button>
         <button
           className="btn ghost block"
           onClick={() => {
             s.updateSettings({ excludedExercises: [...s.settings.excludedExercises, live.exerciseId] })
-            toast('Wird bei neuen Plänen nicht mehr verwendet')
+            toast(tr('plan.excluded'))
           }}
         >
-          Übung künftig ausschließen
+          {tr('plan.exclude')}
         </button>
       </div>
     </Sheet>
@@ -213,16 +214,19 @@ function AddExercise({ day, onClose }: { day: PlanDay | null; onClose: () => voi
   const [creating, setCreating] = useState(false)
   if (!day) return null
   const profile = s.profile!
-  const list = allExercises(s).filter((e) => hasEquipment(profile.equipment, e) && (!q || e.name.toLowerCase().includes(q.toLowerCase()) || SLOT_LABEL[e.slot].toLowerCase().includes(q.toLowerCase())))
+  const nq = normalize(q)
+  const list = allExercises(s).filter(
+    (e) => hasEquipment(profile.equipment, e) && (!nq || normalize(exerciseName(e)).includes(nq) || normalize(e.name).includes(nq) || normalize(tkr(`labels.slot.${e.slot}`)).includes(nq)),
+  )
   const add = (e: Exercise) => {
     const compound = e.compound
     const range: [number, number] = e.loadType === 'koerpergewicht' ? [8, 15] : compound ? [6, 10] : [10, 15]
     s.addPlanSlot(day.id, { key: uid(), slot: e.slot, exerciseId: e.id, sets: 3, repMin: range[0], repMax: range[1], restSec: compound ? 150 : 90 })
-    toast(`${e.name} hinzugefügt`)
+    toast(tr('plan.added', { name: exerciseName(e) }))
     onClose()
   }
   return (
-    <Sheet open onClose={onClose} title={`Zu „${day.name}" hinzufügen`}>
+    <Sheet open onClose={onClose} title={tr('plan.addTo', { day: dayName(day) })}>
       {creating ? (
         <CustomExerciseForm
           onDone={(e) => {
@@ -233,18 +237,18 @@ function AddExercise({ day, onClose }: { day: PlanDay | null; onClose: () => voi
       ) : (
         <div className="stack lg">
           <div className="row">
-            <input className="input" placeholder="Suchen, z. B. Bizeps oder Rudern" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Übung suchen" />
+            <input className="input" placeholder={tr('plan.searchPlaceholder')} value={q} onChange={(e) => setQ(e.target.value)} aria-label={tr('plan.searchLabel')} />
           </div>
           <button className="btn block" onClick={() => setCreating(true)}>
-            <Icon name="plus" size={18} /> Eigene Übung anlegen
+            <Icon name="plus" size={18} /> {tr('plan.createCustom')}
           </button>
           <div className="card list" style={{ padding: '0 16px' }}>
             {list.slice(0, 60).map((e) => (
               <button key={e.id} className="list-item" onClick={() => add(e)}>
                 <span className="grow">
-                  <strong>{e.name}</strong>
+                  <strong>{exerciseName(e)}</strong>
                   <span className="small muted" style={{ display: 'block' }}>
-                    {SLOT_LABEL[e.slot]} · {e.equipment.map((x) => EQUIPMENT_LABEL[x]).join(', ')}
+                    {tkr(`labels.slot.${e.slot}`)} · {e.equipment.map((x) => tkr(`labels.equipment.${x}`)).join(', ')}
                   </span>
                 </span>
                 <Icon name="plus" size={18} />
@@ -256,6 +260,8 @@ function AddExercise({ day, onClose }: { day: PlanDay | null; onClose: () => voi
     </Sheet>
   )
 }
+
+const EQUIPMENT_KEYS: Equipment[] = ['langhantel', 'kurzhantel', 'bank', 'kabel', 'maschine', 'klimmzugstange', 'dipbarren', 'baender', 'kettlebell', 'koerpergewicht']
 
 const SLOT_PRIMARY: Record<Slot, Muscle> = {
   brust_compound: 'brust',
@@ -289,25 +295,25 @@ function CustomExerciseForm({ onDone }: { onDone: (e?: Exercise) => void }) {
   return (
     <div className="stack lg">
       <div className="field">
-        <label htmlFor="cx-name">Name</label>
-        <input id="cx-name" className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="z. B. Kabel-Crossover tief" />
+        <label htmlFor="cx-name">{tr('plan.custom.name')}</label>
+        <input id="cx-name" className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder={tr('plan.custom.namePlaceholder')} />
       </div>
       <div className="field">
-        <label htmlFor="cx-slot">Bewegungsmuster (für Tausch und Statistik)</label>
+        <label htmlFor="cx-slot">{tr('plan.custom.pattern')}</label>
         <select id="cx-slot" className="input" value={slot} onChange={(e) => setSlot(e.target.value as Slot)}>
-          {(Object.keys(SLOT_LABEL) as Slot[]).map((k) => (
+          {(Object.keys(SLOT_PRIMARY) as Slot[]).map((k) => (
             <option key={k} value={k}>
-              {SLOT_LABEL[k]} ({MUSCLE_LABEL[SLOT_PRIMARY[k]]})
+              {tkr(`labels.slot.${k}`)} ({tkr(`labels.muscle.${SLOT_PRIMARY[k]}`)})
             </option>
           ))}
         </select>
       </div>
       <div className="field">
-        <label htmlFor="cx-eq">Ausstattung</label>
+        <label htmlFor="cx-eq">{tr('plan.custom.equipment')}</label>
         <select id="cx-eq" className="input" value={eq} onChange={(e) => setEq(e.target.value as Equipment)}>
-          {(Object.keys(EQUIPMENT_LABEL) as Equipment[]).map((k) => (
+          {EQUIPMENT_KEYS.map((k) => (
             <option key={k} value={k}>
-              {EQUIPMENT_LABEL[k]}
+              {tkr(`labels.equipment.${k}`)}
             </option>
           ))}
         </select>
@@ -315,15 +321,15 @@ function CustomExerciseForm({ onDone }: { onDone: (e?: Exercise) => void }) {
       <Segmented
         value={loadType}
         onChange={setLoadType}
-        label="Belastung"
+        label={tr('plan.custom.load')}
         options={[
-          { value: 'gewicht', label: 'Mit Gewicht' },
-          { value: 'koerpergewicht', label: 'Körpergewicht' },
+          { value: 'gewicht', label: tr('plan.custom.weighted') },
+          { value: 'koerpergewicht', label: tr('plan.custom.bodyweight') },
         ]}
       />
       <div className="row">
         <button className="btn grow" onClick={() => onDone()}>
-          Abbrechen
+          {tr('common.cancel')}
         </button>
         <button
           className="btn primary grow"
@@ -341,14 +347,14 @@ function CustomExerciseForm({ onDone }: { onDone: (e?: Exercise) => void }) {
               compound,
               increment: loadType === 'koerpergewicht' ? 0 : compound ? 2.5 : 1,
               minLevel: 'anfaenger',
-              cues: ['Eigene Übung: saubere, kontrollierte Ausführung.'],
+              cues: [tr('plan.custom.cue')],
               custom: true,
             }
             add(e)
             onDone(e)
           }}
         >
-          Anlegen
+          {tr('plan.custom.create')}
         </button>
       </div>
     </div>

@@ -5,18 +5,22 @@ import { estimateMinutes, isDeload, targetRir } from '../domain/planner'
 import { buildSession, cyclePosition } from '../domain/progression'
 import { streak } from '../domain/stats'
 import type { CheckIn, Muscle } from '../domain/types'
-import { addDays, currentHour, formatDate, startOfWeek, today, WEEKDAYS_SHORT, weekdayIndex } from '../domain/util'
+import { addDays, currentHour, fmt, formatDate, startOfWeek, today, weekdayIndex } from '../domain/util'
 import { exerciseMap, useStore } from '../store'
 import { Bar, Icon, Ring, Sheet, Stepper } from '../ui/kit'
 import { toast } from '../ui/notify'
 import { CheckInSheet } from './CheckInSheet'
 import { VerifyBanner } from './Account'
 import { useSync } from '../sync/engine'
+import { useT, weekdaysShort } from '../i18n'
+import { exerciseName } from '../i18n/content/exercises'
+import { dayFocus, dayName, sessionDayName } from '../i18n/display'
 
 export default function Today() {
   const s = useStore()
   const nav = useNavigate()
   const user = useSync((x) => x.user)
+  const { t, lang } = useT()
   const [checkIn, setCheckIn] = useState(false)
   const [weightOpen, setWeightOpen] = useState(false)
   const profile = s.profile!
@@ -29,7 +33,7 @@ export default function Today() {
   const muscles = [...new Set(day.slots.map((sl) => lib.get(sl.exerciseId)?.primary).filter(Boolean))] as Muscle[]
 
   const d = today()
-  const t = targets(profile, s.settings.kcalOverride, s.kcalAdjustment)
+  const goal = targets(profile, s.settings.kcalOverride, s.kcalAdjustment)
   const eaten = totals(s.foods.filter((f) => f.date === d))
   const burned = burnedToday(s.cardio, d)
   const streakN = streak(s)
@@ -38,7 +42,7 @@ export default function Today() {
   const doneDates = new Set(s.sessions.filter((x) => x.finishedAt).map((x) => x.date))
   const lastWeight = s.weights[s.weights.length - 1]
   const hour = currentHour()
-  const hello = hour < 11 ? 'Guten Morgen' : hour < 18 ? 'Hallo' : 'Guten Abend'
+  const hello = hour < 11 ? t('today.morning') : hour < 18 ? t('today.hello') : t('today.evening')
 
   const start = (c: CheckIn | undefined) => {
     if (c) s.saveCheckIn(c)
@@ -69,7 +73,7 @@ export default function Today() {
             {profile.name ? `, ${profile.name}` : ''}
           </h1>
         </div>
-        <div className="badge accent" style={{ fontSize: '0.9rem', padding: '6px 12px', gap: 4 }} title="Tage in Folge mit Aktivität">
+        <div className="badge accent" style={{ fontSize: '0.9rem', padding: '6px 12px', gap: 4 }} title={t('today.streakTitle')}>
           <Icon name="flame" size={16} /> {streakN}
         </div>
       </div>
@@ -80,11 +84,11 @@ export default function Today() {
         <div className="card" style={{ background: 'var(--warn-soft)', borderColor: 'transparent' }}>
           <div className="row between">
             <div>
-              <strong>{s.settings.mode === 'urlaub' ? 'Urlaubsmodus aktiv' : 'Krankheitsmodus aktiv'}</strong>
-              <p className="small muted">Dein Plan und deine Serie sind pausiert.</p>
+              <strong>{s.settings.mode === 'urlaub' ? t('today.vacationOn') : t('today.sickOn')}</strong>
+              <p className="small muted">{t('today.paused')}</p>
             </div>
             <button className="btn sm" onClick={() => s.setMode('normal')}>
-              Beenden
+              {t('today.end')}
             </button>
           </div>
         </div>
@@ -93,63 +97,61 @@ export default function Today() {
       {s.active ? (
         <Link to="/training" className="card accent stack" style={{ textDecoration: 'none' }}>
           <div className="eyebrow" style={{ color: 'inherit', opacity: 0.8 }}>
-            Läuft gerade
+            {t('today.running')}
           </div>
-          <h2>{s.active.dayName}</h2>
+          <h2>{sessionDayName(s.active)}</h2>
           <span className="btn" style={{ background: 'var(--accent-ink)', color: 'var(--accent)', border: 0, alignSelf: 'flex-start' }}>
-            Training fortsetzen
+            {t('today.resume')}
           </span>
         </Link>
       ) : meso.completed ? (
         <div className="card accent stack">
           <div className="eyebrow" style={{ color: 'inherit', opacity: 0.8 }}>
-            Mesozyklus {meso.number} geschafft
+            {t('today.mesoDone', { n: meso.number })}
           </div>
-          <h2>Zeit für deine Auswertung</h2>
-          <p className="small muted">Sieh dir deinen Fortschritt an und starte den nächsten Zyklus.</p>
+          <h2>{t('today.reviewTitle')}</h2>
+          <p className="small muted">{t('today.reviewText')}</p>
           <Link to="/zyklus" className="btn" style={{ background: 'var(--accent-ink)', color: 'var(--accent)', border: 0, alignSelf: 'flex-start' }}>
-            Zur Auswertung
+            {t('today.toReview')}
           </Link>
         </div>
       ) : (
         <div className="card stack">
           <div className="row between">
             <span className="eyebrow">
-              Woche {pos.week + 1}/{meso.weeks} · Einheit {pos.dayIndex + 1}/{meso.days.length}
+              {t('today.position', { week: pos.week + 1, weeks: meso.weeks, day: pos.dayIndex + 1, days: meso.days.length })}
             </span>
-            {deload ? <span className="badge warn">Deload</span> : <span className="badge">{rir} RIR</span>}
+            {deload ? <span className="badge warn">{t('common.deload')}</span> : <span className="badge">{rir} RIR</span>}
           </div>
-          <h2 style={{ fontSize: '1.5rem' }}>{day.name}</h2>
-          <p className="muted small">
-            {day.slots.length} Übungen · ca. {estimateMinutes(day)} min · {day.focus}
-          </p>
+          <h2 style={{ fontSize: '1.5rem' }}>{dayName(day)}</h2>
+          <p className="muted small">{t('today.dayMeta', { n: day.slots.length, min: estimateMinutes(day), focus: dayFocus(day) })}</p>
           <div className="stack" style={{ gap: 4 }}>
             {day.slots.slice(0, 4).map((sl) => (
               <div key={sl.key} className="row small">
                 <span className="muted num" style={{ width: 28 }}>
                   {sl.sets}×
                 </span>
-                <span>{lib.get(sl.exerciseId)?.name}</span>
+                <span>{lib.get(sl.exerciseId) && exerciseName(lib.get(sl.exerciseId)!)}</span>
               </div>
             ))}
-            {day.slots.length > 4 && <span className="muted small">+ {day.slots.length - 4} weitere</span>}
+            {day.slots.length > 4 && <span className="muted small">{t('today.more', { n: day.slots.length - 4 })}</span>}
           </div>
-          {!isTrainingDay && <p className="small muted">Heute ist laut Plan Ruhetag. Du kannst trotzdem trainieren.</p>}
+          {!isTrainingDay && <p className="small muted">{t('today.restDay')}</p>}
           <button className="btn primary block" onClick={() => setCheckIn(true)} disabled={s.settings.mode !== 'normal'}>
-            <Icon name="play" size={18} /> Training starten
+            <Icon name="play" size={18} /> {t('today.start')}
           </button>
         </div>
       )}
 
       <div className="card stack">
         <div className="row between">
-          <h3>Diese Woche</h3>
+          <h3>{t('today.thisWeek')}</h3>
           <Link to="/fortschritt" className="small">
-            Kalender
+            {t('today.calendar')}
           </Link>
         </div>
         <div className="week-strip">
-          {WEEKDAYS_SHORT.map((w, i) => {
+          {weekdaysShort(lang).map((w, i) => {
             const date = addDays(weekStart, i)
             const cls = ['d', doneDates.has(date) ? 'done' : profile.trainingDays.includes(i) ? 'plan' : '', date === d ? 'today' : ''].join(' ')
             return (
@@ -163,18 +165,18 @@ export default function Today() {
       </div>
 
       <Link to="/ernaehrung" className="card row" style={{ gap: 16, textDecoration: 'none', color: 'inherit' }}>
-        <Ring value={eaten.kcal} max={t.kcal + burned} size={104} stroke={10}>
+        <Ring value={eaten.kcal} max={goal.kcal + burned} size={104} stroke={10}>
           <div>
             <div style={{ fontWeight: 800, fontSize: '1.15rem' }} className="num">
-              {Math.max(0, Math.round(t.kcal + burned - eaten.kcal)).toLocaleString('de-DE')}
+              {fmt(Math.max(0, Math.round(goal.kcal + burned - eaten.kcal)))}
             </div>
-            <div className="tiny muted">kcal übrig</div>
+            <div className="tiny muted">{t('common.kcalLeft')}</div>
           </div>
         </Ring>
         <div className="stack grow" style={{ gap: 10 }}>
-          <Macro label="Protein" v={eaten.protein} max={t.protein} color="var(--protein)" />
-          <Macro label="Kohlenhydrate" v={eaten.carbs} max={t.carbs} color="var(--carbs)" />
-          <Macro label="Fett" v={eaten.fat} max={t.fat} color="var(--fat)" />
+          <Macro label={t('common.protein')} v={eaten.protein} max={goal.protein} color="var(--protein)" />
+          <Macro label={t('common.carbs')} v={eaten.carbs} max={goal.carbs} color="var(--carbs)" />
+          <Macro label={t('common.fat')} v={eaten.fat} max={goal.fat} color="var(--fat)" />
         </div>
       </Link>
 
@@ -182,19 +184,19 @@ export default function Today() {
         <button className="card tight stack" style={{ alignItems: 'center', gap: 6 }} onClick={() => setWeightOpen(true)}>
           <Icon name="scale" />
           <span className="small" style={{ fontWeight: 600 }}>
-            {lastWeight ? `${lastWeight.kg.toLocaleString('de-DE')} kg` : 'Gewicht'}
+            {lastWeight ? `${fmt(lastWeight.kg, 1)} kg` : t('common.weight')}
           </span>
         </button>
         <Link to="/mobility" className="card tight stack" style={{ alignItems: 'center', gap: 6, textDecoration: 'none', color: 'inherit' }}>
           <Icon name="stretch" />
           <span className="small" style={{ fontWeight: 600 }}>
-            Mobility
+            {t('common.mobility')}
           </span>
         </Link>
         <Link to="/cardio" className="card tight stack" style={{ alignItems: 'center', gap: 6, textDecoration: 'none', color: 'inherit' }}>
           <Icon name="run" />
           <span className="small" style={{ fontWeight: 600 }}>
-            Cardio
+            {t('common.cardio')}
           </span>
         </Link>
       </div>
@@ -224,20 +226,21 @@ export function WeightSheet({ open, onClose }: { open: boolean; onClose: () => v
   const logWeight = useStore((s) => s.logWeight)
   const last = weights[weights.length - 1]?.kg ?? 75
   const [kg, setKg] = useState(last)
+  const { t } = useT()
   return (
-    <Sheet open={open} onClose={onClose} title="Gewicht eintragen">
+    <Sheet open={open} onClose={onClose} title={t('today.weightSheet.title')}>
       <div className="stack lg">
-        <p className="muted small">Am besten morgens nüchtern nach dem Toilettengang. Der Trend glättet Tagesschwankungen.</p>
-        <Stepper label="Gewicht" value={kg} onChange={setKg} step={0.1} min={30} max={300} suffix="kg" />
+        <p className="muted small">{t('today.weightSheet.hint')}</p>
+        <Stepper label={t('common.weight')} value={kg} onChange={setKg} step={0.1} min={30} max={300} suffix="kg" />
         <button
           className="btn primary block"
           onClick={() => {
             logWeight(kg)
-            toast('Gewicht gespeichert')
+            toast(t('today.weightSheet.saved'))
             onClose()
           }}
         >
-          Speichern
+          {t('common.save')}
         </button>
       </div>
     </Sheet>
