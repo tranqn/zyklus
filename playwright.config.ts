@@ -12,9 +12,12 @@ export default defineConfig({
   },
   // mobile first: the app is built for phones
   projects: [
-    { name: 'mobile', use: { ...devices['Pixel 7'] } },
+    { name: 'mobile', use: { ...devices['Pixel 7'] }, testIgnore: /vi\.spec/ },
     // smallest common phone width: catches labels and layouts that overflow
-    { name: 'small', use: { ...devices['iPhone SE'], browserName: 'chromium', viewport: { width: 320, height: 568 } }, grep: /every main route|account/ },
+    { name: 'small', use: { ...devices['iPhone SE'], browserName: 'chromium', viewport: { width: 320, height: 568 } }, grep: /every main route|account/, testIgnore: /vi\.spec/ },
+    // Vietnamese users get the full app in Vietnamese (browser language vi-VN)
+    { name: 'vi', use: { ...devices['Pixel 7'], locale: 'vi-VN' }, testMatch: /vi\.spec/ },
+    { name: 'vi-small', use: { ...devices['iPhone SE'], browserName: 'chromium', locale: 'vi-VN', viewport: { width: 320, height: 568 } }, testMatch: /vi\.spec/, grep: /overflow/ },
   ],
   webServer: [
     {

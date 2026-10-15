@@ -218,7 +218,9 @@ export const useStore = create<State & Actions>()(
                 ? {
                     ...e,
                     exerciseId,
-                    note: 'Übung getauscht: Gewicht im ersten Satz neu finden.',
+                    noteKey: 'swapped',
+                    noteParams: undefined,
+                    note: undefined,
                     sets: e.sets
                       .filter((x) => x.kind !== 'aufwaermen')
                       .map((x, i) => ({ ...x, kind: i === 0 ? ('test' as const) : ('arbeit' as const), targetWeight: undefined, done: false })),

@@ -1,4 +1,6 @@
 /** Current epoch ms. Read it in handlers and effects, not during render. */
+import { getLocale } from '../i18n/lang'
+
 export function nowMs(): number {
   return Date.now()
 }
@@ -44,14 +46,13 @@ export function startOfWeek(s: string): string {
   return addDays(s, -weekdayIndex(s))
 }
 
-export const WEEKDAYS_SHORT = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
-
 export function formatDate(s: string, opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' }): string {
-  return parseDay(s).toLocaleDateString('de-DE', opts)
+  return parseDay(s).toLocaleDateString(getLocale(), opts)
 }
 
+/** Number in the current UI locale (1.234,5 in de/vi, 1,234.5 in en). */
 export function fmt(n: number, digits = 0): string {
-  return n.toLocaleString('de-DE', { maximumFractionDigits: digits, minimumFractionDigits: 0 })
+  return n.toLocaleString(getLocale(), { maximumFractionDigits: digits, minimumFractionDigits: 0 })
 }
 
 export function clamp(n: number, min: number, max: number): number {

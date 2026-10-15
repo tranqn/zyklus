@@ -102,6 +102,8 @@ export interface PlanSlot {
 
 export interface PlanDay {
   id: string
+  /** template key (gk_a, push_b ...): name and focus are translated from it; name/focus are fallbacks */
+  key?: string
   name: string
   focus: string
   slots: PlanSlot[]
@@ -113,6 +115,8 @@ export interface Mesocycle {
   startDate: string
   /** Total weeks including the final deload week. */
   weeks: number
+  /** s2..s6, translated; `split` is the fallback text */
+  splitKey?: string
   split: string
   days: PlanDay[]
   completed: boolean
@@ -140,6 +144,9 @@ export interface SessionExercise {
   repMax: number
   restSec: number
   superset?: string
+  /** coaching note as translation key (program.note.*) plus parameters; `note` is legacy text */
+  noteKey?: string
+  noteParams?: Record<string, number>
   note?: string
   sets: SetEntry[]
 }
@@ -157,6 +164,7 @@ export interface WorkoutSession {
   id: string
   mesoId: string
   planDayId: string
+  dayKey?: string
   dayName: string
   week: number
   deload: boolean
@@ -189,6 +197,15 @@ export interface Food {
   portionLabel?: string
   barcode?: string
   custom?: boolean
+  /** built-in foods: name in every language (`name` is the German fallback) */
+  names?: Record<'de' | 'en' | 'vi', string>
+  portionLabels?: Record<'de' | 'en' | 'vi', string>
+  /** Vietnamese serving size where it differs (1 chén cơm = 150 g) */
+  viPortion?: { grams: number; label: string }
+  /** cuisine the dish belongs to; ranked first in that language */
+  region?: 'de' | 'vi'
+  /** extra search words (any language) */
+  aliases?: string[]
 }
 
 export interface FoodEntry {
@@ -234,6 +251,8 @@ export interface Settings {
   modeSince?: string
   /** First session after vacation/sick mode runs lighter. */
   reentryPending?: boolean
+  /** UI language, synced with the account (de | en | vi) */
+  language?: 'de' | 'en' | 'vi'
 }
 
 export interface RecipeItem {

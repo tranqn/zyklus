@@ -17,6 +17,7 @@ Mobile-first Trainings-PWA, inspiriert vom Funktionsumfang der MCI-App (MCI Solu
 - **Urlaubs- und Krankheitsmodus**: Plan und Serie pausieren, leichter Wiedereinstieg
 - **Konten**: Registrierung mit E-Mail und Passwort (Pflicht), E-Mail-Bestätigung, Passwort-Reset, Datenexport, Kontolöschung; Daten werden zwischen Geräten synchronisiert (offline-fähig, Konflikte werden pro Eintrag zusammengeführt)
 - **Übungsanimationen**: 31 animierte Bewegungsmuster für rund 65 Übungen, erzeugt mit EffectCraft (`pnpm anim`, siehe `tools/anim/`), als Lottie im Übungs-Infoblatt
+- **Sprachen**: Deutsch, English, Tiếng Việt mit voller Parität: Oberfläche, Übungstexte, Mobility, Cardio, E-Mails, Fehlermeldungen, Rechtstexte; vietnamesische Gerichte und Portionen (tô, chén, ly) in der Lebensmittel-Datenbank, Freitext-Erfassung je Sprache (auch ohne Diakritika); Sprache folgt dem Browser, ist umschaltbar und wird mit dem Konto synchronisiert
 - **PWA**: installierbar, offline nutzbar
 
 ## Entwicklung
@@ -30,6 +31,14 @@ pnpm build
 ```
 
 Die Fachlogik liegt in `src/domain/`, die Synchronisierung in `src/sync/`, die API in `server/` (Hono + node:sqlite, `pnpm --dir server dev` auf Port 8787) (ohne React, mit Tests in `src/domain/__tests__/`), die Oberfläche in `src/pages/` und `src/ui/`.
+
+## Übersetzungen
+
+Texte liegen pro Bereich in `src/i18n/ns/*.ts`, jeweils Deutsch, Englisch und Vietnamesisch nebeneinander. Deutsch ist die Quelle; fehlt ein Schlüssel in einer Sprache, bricht `tsc` ab. Übungstexte stehen in `src/i18n/content/exercises.ts`, Lebensmittel und Aktivitäten direkt in den Domain-Daten.
+
+```sh
+pnpm i18n:review   # docs/i18n-review.md: alle Texte in drei Sprachen nebeneinander, zum Gegenlesen
+```
 
 ## Animationen neu erzeugen
 

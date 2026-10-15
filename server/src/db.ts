@@ -39,6 +39,9 @@ export function openDb(path: string): DB {
   db.exec('PRAGMA foreign_keys = ON')
   db.exec('PRAGMA busy_timeout = 5000')
   for (const stmt of SCHEMA) db.exec(stmt)
+  // migrations for databases created by earlier versions
+  const cols = (db.prepare('PRAGMA table_info(users)').all() as { name: string }[]).map((c) => c.name)
+  if (!cols.includes('locale')) db.exec("ALTER TABLE users ADD COLUMN locale TEXT NOT NULL DEFAULT 'de'")
   return db
 }
 
@@ -49,4 +52,9 @@ export interface UserRow {
   email_verified_at: number | null
   consent_at: number
   created_at: number
+  locale: Locale
 }
+
+export type Locale = 'de' | 'en' | 'vi'
+export const LOCALES: Locale[] = ['de', 'en', 'vi']
+export const toLocale = (v: unknown): Locale => (LOCALES.includes(v as Locale) ? (v as Locale) : 'de')

@@ -14,18 +14,20 @@ import { AccountPage } from './pages/Account'
 import { AuthScreen, ResetPage, VerifyPage } from './pages/Auth'
 import { Datenschutz, Impressum } from './pages/Legal'
 import { checkSession, startSync, useSync } from './sync/engine'
+import { useLang, useT } from './i18n'
 
 const TABS = [
-  { to: '/', icon: 'home', label: 'Heute' },
-  { to: '/plan', icon: 'plan', label: 'Plan' },
-  { to: '/ernaehrung', icon: 'food', label: 'Ernährung' },
-  { to: '/fortschritt', icon: 'chart', label: 'Fortschritt' },
-  { to: '/mehr', icon: 'more', label: 'Mehr' },
-]
+  { to: '/', icon: 'home', label: 'shell.nav.today' },
+  { to: '/plan', icon: 'plan', label: 'shell.nav.plan' },
+  { to: '/ernaehrung', icon: 'food', label: 'shell.nav.nutrition' },
+  { to: '/fortschritt', icon: 'chart', label: 'shell.nav.progress' },
+  { to: '/mehr', icon: 'more', label: 'shell.nav.more' },
+] as const
 
 function Shell() {
   const loc = useLocation()
   const hideNav = loc.pathname === '/training'
+  const { t } = useT()
   return (
     <div className="app">
       <main>
@@ -47,12 +49,12 @@ function Shell() {
         </Routes>
       </main>
       {!hideNav && (
-        <nav className="nav" aria-label="Hauptnavigation">
+        <nav className="nav" aria-label={t('shell.nav.main')}>
           <div className="nav-inner">
-            {TABS.map((t) => (
-              <NavLink key={t.to} to={t.to} end={t.to === '/'} className={({ isActive }) => (isActive ? 'active' : '')}>
-                <Icon name={t.icon} size={22} />
-                {t.label}
+            {TABS.map((tab) => (
+              <NavLink key={tab.to} to={tab.to} end={tab.to === '/'} className={({ isActive }) => (isActive ? 'active' : '')}>
+                <Icon name={tab.icon} size={22} />
+                {t(tab.label)}
               </NavLink>
             ))}
           </div>
@@ -88,6 +90,15 @@ function Gate() {
 }
 
 export default function App() {
+  const lang = useLang((s) => s.lang)
+  const syncedLang = useStore((s) => s.settings.language)
+  useEffect(() => {
+    document.documentElement.lang = lang
+  }, [lang])
+  // a language chosen on another device arrives with the synced settings
+  useEffect(() => {
+    if (syncedLang && syncedLang !== useLang.getState().lang) useLang.getState().setLang(syncedLang)
+  }, [syncedLang])
   useEffect(() => {
     const stop = startSync()
     checkSession()

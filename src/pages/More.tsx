@@ -3,28 +3,32 @@ import { Link, useNavigate } from 'react-router-dom'
 import { CARDIO, cardioKcal, MOBILITY, routineSeconds, type MobilityRoutine } from '../domain/activities'
 import { allExercises, useStore } from '../store'
 import { useSync } from '../sync/engine'
-import { EQUIPMENT_LABEL, GYM_EQUIPMENT, HOME_EQUIPMENT_CHOICES } from '../domain/exercises'
+import { t as tr, tk as tkr, tx, useT, weekdaysShort } from '../i18n'
+import { exerciseName } from '../i18n/content/exercises'
+import { LanguagePicker } from '../ui/LanguagePicker'
+import { GYM_EQUIPMENT, HOME_EQUIPMENT_CHOICES } from '../domain/exercises'
 import { targets, tdee } from '../domain/nutrition'
 import type { Equipment, Goal, Level } from '../domain/types'
-import { formatDate, nowMs, today, WEEKDAYS_SHORT } from '../domain/util'
+import { fmt, formatDate, nowMs, today } from '../domain/util'
 import { Icon, Segmented, Sheet, Stepper } from '../ui/kit'
 import { confirmAction, toast } from '../ui/notify'
 
 export default function More() {
   const mode = useStore((s) => s.settings.mode)
   const user = useSync((s) => s.user)
+  const { t } = useT()
   const items = [
-    { to: '/konto', icon: 'heart', t: 'Konto', d: `${user?.email ?? ''}${user && !user.verified ? ' · nicht bestätigt' : ''}` },
-    { to: '/mobility', icon: 'stretch', t: 'Mobility', d: 'Geführte Routinen mit Timer' },
-    { to: '/cardio', icon: 'run', t: 'Cardio', d: 'Ausdauer eintragen, Kalorien zählen' },
-    { to: '/einstellungen', icon: 'settings', t: 'Profil und Einstellungen', d: 'Ziel, Trainingstage, Ausstattung, Daten' },
-    { to: '/modus', icon: 'moon', t: 'Urlaubs- und Krankheitsmodus', d: mode === 'normal' ? 'Plan und Serie pausieren' : 'Gerade aktiv' },
-    { to: '/wissen', icon: 'info', t: 'So funktioniert Zyklus', d: 'RIR, Mesozyklen, Progression' },
+    { to: '/konto', icon: 'heart', t: t('more.menu.account'), d: `${user?.email ?? ''}${user && !user.verified ? t('more.menu.unverified') : ''}` },
+    { to: '/mobility', icon: 'stretch', t: t('more.menu.mobility'), d: t('more.menu.mobilityD') },
+    { to: '/cardio', icon: 'run', t: t('more.menu.cardio'), d: t('more.menu.cardioD') },
+    { to: '/einstellungen', icon: 'settings', t: t('more.menu.settings'), d: t('more.menu.settingsD') },
+    { to: '/modus', icon: 'moon', t: t('more.menu.mode'), d: mode === 'normal' ? t('more.menu.modeOff') : t('more.menu.modeOn') },
+    { to: '/wissen', icon: 'info', t: t('more.menu.knowledge'), d: t('more.menu.knowledgeD') },
   ]
   return (
     <div className="page">
       <div className="page-head">
-        <h1>Mehr</h1>
+        <h1>{t('more.title')}</h1>
       </div>
       <div className="card list" style={{ padding: '0 16px' }}>
         {items.map((i) => (
@@ -48,10 +52,12 @@ export default function More() {
 
 function SubPage({ title, eyebrow, children }: { title: string; eyebrow?: string; children: React.ReactNode }) {
   const nav = useNavigate()
+  // re-render the whole sub page when the language changes
+  useT()
   return (
     <div className="page">
       <div className="row">
-        <button className="icon-btn" onClick={() => nav(-1)} aria-label="Zurück">
+        <button className="icon-btn" onClick={() => nav(-1)} aria-label={tr('common.back')}>
           <Icon name="back" />
         </button>
       </div>
@@ -69,15 +75,15 @@ export function Mobility() {
   const [routine, setRoutine] = useState<MobilityRoutine | null>(null)
   const done = s.mobility.slice(-5).reverse()
   return (
-    <SubPage title="Mobility" eyebrow="Beweglichkeit">
-      <p className="muted small">Kurze Routinen für Haltung, Verletzungsprophylaxe und tiefere Bewegungen. Ideal an Ruhetagen oder nach dem Training.</p>
+    <SubPage title={tr('common.mobility')} eyebrow={tr('more.mobility.eyebrow')}>
+      <p className="muted small">{tr('more.mobility.intro')}</p>
       <div className="stack">
         {MOBILITY.map((r) => (
           <button key={r.id} className="card row" style={{ textAlign: 'left' }} onClick={() => setRoutine(r)}>
             <span className="grow">
-              <strong>{r.name}</strong>
+              <strong>{tx(r.name)}</strong>
               <span className="small muted" style={{ display: 'block' }}>
-                {r.focus} · {Math.round(routineSeconds(r) / 60)} min · {r.moves.length} Übungen
+                {tr('more.mobility.meta', { focus: tx(r.focus), min: Math.round(routineSeconds(r) / 60), n: r.moves.length })}
               </span>
             </span>
             <span className="icon-btn" aria-hidden="true">
@@ -88,13 +94,13 @@ export function Mobility() {
       </div>
       {done.length > 0 && (
         <div className="card stack" style={{ gap: 0 }}>
-          <h3 style={{ marginBottom: 6 }}>Zuletzt</h3>
+          <h3 style={{ marginBottom: 6 }}>{tr('more.mobility.recent')}</h3>
           <div className="list">
             {done.map((m) => (
               <div key={m.id} className="list-item small">
-                <span className="grow">{MOBILITY.find((r) => r.id === m.routineId)?.name}</span>
+                <span className="grow">{tx(MOBILITY.find((r) => r.id === m.routineId)?.name)}</span>
                 <span className="muted">
-                  {formatDate(m.date)} · {m.minutes} min
+                  {tr('more.mobility.recentMeta', { date: formatDate(m.date), min: m.minutes })}
                 </span>
               </div>
             ))}
@@ -109,7 +115,7 @@ export function Mobility() {
 function MobilityPlayer({ routine, onClose }: { routine: MobilityRoutine; onClose: () => void }) {
   const addMobility = useStore((s) => s.addMobility)
   // flatten moves into timed steps (both sides become two steps)
-  const steps = routine.moves.flatMap((m) => (m.sides ? [{ ...m, side: 'Links' }, { ...m, side: 'Rechts' }] : [{ ...m, side: '' }]))
+  const steps = routine.moves.flatMap((m) => (m.sides ? [{ ...m, side: tr('more.mobility.left') }, { ...m, side: tr('more.mobility.right') }] : [{ ...m, side: '' }]))
   // one state object, so a tick can move to the next step atomically
   const [pos, setPos] = useState({ i: 0, left: steps[0].seconds, finished: false })
   const [paused, setPaused] = useState(false)
@@ -133,32 +139,32 @@ function MobilityPlayer({ routine, onClose }: { routine: MobilityRoutine; onClos
   const step = steps[i]
   const save = () => {
     addMobility({ date: today(), routineId: routine.id, minutes: Math.max(1, Math.round((nowMs() - started) / 60000)) })
-    toast('Mobility gespeichert')
+    toast(tr('more.mobility.saved'))
     onClose()
   }
   return (
-    <Sheet open onClose={onClose} title={routine.name}>
+    <Sheet open onClose={onClose} title={tx(routine.name)}>
       {finished ? (
         <div className="stack lg" style={{ textAlign: 'center' }}>
           <div style={{ fontSize: '3rem' }} aria-hidden="true">
             🧘
           </div>
-          <h2>Geschafft!</h2>
+          <h2>{tr('more.mobility.done')}</h2>
           <button className="btn primary block" onClick={save}>
-            Speichern
+            {tr('common.save')}
           </button>
         </div>
       ) : (
         <div className="stack lg" style={{ textAlign: 'center' }}>
           <span className="eyebrow">
-            Übung {i + 1} von {steps.length}
+            {tr('more.mobility.step', { n: i + 1, total: steps.length })}
           </span>
-          <h2 style={{ fontSize: '1.5rem' }}>{step.name}</h2>
+          <h2 style={{ fontSize: '1.5rem' }}>{tx(step.name)}</h2>
           {step.side && <span className="badge accent" style={{ alignSelf: 'center' }}>{step.side}</span>}
           <div className="num" style={{ fontSize: '4.5rem', fontWeight: 800, lineHeight: 1 }} aria-live="polite">
             {left}
           </div>
-          <p className="muted">{step.cue}</p>
+          <p className="muted">{tx(step.cue)}</p>
           <div className="bar">
             <div style={{ width: `${((i + 1) / steps.length) * 100}%` }} />
           </div>
@@ -167,13 +173,13 @@ function MobilityPlayer({ routine, onClose }: { routine: MobilityRoutine; onClos
               className="btn grow"
               onClick={() => i > 0 && goTo(i - 1)}
             >
-              Zurück
+              {tr('common.back')}
             </button>
             <button className="btn primary grow" onClick={() => setPaused(!paused)}>
-              <Icon name={paused ? 'play' : 'pause'} size={18} /> {paused ? 'Weiter' : 'Pause'}
+              <Icon name={paused ? 'play' : 'pause'} size={18} /> {paused ? tr('more.mobility.resume') : tr('more.mobility.pause')}
             </button>
             <button className="btn grow" onClick={() => goTo(i + 1)}>
-              Weiter
+              {tr('more.mobility.next')}
             </button>
           </div>
         </div>
@@ -191,46 +197,44 @@ export function Cardio() {
   const kcal = cardioKcal(act, intensity, minutes, s.profile!.weightKg)
   const recent = [...s.cardio].reverse().slice(0, 10)
   return (
-    <SubPage title="Cardio" eyebrow="Ausdauer">
+    <SubPage title={tr('common.cardio')} eyebrow={tr('more.cardio.eyebrow')}>
       <div className="card stack lg">
         <div className="field">
-          <label htmlFor="act">Aktivität</label>
+          <label htmlFor="act">{tr('more.cardio.activity')}</label>
           <select id="act" className="input" value={activity} onChange={(e) => setActivity(e.target.value)}>
             {CARDIO.map((a) => (
               <option key={a.id} value={a.id}>
-                {a.name}
+                {tx(a.name)}
               </option>
             ))}
           </select>
         </div>
         <div className="stack">
-          <span className="label">Dauer</span>
-          <Stepper label="Dauer" value={minutes} onChange={setMinutes} step={5} min={5} max={300} suffix="min" />
+          <span className="label">{tr('more.cardio.duration')}</span>
+          <Stepper label={tr('more.cardio.duration')} value={minutes} onChange={setMinutes} step={5} min={5} max={300} suffix="min" />
         </div>
         <div className="stack">
-          <span className="label">Intensität</span>
+          <span className="label">{tr('more.cardio.intensity')}</span>
           <Segmented
             value={intensity}
             onChange={setIntensity}
-            label="Intensität"
+            label={tr('more.cardio.intensity')}
             options={[
-              { value: 1, label: 'Locker' },
-              { value: 2, label: 'Mittel' },
-              { value: 3, label: 'Intensiv' },
+              { value: 1, label: tr('more.cardio.easy') },
+              { value: 2, label: tr('more.cardio.medium') },
+              { value: 3, label: tr('more.cardio.hard') },
             ]}
           />
         </div>
-        <p className="small muted">
-          Ca. <strong className="num">{kcal} kcal</strong> verbraucht. Diese Kalorien werden deinem Tagesziel gutgeschrieben.
-        </p>
+        <p className="small muted">{tr('more.cardio.burned', { kcal })}</p>
         <button
           className="btn primary block"
           onClick={() => {
             s.addCardio({ date: today(), activityId: activity, minutes, intensity, kcal })
-            toast('Cardio gespeichert')
+            toast(tr('more.cardio.saved'))
           }}
         >
-          Eintragen
+          {tr('more.cardio.log')}
         </button>
       </div>
       {recent.length > 0 && (
@@ -238,12 +242,12 @@ export function Cardio() {
           {recent.map((c) => (
             <div key={c.id} className="list-item">
               <span className="grow">
-                <strong>{CARDIO.find((a) => a.id === c.activityId)?.name}</strong>
+                <strong>{tx(CARDIO.find((a) => a.id === c.activityId)?.name)}</strong>
                 <span className="small muted" style={{ display: 'block' }}>
-                  {formatDate(c.date)} · {c.minutes} min · {c.kcal} kcal
+                  {tr('more.cardio.meta', { date: formatDate(c.date), min: c.minutes, kcal: c.kcal })}
                 </span>
               </span>
-              <button className="icon-btn plain" aria-label="Löschen" onClick={() => s.removeCardio(c.id)}>
+              <button className="icon-btn plain" aria-label={tr('common.delete')} onClick={() => s.removeCardio(c.id)}>
                 <Icon name="trash" size={18} />
               </button>
             </div>
@@ -258,22 +262,20 @@ export function ModePage() {
   const s = useStore()
   const mode = s.settings.mode
   return (
-    <SubPage title="Pause-Modus" eyebrow="Urlaub und Krankheit">
-      <p className="muted small">
-        Im Pause-Modus wird dein Zyklus angehalten und deine Serie eingefroren. Nach der Rückkehr startest du mit einer leichteren Einheit (weniger Sätze, mehr Reserve, ca. 10 % weniger Gewicht).
-      </p>
+    <SubPage title={tr('more.mode.title')} eyebrow={tr('more.mode.eyebrow')}>
+      <p className="muted small">{tr('more.mode.intro')}</p>
       {(['normal', 'urlaub', 'krank'] as const).map((m) => (
-        <button key={m} className="option" aria-pressed={mode === m} onClick={() => (s.setMode(m), toast(m === 'normal' ? 'Willkommen zurück!' : 'Pause-Modus aktiv'))}>
+        <button key={m} className="option" aria-pressed={mode === m} onClick={() => (s.setMode(m), toast(m === 'normal' ? tr('more.mode.welcomeBack') : tr('more.mode.pauseOn')))}>
           <span className="emoji" aria-hidden="true">
             {m === 'normal' ? '💪' : m === 'urlaub' ? '🏖️' : '🤒'}
           </span>
           <span className="stack" style={{ gap: 2 }}>
-            <strong>{m === 'normal' ? 'Normales Training' : m === 'urlaub' ? 'Urlaubsmodus' : 'Krankheitsmodus'}</strong>
-            <span className="small muted">{m === 'normal' ? 'Plan läuft weiter' : m === 'urlaub' ? 'Kein Studio, Serie bleibt erhalten' : 'Erst gesund werden, dann sanft zurück'}</span>
+            <strong>{m === 'normal' ? tr('more.mode.normal') : m === 'urlaub' ? tr('more.mode.vacation') : tr('more.mode.sick')}</strong>
+            <span className="small muted">{m === 'normal' ? tr('more.mode.normalD') : m === 'urlaub' ? tr('more.mode.vacationD') : tr('more.mode.sickD')}</span>
           </span>
         </button>
       ))}
-      {mode !== 'normal' && s.settings.modeSince && <p className="small muted">Aktiv seit {formatDate(s.settings.modeSince, { day: 'numeric', month: 'long' })}.</p>}
+      {mode !== 'normal' && s.settings.modeSince && <p className="small muted">{tr('more.mode.since', { date: formatDate(s.settings.modeSince, { day: 'numeric', month: 'long' }) })}</p>}
     </SubPage>
   )
 }
@@ -283,7 +285,7 @@ export function SettingsPage() {
   const p = s.profile!
   const [regen, setRegen] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
-  const t = targets(p, s.settings.kcalOverride, s.kcalAdjustment)
+  const goal = targets(p, s.settings.kcalOverride, s.kcalAdjustment)
   const upd = (patch: Parameters<typeof s.updateProfile>[0], planRelevant = true) => {
     s.updateProfile(patch)
     if (planRelevant) setRegen(true)
@@ -316,53 +318,56 @@ export function SettingsPage() {
     else document.documentElement.setAttribute('data-theme', v)
   }
   return (
-    <SubPage title="Einstellungen">
+    <SubPage title={tr('more.settings.title')}>
       {regen && (
         <div className="card" style={{ background: 'var(--accent-soft)', borderColor: 'transparent' }}>
           <p className="small" style={{ marginBottom: 8 }}>
-            Du hast planrelevante Angaben geändert. Plan jetzt neu erstellen?
+            {tr('more.settings.regenAsk')}
           </p>
           <div className="row">
             <button className="btn sm" onClick={() => setRegen(false)}>
-              Später
+              {tr('common.later')}
             </button>
             <button
               className="btn primary sm"
               onClick={() => {
                 s.regeneratePlan()
                 setRegen(false)
-                toast('Plan neu erstellt')
+                toast(tr('more.settings.regenDone'))
               }}
             >
-              Neu erstellen
+              {tr('more.settings.regenNow')}
             </button>
           </div>
         </div>
       )}
 
       <section className="card stack lg">
-        <h3>Training</h3>
+        <h3>{tr('more.settings.training')}</h3>
         <div className="field">
-          <label htmlFor="goal">Ziel</label>
+          <label htmlFor="goal">{tr('more.settings.goal')}</label>
           <select id="goal" className="input" value={p.goal} onChange={(e) => upd({ goal: e.target.value as Goal })}>
-            <option value="muskelaufbau">Muskelaufbau</option>
-            <option value="fettabbau">Fett verlieren</option>
-            <option value="rekomposition">Body Recomposition</option>
-            <option value="kraft">Maximalkraft</option>
+            {(['muskelaufbau', 'fettabbau', 'rekomposition', 'kraft'] as const).map((g) => (
+              <option key={g} value={g}>
+                {tkr(`onboarding.goal.${g}.t`)}
+              </option>
+            ))}
           </select>
         </div>
         <div className="field">
-          <label htmlFor="level">Erfahrung</label>
+          <label htmlFor="level">{tr('more.settings.level')}</label>
           <select id="level" className="input" value={p.level} onChange={(e) => upd({ level: e.target.value as Level })}>
-            <option value="anfaenger">Einsteiger</option>
-            <option value="fortgeschritten">Fortgeschritten</option>
-            <option value="profi">Sehr erfahren</option>
+            {(['anfaenger', 'fortgeschritten', 'profi'] as const).map((l) => (
+              <option key={l} value={l}>
+                {tkr(`onboarding.level.${l}.t`)}
+              </option>
+            ))}
           </select>
         </div>
         <div className="stack">
-          <span className="label">Trainingstage ({p.trainingDays.length} pro Woche)</span>
+          <span className="label">{tr('more.settings.trainingDays', { n: p.trainingDays.length })}</span>
           <div className="week-strip">
-            {WEEKDAYS_SHORT.map((d, i) => (
+            {weekdaysShort().map((d, i) => (
               <button
                 key={d}
                 className="chip"
@@ -370,7 +375,7 @@ export function SettingsPage() {
                 aria-pressed={p.trainingDays.includes(i)}
                 onClick={() => {
                   const days = p.trainingDays.includes(i) ? p.trainingDays.filter((x) => x !== i) : [...p.trainingDays, i].sort()
-                  if (days.length < 2 || days.length > 6) return toast('2 bis 6 Trainingstage')
+                  if (days.length < 2 || days.length > 6) return toast(tr('more.settings.daysRange'))
                   upd({ trainingDays: days, daysPerWeek: days.length })
                 }}
               >
@@ -380,25 +385,25 @@ export function SettingsPage() {
           </div>
         </div>
         <div className="stack">
-          <span className="label">Dauer pro Training</span>
-          <Stepper label="Trainingsdauer" value={p.sessionMinutes} onChange={(v) => upd({ sessionMinutes: v })} step={15} min={30} max={120} suffix="min" />
+          <span className="label">{tr('more.settings.duration')}</span>
+          <Stepper label={tr('more.settings.durationLabel')} value={p.sessionMinutes} onChange={(v) => upd({ sessionMinutes: v })} step={15} min={30} max={120} suffix="min" />
         </div>
         <div className="stack">
-          <span className="label">Ort</span>
+          <span className="label">{tr('more.settings.place')}</span>
           <Segmented
             value={p.location}
-            label="Trainingsort"
+            label={tr('more.settings.placeLabel')}
             onChange={(v) => upd({ location: v, equipment: v === 'studio' ? GYM_EQUIPMENT : ['koerpergewicht', 'kurzhantel'] })}
             options={[
-              { value: 'studio', label: 'Studio' },
-              { value: 'zuhause', label: 'Zuhause' },
+              { value: 'studio', label: tr('more.settings.gym') },
+              { value: 'zuhause', label: tr('more.settings.home') },
             ]}
           />
           {p.location === 'zuhause' && (
             <div className="row wrap">
               {HOME_EQUIPMENT_CHOICES.map((e: Equipment) => (
                 <button key={e} className="chip" aria-pressed={p.equipment.includes(e)} onClick={() => upd({ equipment: p.equipment.includes(e) ? p.equipment.filter((x) => x !== e) : [...p.equipment, e] })}>
-                  {EQUIPMENT_LABEL[e]}
+                  {tkr(`labels.equipment.${e}`)}
                 </button>
               ))}
             </div>
@@ -406,11 +411,15 @@ export function SettingsPage() {
         </div>
         {s.settings.excludedExercises.length > 0 && (
           <div className="stack">
-            <span className="label">Ausgeschlossene Übungen</span>
+            <span className="label">{tr('more.settings.excluded')}</span>
             <div className="row wrap">
               {s.settings.excludedExercises.map((id) => (
                 <button key={id} className="chip" onClick={() => s.updateSettings({ excludedExercises: s.settings.excludedExercises.filter((x) => x !== id) })}>
-                  {allExercises(s).find((e) => e.id === id)?.name ?? id} <Icon name="close" size={14} />
+                  {(() => {
+                    const e = allExercises(s).find((x) => x.id === id)
+                    return e ? exerciseName(e) : id
+                  })()}{' '}
+                  <Icon name="close" size={14} />
                 </button>
               ))}
             </div>
@@ -419,76 +428,78 @@ export function SettingsPage() {
       </section>
 
       <section className="card stack lg">
-        <h3>Körper und Ernährung</h3>
+        <h3>{tr('more.settings.body')}</h3>
         <div className="grid2">
           <div className="stack">
-            <span className="label">Alter</span>
-            <Stepper label="Alter" value={p.age} onChange={(v) => upd({ age: v }, false)} min={14} max={90} />
+            <span className="label">{tr('more.settings.age')}</span>
+            <Stepper label={tr('more.settings.age')} value={p.age} onChange={(v) => upd({ age: v }, false)} min={14} max={90} />
           </div>
           <div className="stack">
-            <span className="label">Größe (cm)</span>
-            <Stepper label="Größe" value={p.heightCm} onChange={(v) => upd({ heightCm: v }, false)} min={130} max={220} />
+            <span className="label">{tr('more.settings.height')}</span>
+            <Stepper label={tr('more.settings.heightLabel')} value={p.heightCm} onChange={(v) => upd({ heightCm: v }, false)} min={130} max={220} />
           </div>
         </div>
         <div className="field">
-          <label htmlFor="act">Alltagsaktivität</label>
+          <label htmlFor="act">{tr('more.settings.activity')}</label>
           <select id="act" className="input" value={p.activity} onChange={(e) => upd({ activity: Number(e.target.value) }, false)}>
-            <option value={1.2}>Überwiegend sitzend</option>
-            <option value={1.375}>Leicht aktiv</option>
-            <option value={1.5}>Aktiv</option>
-            <option value={1.65}>Sehr aktiv</option>
+            {([[1.2, 'a1'], [1.375, 'a2'], [1.5, 'a3'], [1.65, 'a4']] as const).map(([v, k]) => (
+              <option key={k} value={v}>
+                {tkr(`onboarding.activity.${k}.t`)}
+              </option>
+            ))}
           </select>
         </div>
-        <p className="small muted">
-          Geschätzter Bedarf: <strong className="num">{Math.round(tdee(p)).toLocaleString('de-DE')} kcal</strong> · Dein Ziel: <strong className="num">{t.kcal.toLocaleString('de-DE')} kcal</strong> ({t.protein} g P, {t.carbs} g K, {t.fat} g F)
-        </p>
+        <p className="small muted">{tr('more.settings.need', { tdee: fmt(Math.round(tdee(p))), kcal: fmt(goal.kcal), p: goal.protein, c: goal.carbs, f: goal.fat })}</p>
         <div className="field">
-          <label htmlFor="kcal">Eigenes Kalorienziel (leer = automatisch)</label>
+          <label htmlFor="kcal">{tr('more.settings.ownKcal')}</label>
           <input
             id="kcal"
             className="input"
             inputMode="numeric"
             value={s.settings.kcalOverride ?? ''}
             onChange={(e) => s.updateSettings({ kcalOverride: e.target.value ? Number(e.target.value.replace(/\D/g, '')) : undefined })}
-            placeholder="z. B. 2400"
+            placeholder={tr('more.settings.ownKcalPlaceholder')}
           />
         </div>
         {s.kcalAdjustment !== 0 && (
           <button className="btn sm" onClick={() => s.setKcalAdjustment(0)}>
-            Smarte Anpassung zurücksetzen ({s.kcalAdjustment > 0 ? '+' : ''}
-            {s.kcalAdjustment} kcal)
+            {tr('more.settings.resetSmart', { delta: `${s.kcalAdjustment > 0 ? '+' : ''}${s.kcalAdjustment}` })}
           </button>
         )}
       </section>
 
       <section className="card stack lg">
-        <h3>App</h3>
-        <Toggle label="Aufwärmsätze vorschlagen" on={s.settings.warmupSets} onChange={(v) => s.updateSettings({ warmupSets: v })} />
-        <Toggle label="Ton am Ende der Satzpause" on={s.settings.restTimerSound} onChange={(v) => s.updateSettings({ restTimerSound: v })} />
-        <Toggle label="Vibration am Ende der Satzpause" on={s.settings.restTimerVibrate} onChange={(v) => s.updateSettings({ restTimerVibrate: v })} />
+        <h3>{tr('more.settings.app')}</h3>
         <div className="stack">
-          <span className="label">Darstellung</span>
+          <span className="label">{tr('more.settings.language')}</span>
+          <LanguagePicker />
+        </div>
+        <Toggle label={tr('more.settings.warmups')} on={s.settings.warmupSets} onChange={(v) => s.updateSettings({ warmupSets: v })} />
+        <Toggle label={tr('more.settings.sound')} on={s.settings.restTimerSound} onChange={(v) => s.updateSettings({ restTimerSound: v })} />
+        <Toggle label={tr('more.settings.vibrate')} on={s.settings.restTimerVibrate} onChange={(v) => s.updateSettings({ restTimerVibrate: v })} />
+        <div className="stack">
+          <span className="label">{tr('more.settings.theme')}</span>
           <Segmented
             value={theme}
             onChange={applyTheme}
-            label="Darstellung"
+            label={tr('more.settings.theme')}
             options={[
-              { value: 'auto', label: 'System' },
-              { value: 'light', label: 'Hell' },
-              { value: 'dark', label: 'Dunkel' },
+              { value: 'auto', label: tr('more.settings.themeAuto') },
+              { value: 'light', label: tr('more.settings.themeLight') },
+              { value: 'dark', label: tr('more.settings.themeDark') },
             ]}
           />
         </div>
       </section>
 
       <section className="card stack">
-        <h3>Deine Daten</h3>
-        <p className="small muted">Deine Daten werden automatisch in deinem Konto gesichert und synchronisiert. Zusätzlich kannst du jederzeit eine Sicherungsdatei herunterladen.</p>
+        <h3>{tr('more.settings.data')}</h3>
+        <p className="small muted">{tr('more.settings.dataText')}</p>
         <button className="btn" onClick={exportData}>
-          Sicherung herunterladen
+          {tr('more.settings.backup')}
         </button>
         <button className="btn" onClick={() => fileRef.current?.click()}>
-          Sicherung wiederherstellen
+          {tr('more.settings.restore')}
         </button>
         <input
           ref={fileRef}
@@ -500,14 +511,14 @@ export function SettingsPage() {
             if (!f) return
             try {
               s.importData(await f.text())
-              toast('Sicherung wiederhergestellt')
+              toast(tr('more.settings.restored'))
             } catch {
-              toast('Datei ist keine gültige Sicherung')
+              toast(tr('more.settings.badBackup'))
             }
           }}
         />
-        <button className="btn danger" onClick={() => confirmAction('Wirklich alle Daten löschen? Das kann nicht rückgängig gemacht werden.') && s.reset()}>
-          Alle Daten löschen
+        <button className="btn danger" onClick={() => confirmAction(tr('more.settings.wipeConfirm')) && s.reset()}>
+          {tr('more.settings.wipe')}
         </button>
       </section>
     </SubPage>
@@ -524,24 +535,17 @@ function Toggle({ label, on, onChange }: { label: string; on: boolean; onChange:
 }
 
 export function Knowledge() {
-  const blocks: [string, string][] = [
-    ['Mesozyklus', 'Ein Trainingsblock von 5 bis 6 Wochen. Die Intensität steigt Woche für Woche, danach folgt eine Deload-Woche mit halbem Volumen. Nach jedem Zyklus wertet die App deinen Fortschritt aus und passt Volumen und Zusatzübungen an.'],
-    ['RIR (Reps in Reserve)', 'Wie viele saubere Wiederholungen du am Satzende noch geschafft hättest. 2 RIR heißt: zwei wären noch gegangen. So trainierst du hart genug für Fortschritt, ohne ständig ans Versagen zu gehen.'],
-    ['Krafttest', 'Bei einer neuen Übung ist der erste Satz ein Testsatz. Aus Gewicht, Wiederholungen und RIR schätzt die App dein Maximum (Epley-Formel) und berechnet daraus die Gewichte aller weiteren Sätze.'],
-    ['Doppelte Progression', 'Erst steigen die Wiederholungen. Schaffst du in allen Sätzen das obere Ende des Bereichs, gibt es mehr Gewicht und du startest wieder unten im Bereich.'],
-    ['Tagesform-Check-in', 'Schlaf, Energie, Stress und Muskelkater fließen in die Einheit ein. Bei deutlichem Muskelkater fällt ein Satz für den Muskel weg und die Reserve steigt. So vermeidest du Übertraining.'],
-    ['Smarte Kalorien', 'Die App vergleicht deinen geglätteten Gewichtstrend mit dem Zieltempo (z. B. 0,6 % Körpergewicht pro Woche beim Abnehmen) und schlägt Korrekturen in kleinen Schritten vor.'],
-    ['Muskel-Map', 'Zeigt die harten Sätze pro Muskel und Woche. Für Muskelaufbau gelten etwa 10 bis 20 Sätze pro Woche als guter Bereich.'],
-  ]
+  const keys = ['meso', 'rir', 'test', 'double', 'checkin', 'kcal', 'map'] as const
+  const blocks = keys.map((k) => [tr(`more.knowledge.${k}`), tr(`more.knowledge.${k}T`)] as const)
   return (
-    <SubPage title="So funktioniert Zyklus" eyebrow="Wissen">
+    <SubPage title={tr('more.knowledge.title')} eyebrow={tr('more.knowledge.eyebrow')}>
       {blocks.map(([h, t]) => (
         <section key={h} className="card stack">
           <h3>{h}</h3>
           <p className="small muted">{t}</p>
         </section>
       ))}
-      <p className="tiny muted">Hinweis: Zyklus ersetzt keine medizinische Beratung. Bei Schmerzen oder Vorerkrankungen sprich mit Ärztin, Arzt oder Physiotherapie.</p>
+      <p className="tiny muted">{tr('more.knowledge.disclaimer')}</p>
     </SubPage>
   )
 }

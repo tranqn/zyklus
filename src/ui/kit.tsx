@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { onToast } from './notify'
+import { fmtNumber, useT } from '../i18n'
 
 const PATHS: Record<string, string> = {
   home: 'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
@@ -46,6 +47,7 @@ export function Icon({ name, size = 22, stroke = 2 }: { name: keyof typeof PATHS
 }
 
 export function Sheet({ open, onClose, title, children }: { open: boolean; onClose: () => void; title?: ReactNode; children: ReactNode }) {
+  const { t } = useT()
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -65,7 +67,7 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
         {title != null && (
           <div className="sheet-head">
             <h2>{title}</h2>
-            <button className="icon-btn" onClick={onClose} aria-label="Schließen">
+            <button className="icon-btn" onClick={onClose} aria-label={t('shell.a11y.close')}>
               <Icon name="close" size={20} />
             </button>
           </div>
@@ -104,19 +106,20 @@ export function Segmented<T extends string | number>({ value, options, onChange,
 }
 
 export function Stepper({ value, onChange, step = 1, min = 0, max = 999, suffix, label }: { value: number; onChange: (v: number) => void; step?: number; min?: number; max?: number; suffix?: string; label: string }) {
+  const { t } = useT()
   const round = (v: number) => Math.round(v * 100) / 100
   return (
     <div className="row" style={{ gap: 10 }}>
-      <button type="button" className="icon-btn" aria-label={`${label} verringern`} onClick={() => onChange(Math.max(min, round(value - step)))}>
+      <button type="button" className="icon-btn" aria-label={t('shell.a11y.decrease', { label })} onClick={() => onChange(Math.max(min, round(value - step)))}>
         <Icon name="minus" />
       </button>
       <div className="grow" style={{ textAlign: 'center' }}>
         <span style={{ fontSize: '1.6rem', fontWeight: 750 }} className="num">
-          {String(value).replace('.', ',')}
+          {fmtNumber(value, 2)}
         </span>
         {suffix && <span className="muted"> {suffix}</span>}
       </div>
-      <button type="button" className="icon-btn" aria-label={`${label} erhöhen`} onClick={() => onChange(Math.min(max, round(value + step)))}>
+      <button type="button" className="icon-btn" aria-label={t('shell.a11y.increase', { label })} onClick={() => onChange(Math.min(max, round(value + step)))}>
         <Icon name="plus" />
       </button>
     </div>
@@ -160,8 +163,9 @@ export interface Point {
 
 /** Minimal responsive line chart: y = raw points, y2 = optional trend line. */
 export function LineChart({ data, unit = '', height = 160, label }: { data: Point[]; unit?: string; height?: number; label: string }) {
+  const { t } = useT()
   const [hover, setHover] = useState<number | null>(null)
-  if (data.length < 2) return <p className="muted small">Noch zu wenige Daten für ein Diagramm.</p>
+  if (data.length < 2) return <p className="muted small">{t('common.noData')}</p>
   const w = 320
   const padL = 34
   const padB = 20
@@ -192,7 +196,7 @@ export function LineChart({ data, unit = '', height = 160, label }: { data: Poin
       <div className="row between small" style={{ marginBottom: 4 }}>
         <span className="muted">{h.x}</span>
         <span className="num" style={{ fontWeight: 700 }}>
-          {(hasTrend && h.y2 != null ? h.y2 : h.y).toLocaleString('de-DE', { maximumFractionDigits: 1 })} {unit}
+          {fmtNumber(hasTrend && h.y2 != null ? h.y2 : h.y, 1)} {unit}
         </span>
       </div>
       <svg

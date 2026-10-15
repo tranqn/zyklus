@@ -1,30 +1,27 @@
 import { useMemo, useState } from 'react'
-import { EQUIPMENT_LABEL, GYM_EQUIPMENT, HOME_EQUIPMENT_CHOICES } from '../domain/exercises'
+import { GYM_EQUIPMENT, HOME_EQUIPMENT_CHOICES } from '../domain/exercises'
 import { targets } from '../domain/nutrition'
 import { generateMesocycle } from '../domain/planner'
 import type { Equipment, Goal, Level, Location, Profile, Sex } from '../domain/types'
-import { nowMs, WEEKDAYS_SHORT } from '../domain/util'
+import { fmt, nowMs } from '../domain/util'
 import { useStore } from '../store'
 import { Icon, Segmented, Stepper } from '../ui/kit'
+import { useT, weekdaysShort } from '../i18n'
+import { dayFocus, dayName, splitName } from '../i18n/display'
+import { LanguagePicker } from '../ui/LanguagePicker'
 
-const GOALS: { v: Goal; e: string; t: string; d: string }[] = [
-  { v: 'muskelaufbau', e: '💪', t: 'Muskelaufbau', d: 'Mehr Muskelmasse mit leichtem Kalorienüberschuss' },
-  { v: 'fettabbau', e: '🔥', t: 'Fett verlieren', d: 'Körperfett reduzieren, Muskeln erhalten' },
-  { v: 'rekomposition', e: '⚖️', t: 'Body Recomposition', d: 'Gleichzeitig straffer und stärker werden' },
-  { v: 'kraft', e: '🏋️', t: 'Maximalkraft', d: 'Schwerer heben in den Grundübungen' },
+const GOALS: { v: Goal; e: string }[] = [
+  { v: 'muskelaufbau', e: '💪' },
+  { v: 'fettabbau', e: '🔥' },
+  { v: 'rekomposition', e: '⚖️' },
+  { v: 'kraft', e: '🏋️' },
 ]
-
-const LEVELS: { v: Level; t: string; d: string }[] = [
-  { v: 'anfaenger', t: 'Einsteiger', d: 'Unter 1 Jahr regelmäßiges Krafttraining' },
-  { v: 'fortgeschritten', t: 'Fortgeschritten', d: '1 bis 3 Jahre, Grundübungen sitzen' },
-  { v: 'profi', t: 'Sehr erfahren', d: 'Über 3 Jahre, strukturiertes Training gewohnt' },
-]
-
-const ACTIVITY: { v: number; t: string; d: string }[] = [
-  { v: 1.2, t: 'Überwiegend sitzend', d: 'Büro, wenig Bewegung im Alltag' },
-  { v: 1.375, t: 'Leicht aktiv', d: 'Etwas zu Fuß oder mit dem Rad unterwegs' },
-  { v: 1.5, t: 'Aktiv', d: 'Viel auf den Beinen, 8.000+ Schritte' },
-  { v: 1.65, t: 'Sehr aktiv', d: 'Körperliche Arbeit' },
+const LEVELS: Level[] = ['anfaenger', 'fortgeschritten', 'profi']
+const ACTIVITY: { v: number; k: 'a1' | 'a2' | 'a3' | 'a4' }[] = [
+  { v: 1.2, k: 'a1' },
+  { v: 1.375, k: 'a2' },
+  { v: 1.5, k: 'a3' },
+  { v: 1.65, k: 'a4' },
 ]
 
 const DEFAULT_DAYS: Record<number, number[]> = {
@@ -37,6 +34,7 @@ const DEFAULT_DAYS: Record<number, number[]> = {
 
 export default function Onboarding() {
   const complete = useStore((s) => s.completeOnboarding)
+  const { t, tk, lang } = useT()
   const [step, setStep] = useState(0)
   const [goal, setGoal] = useState<Goal>('muskelaufbau')
   const [level, setLevel] = useState<Level>('anfaenger')
@@ -93,10 +91,10 @@ export default function Onboarding() {
       <div className="page" style={{ minHeight: '100dvh', paddingBottom: 'calc(24px + var(--safe-b))' }}>
         {step > 0 && (
           <div className="row" style={{ gap: 12 }}>
-            <button className="icon-btn" onClick={back} aria-label="Zurück">
+            <button className="icon-btn" onClick={back} aria-label={t('onboarding.back')}>
               <Icon name="back" />
             </button>
-            <div className="bar grow" aria-label={`Schritt ${step} von ${steps.length - 1}`}>
+            <div className="bar grow" aria-label={t('onboarding.progress', { step, total: steps.length - 1 })}>
               <div style={{ width: `${(step / (steps.length - 1)) * 100}%` }} />
             </div>
           </div>
@@ -105,27 +103,26 @@ export default function Onboarding() {
         {current === 'start' && (
           <div className="stack lg" style={{ flex: 1, justifyContent: 'center' }}>
             <div className="eyebrow">Zyklus</div>
-            <h1 style={{ fontSize: '2.4rem' }}>Dein Trainingsplan, der mitdenkt.</h1>
-            <p className="muted">
-              Ein paar Fragen, dann bekommst du einen Plan mit Mesozyklen, Krafttests, automatischer Progression und Kalorienzielen.
-            </p>
+            <h1 style={{ fontSize: '2.4rem' }}>{t('onboarding.headline')}</h1>
+            <p className="muted">{t('onboarding.intro')}</p>
+            <LanguagePicker />
             <div className="field">
-              <label htmlFor="name">Wie dürfen wir dich nennen? (optional)</label>
-              <input id="name" className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Vorname" autoComplete="given-name" />
+              <label htmlFor="name">{t('onboarding.nameLabel')}</label>
+              <input id="name" className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('onboarding.namePlaceholder')} autoComplete="given-name" />
             </div>
           </div>
         )}
 
         {current === 'ziel' && (
-          <Step title="Was ist dein Hauptziel?">
+          <Step title={t('onboarding.qGoal')}>
             {GOALS.map((g) => (
               <button key={g.v} className="option" aria-pressed={goal === g.v} onClick={() => setGoal(g.v)}>
                 <span className="emoji" aria-hidden="true">
                   {g.e}
                 </span>
                 <span className="stack" style={{ gap: 2 }}>
-                  <strong>{g.t}</strong>
-                  <span className="muted small">{g.d}</span>
+                  <strong>{tk(`onboarding.goal.${g.v}.t`)}</strong>
+                  <span className="muted small">{tk(`onboarding.goal.${g.v}.d`)}</span>
                 </span>
               </button>
             ))}
@@ -133,12 +130,12 @@ export default function Onboarding() {
         )}
 
         {current === 'level' && (
-          <Step title="Wie viel Trainingserfahrung hast du?">
+          <Step title={t('onboarding.qLevel')}>
             {LEVELS.map((l) => (
-              <button key={l.v} className="option" aria-pressed={level === l.v} onClick={() => setLevel(l.v)}>
+              <button key={l} className="option" aria-pressed={level === l} onClick={() => setLevel(l)}>
                 <span className="stack" style={{ gap: 2 }}>
-                  <strong>{l.t}</strong>
-                  <span className="muted small">{l.d}</span>
+                  <strong>{tk(`onboarding.level.${l}.t`)}</strong>
+                  <span className="muted small">{tk(`onboarding.level.${l}.d`)}</span>
                 </span>
               </button>
             ))}
@@ -146,35 +143,35 @@ export default function Onboarding() {
         )}
 
         {current === 'ort' && (
-          <Step title="Wo trainierst du?">
+          <Step title={t('onboarding.qPlace')}>
             <Segmented
               value={location}
               onChange={setLocation}
-              label="Trainingsort"
+              label={t('onboarding.place')}
               options={[
-                { value: 'studio', label: 'Fitnessstudio' },
-                { value: 'zuhause', label: 'Zuhause' },
+                { value: 'studio', label: t('onboarding.gym') },
+                { value: 'zuhause', label: t('onboarding.home') },
               ]}
             />
             {location === 'zuhause' ? (
               <>
-                <p className="muted small">Was hast du zuhause? Körpergewicht geht immer.</p>
+                <p className="muted small">{t('onboarding.homeHint')}</p>
                 <div className="row wrap">
                   {HOME_EQUIPMENT_CHOICES.map((e) => (
                     <button key={e} className="chip" aria-pressed={homeEq.includes(e)} onClick={() => setHomeEq((x) => (x.includes(e) ? x.filter((y) => y !== e) : [...x, e]))}>
-                      {EQUIPMENT_LABEL[e]}
+                      {tk(`labels.equipment.${e}`)}
                     </button>
                   ))}
                 </div>
               </>
             ) : (
-              <p className="muted small">Wir gehen von einem normal ausgestatteten Studio aus: Hanteln, Kabelzüge und Maschinen.</p>
+              <p className="muted small">{t('onboarding.gymHint')}</p>
             )}
           </Step>
         )}
 
         {current === 'tage' && (
-          <Step title="Wie oft pro Woche willst du trainieren?">
+          <Step title={t('onboarding.qDays')}>
             <div className="grid3" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
               {[2, 3, 4, 5, 6].map((n) => (
                 <button key={n} className="chip" style={{ justifyContent: 'center', minHeight: 56, fontSize: '1.2rem' }} aria-pressed={days === n} onClick={() => setDayCount(n)}>
@@ -183,67 +180,67 @@ export default function Onboarding() {
               ))}
             </div>
             <p className="label" style={{ marginTop: 8 }}>
-              An welchen Tagen? ({weekdays.length} gewählt)
+              {t('onboarding.whichDays', { n: weekdays.length })}
             </p>
             <div className="week-strip">
-              {WEEKDAYS_SHORT.map((d, i) => (
+              {weekdaysShort(lang).map((d, i) => (
                 <button key={d} className="chip" style={{ justifyContent: 'center', padding: 0 }} aria-pressed={weekdays.includes(i)} onClick={() => toggleWeekday(i)}>
                   {d}
                 </button>
               ))}
             </div>
-            {weekdays.length !== days && <p className="small" style={{ color: 'var(--warn)' }}>Wähle genau {days} Tage, damit Plan und Kalender zusammenpassen.</p>}
+            {weekdays.length !== days && <p className="small" style={{ color: 'var(--warn)' }}>{t('onboarding.pickExactly', { n: days })}</p>}
           </Step>
         )}
 
         {current === 'dauer' && (
-          <Step title="Wie lange darf ein Training dauern?">
+          <Step title={t('onboarding.qDuration')}>
             {[30, 45, 60, 75, 90].map((m) => (
               <button key={m} className="option" aria-pressed={minutes === m} onClick={() => setMinutes(m)}>
                 <strong className="num" style={{ width: 70 }}>
-                  {m} min
+                  {m} {t('common.min')}
                 </strong>
-                <span className="muted small">{m <= 45 ? 'Kompakt, mit Supersätzen' : m <= 60 ? 'Ausgewogen' : 'Mehr Volumen pro Einheit'}</span>
+                <span className="muted small">{m <= 45 ? t('onboarding.durShort') : m <= 60 ? t('onboarding.durMid') : t('onboarding.durLong')}</span>
               </button>
             ))}
           </Step>
         )}
 
         {current === 'koerper' && (
-          <Step title="Ein paar Körperdaten" hint="Für Kalorienbedarf und Startgewichte. Bleibt lokal auf deinem Gerät.">
+          <Step title={t('onboarding.qBody')} hint={t('onboarding.bodyHint')}>
             <Segmented
               value={sex}
               onChange={setSex}
-              label="Geschlecht"
+              label={t('onboarding.sex')}
               options={[
-                { value: 'm', label: 'Männlich' },
-                { value: 'w', label: 'Weiblich' },
+                { value: 'm', label: t('onboarding.male') },
+                { value: 'w', label: t('onboarding.female') },
               ]}
             />
             <div className="card stack lg">
               <div className="stack">
-                <span className="label">Alter</span>
-                <Stepper label="Alter" value={age} onChange={setAge} min={14} max={90} suffix="Jahre" />
+                <span className="label">{t('onboarding.age')}</span>
+                <Stepper label={t('onboarding.age')} value={age} onChange={setAge} min={14} max={90} suffix={t('onboarding.years')} />
               </div>
               <div className="stack">
-                <span className="label">Größe</span>
-                <Stepper label="Größe" value={height} onChange={setHeight} min={130} max={220} suffix="cm" />
+                <span className="label">{t('onboarding.height')}</span>
+                <Stepper label={t('onboarding.height')} value={height} onChange={setHeight} min={130} max={220} suffix="cm" />
               </div>
               <div className="stack">
-                <span className="label">Gewicht</span>
-                <Stepper label="Gewicht" value={weight} onChange={setWeight} step={0.5} min={35} max={250} suffix="kg" />
+                <span className="label">{t('onboarding.weight')}</span>
+                <Stepper label={t('onboarding.weight')} value={weight} onChange={setWeight} step={0.5} min={35} max={250} suffix="kg" />
               </div>
             </div>
           </Step>
         )}
 
         {current === 'alltag' && (
-          <Step title="Wie aktiv ist dein Alltag (ohne Training)?">
+          <Step title={t('onboarding.qActivity')}>
             {ACTIVITY.map((a) => (
               <button key={a.v} className="option" aria-pressed={activity === a.v} onClick={() => setActivity(a.v)}>
                 <span className="stack" style={{ gap: 2 }}>
-                  <strong>{a.t}</strong>
-                  <span className="muted small">{a.d}</span>
+                  <strong>{tk(`onboarding.activity.${a.k}.t`)}</strong>
+                  <span className="muted small">{tk(`onboarding.activity.${a.k}.d`)}</span>
                 </span>
               </button>
             ))}
@@ -251,36 +248,32 @@ export default function Onboarding() {
         )}
 
         {current === 'fertig' && preview && (
-          <Step title={`Dein Plan${name ? `, ${name}` : ''}`}>
+          <Step title={name ? t('onboarding.yourPlanNamed', { name }) : t('onboarding.yourPlan')}>
             <div className="card accent stack">
               <div className="eyebrow" style={{ color: 'inherit', opacity: 0.8 }}>
-                Mesozyklus 1 · {preview.weeks} Wochen
+                {t('onboarding.mesoWeeks', { weeks: preview.weeks })}
               </div>
-              <h2>{preview.split}</h2>
-              <p className="small muted">
-                {preview.weeks - 1} Aufbauwochen mit steigender Intensität, danach eine Deload-Woche zur Erholung. Die erste Einheit pro Übung ist ein Krafttest.
-              </p>
+              <h2>{splitName(preview)}</h2>
+              <p className="small muted">{t('onboarding.mesoText', { build: preview.weeks - 1 })}</p>
             </div>
             <div className="card list">
               {preview.days.map((d) => (
                 <div key={d.id} className="list-item" style={{ alignItems: 'flex-start' }}>
                   <div className="grow">
-                    <strong>{d.name}</strong>
-                    <p className="muted small">
-                      {d.slots.length} Übungen · {d.slots.reduce((a, s) => a + s.sets, 0)} Sätze · {d.focus}
-                    </p>
+                    <strong>{dayName(d)}</strong>
+                    <p className="muted small">{t('onboarding.dayMeta', { n: d.slots.length, sets: d.slots.reduce((a, s) => a + s.sets, 0), focus: dayFocus(d) })}</p>
                   </div>
                 </div>
               ))}
             </div>
             <div className="card grid2">
               <div className="stat">
-                <span className="v">{kcal.kcal.toLocaleString('de-DE')}</span>
-                <span className="l">kcal pro Tag</span>
+                <span className="v">{fmt(kcal.kcal)}</span>
+                <span className="l">{t('onboarding.kcalPerDay')}</span>
               </div>
               <div className="stat">
                 <span className="v">{kcal.protein} g</span>
-                <span className="l">Protein pro Tag</span>
+                <span className="l">{t('onboarding.proteinPerDay')}</span>
               </div>
             </div>
           </Step>
@@ -289,11 +282,11 @@ export default function Onboarding() {
         <div style={{ marginTop: 'auto', paddingTop: 8 }}>
           {current === 'fertig' ? (
             <button className="btn primary block" onClick={() => complete({ ...profile, createdAt: new Date(nowMs()).toISOString() })}>
-              Los geht's
+              {t('onboarding.go')}
             </button>
           ) : (
             <button className="btn primary block" onClick={next} disabled={current === 'tage' && weekdays.length !== days}>
-              {step === 0 ? 'Plan erstellen' : 'Weiter'}
+              {step === 0 ? t('onboarding.create') : t('onboarding.next')}
             </button>
           )}
         </div>

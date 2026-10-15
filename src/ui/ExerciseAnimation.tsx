@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { ANIMATION } from '../domain/animations'
 import { Icon } from './kit'
+import { useT } from '../i18n'
 
 type Player = { play(): void; pause(): void; destroy(): void; goToAndStop(v: number, frame: boolean): void }
 
 /** Looping Lottie animation of an exercise, loaded only when the sheet opens. */
 export function ExerciseAnimation({ exerciseId, label }: { exerciseId: string; label: string }) {
   const pattern = ANIMATION[exerciseId]
+  const { t } = useT()
   const box = useRef<HTMLDivElement>(null)
   const player = useRef<Player | null>(null)
   const reduce = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -37,11 +39,11 @@ export function ExerciseAnimation({ exerciseId, label }: { exerciseId: string; l
   if (!pattern || failed) return null
   return (
     <figure style={{ margin: 0, position: 'relative' }}>
-      <div ref={box} role="img" aria-label={`Animation: ${label}`} style={{ width: '100%', maxWidth: 320, aspectRatio: '1', margin: '0 auto', background: 'var(--surface-2)', borderRadius: 16 }} />
+      <div ref={box} role="img" aria-label={t('shell.anim.label', { name: label })} style={{ width: '100%', maxWidth: 320, aspectRatio: '1', margin: '0 auto', background: 'var(--surface-2)', borderRadius: 16 }} />
       <button
         className="icon-btn"
         style={{ position: 'absolute', right: 8, bottom: 8, background: 'var(--surface)' }}
-        aria-label={playing ? 'Animation anhalten' : 'Animation abspielen'}
+        aria-label={playing ? t('shell.anim.pause') : t('shell.anim.play')}
         onClick={() => {
           if (playing) player.current?.pause()
           else player.current?.play()

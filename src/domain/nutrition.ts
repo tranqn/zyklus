@@ -91,20 +91,16 @@ export function goalRate(p: Profile): number {
  * Smart calorie adjustment: compare real trend with the goal rate.
  * 1 kg body mass ~ 7700 kcal; corrections are capped at +-250 kcal per check.
  */
-export function suggestAdjustment(p: Profile, weights: WeightEntry[]): { delta: number; rate?: number; goal: number; text: string } {
+export type AdjustmentKind = 'need_data' | 'on_track' | 'increase' | 'decrease'
+
+export function suggestAdjustment(p: Profile, weights: WeightEntry[]): { delta: number; rate?: number; goal: number; kind: AdjustmentKind } {
   const goal = goalRate(p)
   const rate = weeklyRate(weights)
-  if (rate == null) return { delta: 0, goal, text: 'Wiege dich mindestens 2 Wochen lang regelmäßig, dann passt die App deine Kalorien an.' }
+  if (rate == null) return { delta: 0, goal, kind: 'need_data' }
   const diff = goal - rate
   const raw = (diff * 7700) / 7
   const delta = Math.abs(raw) < 60 ? 0 : Math.round(Math.max(-250, Math.min(250, raw)) / 10) * 10
-  const text =
-    delta === 0
-      ? 'Du liegst im Zielkorridor. Kalorien bleiben gleich.'
-      : delta > 0
-        ? `Dein Trend liegt unter dem Ziel. Vorschlag: +${delta} kcal pro Tag.`
-        : `Dein Trend liegt über dem Ziel. Vorschlag: ${delta} kcal pro Tag.`
-  return { delta, rate, goal, text }
+  return { delta, rate, goal, kind: delta === 0 ? 'on_track' : delta > 0 ? 'increase' : 'decrease' }
 }
 
 export function burnedToday(cardio: CardioEntry[], day = today()): number {
@@ -117,69 +113,102 @@ export interface ParsedItem {
   food?: Food
 }
 
-const UNIT_GRAMS: Record<string, number> = { kg: 1000, g: 1, gr: 1, gramm: 1, ml: 1, l: 1000 }
+type ParseLang = 'de' | 'en' | 'vi'
 
-function normalize(s: string): string {
+/** Lowercase, strip accents (ä -> a, ức -> uc, đ -> d), keep letters/digits/spaces. */
+export function normalize(s: string): string {
   return s
     .toLowerCase()
-    .replace(/ä/g, 'ae')
-    .replace(/ö/g, 'oe')
-    .replace(/ü/g, 'ue')
     .replace(/ß/g, 'ss')
+    .replace(/đ/g, 'd')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9 ]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
 }
 
-export function matchFood(query: string, foods: Food[]): Food | undefined {
+/** Word variants for matching: German and English plurals; Vietnamese has none. */
+function stems(w: string, lang: ParseLang): string[] {
+  if (lang === 'de') return [w, w.replace(/(ern|er|en|n|e|s)$/, '')]
+  if (lang === 'en') return [w, w.replace(/(es|s)$/, '')]
+  return [w]
+}
+
+function namesOf(f: Food): string[] {
+  return [...(f.names ? [f.names.de, f.names.en, f.names.vi] : [f.name]), ...(f.aliases ?? [])]
+}
+
+export function matchFood(query: string, foods: Food[], lang: ParseLang = 'de'): Food | undefined {
   const q = normalize(query)
   if (!q) return undefined
   const words = q.split(' ')
   let best: { f: Food; score: number } | undefined
   for (const f of foods) {
-    const n = normalize(f.name)
-    let score = 0
-    if (n === q) score = 100
-    else if (n.startsWith(q)) score = 80
-    else if (n.includes(q)) score = 60
-    else {
-      // word-boundary match with simple German plural stemming (Eier -> Ei, Bananen -> Banane)
-      const tokens = n.split(' ')
-      let hits = 0
-      for (const w of words) {
-        const stems = [w, w.replace(/(ern|er|en|n|e|s)$/, '')].filter((x) => x.length >= 2)
-        if (tokens.some((t) => stems.includes(t))) hits += 1.2
-        else if (tokens.some((t) => stems.some((st) => t.startsWith(st) && st.length >= 3))) hits += 1
+    const own = f.names?.[lang] ?? f.name
+    for (const name of namesOf(f)) {
+      const n = normalize(name)
+      let score = 0
+      // closer matches win: "cơm" is plain rice, not "cơm tấm sườn"
+      const cover = q.length / n.length
+      if (n === q) score = 100
+      else if (n.startsWith(q)) score = 60 + 30 * cover
+      else if (n.includes(q)) score = 40 + 30 * cover
+      else {
+        // word-boundary match with simple plural stemming (Eier -> Ei, eggs -> egg)
+        const tokens = n.split(' ')
+        let hits = 0
+        for (const w of words) {
+          const st = stems(w, lang).filter((x) => x.length >= 2)
+          if (tokens.some((t) => st.includes(t))) hits += 1.2
+          else if (tokens.some((t) => st.some((x) => t.startsWith(x) && x.length >= 3))) hits += 1
+        }
+        if (!hits) continue
+        score = (hits / words.length) * 50
       }
-      if (!hits) continue
-      score = (hits / words.length) * 50
+      // prefer the name in the user's language and dishes of the user's cuisine
+      if (name === own || f.aliases?.includes(name)) score += 5
+      // the user's cuisine only breaks ties
+      if (f.region && f.region === lang) score += 0.5
+      if (!best || score > best.score) best = { f, score }
     }
-    score -= n.length / 100
-    if (!best || score > best.score) best = { f, score }
   }
   return best?.f
 }
 
+const UNIT_GRAMS: Record<string, number> = { kg: 1000, g: 1, gr: 1, gramm: 1, gram: 1, grams: 1, ml: 1, l: 1000 }
+/** count words: the number means "portions" (1 quả trứng, 2 Stück, 3 x) */
+const COUNT_WORDS = ['x', 'stk', 'stück', 'stueck', 'pcs', 'pc', 'piece', 'pieces', 'quả', 'qua', 'trái', 'trai', 'cái', 'cai', 'tô', 'to', 'bát', 'bat', 'chén', 'chen', 'đĩa', 'dia', 'ly', 'cốc', 'coc', 'lát', 'lat', 'muỗng', 'muong', 'miếng', 'mieng', 'cuốn', 'cuon', 'ổ', 'o', 'gói', 'goi', 'hũ', 'hu', 'lon', 'chai', 'củ', 'cu', 'phần', 'phan', 'bowl', 'bowls', 'slice', 'slices', 'cup', 'cups', 'glass', 'glasses', 'can', 'cans']
+// JS \b only knows ASCII letters, so "và" needs explicit whitespace around it
+const SEPARATORS = /,|\s(?:und|and|và)\s|\+|\n|;/i
+
 /**
- * Natural-language logging: "200g Hähnchen, 2 Eier und 1 Banane".
- * Counts without unit use the food's typical portion.
+ * Natural-language logging in de/en/vi: "200g Hähnchen, 2 Eier und 1 Banane",
+ * "150g chicken breast and 2 eggs", "1 tô phở bò và 2 quả trứng".
+ * Counts without a weight unit use the food's typical portion.
  */
-export function parseMealText(text: string, foods: Food[]): ParsedItem[] {
+export function parseMealText(text: string, foods: Food[], lang: ParseLang = 'de'): ParsedItem[] {
+  const portion = (f?: Food) => (f ? (lang === 'vi' && f.viPortion ? f.viPortion.grams : f.portion) : undefined)
   return text
-    .split(/,|\bund\b|\+|\n|;/i)
+    .split(SEPARATORS)
     .map((p) => p.trim())
     .filter(Boolean)
     .map((part) => {
-      const m = part.match(/^(\d+(?:[.,]\d+)?)\s*(kg|gramm|gr|g|ml|l|x|stk|stück|stueck)?\.?\s+(.*)$/i)
+      const m = part.match(/^(\d+(?:[.,]\d+)?)\s*(\S+)?\s*(.*)$/u)
       if (!m) {
-        const food = matchFood(part, foods)
-        return { text: part, grams: food?.portion ?? 100, food }
+        const food = matchFood(part, foods, lang)
+        return { text: part, grams: portion(food) ?? 100, food }
       }
       const qty = parseFloat(m[1].replace(',', '.'))
-      const unit = (m[2] ?? '').toLowerCase()
-      const name = m[3]
-      const food = matchFood(name, foods)
-      const grams = unit in UNIT_GRAMS ? qty * UNIT_GRAMS[unit] : qty * (food?.portion ?? 100)
+      let unit = (m[2] ?? '').toLowerCase().replace(/\.$/, '')
+      let name = m[3]
+      // "200g" with the unit glued on is handled by \s*; a bare count ("2 eggs") puts the food word in `unit`
+      if (!(unit in UNIT_GRAMS) && !COUNT_WORDS.includes(unit)) {
+        name = `${m[2] ?? ''} ${name}`.trim()
+        unit = ''
+      }
+      const food = matchFood(name, foods, lang)
+      const grams = unit in UNIT_GRAMS ? qty * UNIT_GRAMS[unit] : qty * (portion(food) ?? 100)
       return { text: part, grams: Math.round(grams), food }
     })
 }

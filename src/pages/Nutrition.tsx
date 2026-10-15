@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
-import { macrosOf, parseMealText, suggestAdjustment, targets, totals, burnedToday, type ParsedItem } from '../domain/nutrition'
+import { macrosOf, normalize, parseMealText, suggestAdjustment, targets, totals, burnedToday, type ParsedItem } from '../domain/nutrition'
 import type { BarcodeDetector as Ponyfill } from 'barcode-detector/ponyfill'
 import { lookupBarcode, searchOff } from '../domain/openfoodfacts'
 import type { Food, FoodEntry, Meal } from '../domain/types'
@@ -8,13 +8,12 @@ import { allFoods, recentFoods, useStore } from '../store'
 import { Bar, Icon, Ring, Segmented, Sheet } from '../ui/kit'
 import { toast } from '../ui/notify'
 import { MealActions, RecipeTab, SaveRecipeSheet, SupplementsCard } from './NutritionExtras'
+import { getLang, t as tr, useT } from '../i18n'
+import { foodName, foodPortion } from '../domain/foods'
 
-const MEALS: { v: Meal; t: string }[] = [
-  { v: 'fruehstueck', t: 'Frühstück' },
-  { v: 'mittag', t: 'Mittagessen' },
-  { v: 'abend', t: 'Abendessen' },
-  { v: 'snack', t: 'Snacks' },
-]
+const MEALS: Meal[] = ['fruehstueck', 'mittag', 'abend', 'snack']
+const mealName = (m: Meal) => tr(`nutrition.meal.${m}` as 'nutrition.meal.mittag')
+const signed = (n: number, digits = 0) => `${n > 0 ? '+' : ''}${fmt(n, digits)}`
 
 function defaultMeal(): Meal {
   const h = new Date().getHours()
@@ -28,25 +27,26 @@ export default function Nutrition() {
   const [editEntry, setEditEntry] = useState<FoodEntry | null>(null)
   const [recipeItems, setRecipeItems] = useState<FoodEntry[] | null>(null)
   const profile = s.profile!
-  const t = targets(profile, s.settings.kcalOverride, s.kcalAdjustment)
+  const { t } = useT()
+  const goal = targets(profile, s.settings.kcalOverride, s.kcalAdjustment)
   const entries = s.foods.filter((f) => f.date === day)
   const tot = totals(entries)
   const burned = burnedToday(s.cardio, day)
-  const budget = t.kcal + burned
+  const budget = goal.kcal + burned
   const adj = suggestAdjustment(profile, s.weights)
 
   return (
     <div className="page">
       <div className="page-head">
         <div>
-          <div className="eyebrow">Ernährung</div>
-          <h1>{day === today() ? 'Heute' : formatDate(day, { weekday: 'long', day: 'numeric', month: 'short' })}</h1>
+          <div className="eyebrow">{t('nutrition.eyebrow')}</div>
+          <h1>{day === today() ? t('nutrition.today') : formatDate(day, { weekday: 'long', day: 'numeric', month: 'short' })}</h1>
         </div>
         <div className="row" style={{ gap: 4 }}>
-          <button className="icon-btn" aria-label="Vorheriger Tag" onClick={() => setDay(addDays(day, -1))}>
+          <button className="icon-btn" aria-label={t('nutrition.prevDay')} onClick={() => setDay(addDays(day, -1))}>
             <Icon name="back" size={20} />
           </button>
-          <button className="icon-btn" aria-label="Nächster Tag" onClick={() => setDay(addDays(day, 1))} disabled={day >= today()}>
+          <button className="icon-btn" aria-label={t('nutrition.nextDay')} onClick={() => setDay(addDays(day, 1))} disabled={day >= today()}>
             <Icon name="chevron" size={20} />
           </button>
         </div>
@@ -56,23 +56,23 @@ export default function Nutrition() {
         <Ring value={tot.kcal} max={budget} size={116} stroke={11}>
           <div>
             <div style={{ fontWeight: 800, fontSize: '1.3rem' }} className="num">
-              {Math.round(budget - tot.kcal).toLocaleString('de-DE')}
+              {fmt(Math.round(budget - tot.kcal))}
             </div>
-            <div className="tiny muted">{budget - tot.kcal >= 0 ? 'kcal übrig' : 'kcal drüber'}</div>
+            <div className="tiny muted">{budget - tot.kcal >= 0 ? t('common.kcalLeft') : t('common.kcalOver')}</div>
           </div>
         </Ring>
         <div className="stack grow" style={{ gap: 8 }}>
           <div className="row between small">
-            <span className="muted">Gegessen</span>
-            <strong className="num">{Math.round(tot.kcal).toLocaleString('de-DE')} kcal</strong>
+            <span className="muted">{t('nutrition.eaten')}</span>
+            <strong className="num">{fmt(Math.round(tot.kcal))} kcal</strong>
           </div>
           <div className="row between small">
-            <span className="muted">Ziel</span>
-            <strong className="num">{t.kcal.toLocaleString('de-DE')} kcal</strong>
+            <span className="muted">{t('nutrition.goal')}</span>
+            <strong className="num">{fmt(goal.kcal)} kcal</strong>
           </div>
           {burned > 0 && (
             <div className="row between small">
-              <span className="muted">+ Cardio</span>
+              <span className="muted">{t('nutrition.plusCardio')}</span>
               <strong className="num">{burned} kcal</strong>
             </div>
           )}
@@ -80,22 +80,22 @@ export default function Nutrition() {
       </div>
 
       <div className="card grid3">
-        <MacroCol label="Protein" v={tot.protein} max={t.protein} color="var(--protein)" />
-        <MacroCol label="Kohlenh." v={tot.carbs} max={t.carbs} color="var(--carbs)" />
-        <MacroCol label="Fett" v={tot.fat} max={t.fat} color="var(--fat)" />
+        <MacroCol label={t('common.protein')} v={tot.protein} max={goal.protein} color="var(--protein)" />
+        <MacroCol label={t('common.carbsShort')} v={tot.carbs} max={goal.carbs} color="var(--carbs)" />
+        <MacroCol label={t('common.fat')} v={tot.fat} max={goal.fat} color="var(--fat)" />
       </div>
 
       {MEALS.map((m) => {
-        const items = entries.filter((e) => e.meal === m.v)
+        const items = entries.filter((e) => e.meal === m)
         const kcal = totals(items).kcal
         return (
-          <section key={m.v} className="card stack" style={{ gap: 0 }}>
+          <section key={m} className="card stack" style={{ gap: 0 }}>
             <div className="row between">
               <div>
-                <h3>{m.t}</h3>
+                <h3>{mealName(m)}</h3>
                 <span className="small muted num">{Math.round(kcal)} kcal</span>
               </div>
-              <button className="icon-btn" aria-label={`Zu ${m.t} hinzufügen`} onClick={() => setAddMeal(m.v)}>
+              <button className="icon-btn" aria-label={t('nutrition.addTo', { meal: mealName(m) })} onClick={() => setAddMeal(m)}>
                 <Icon name="plus" />
               </button>
             </div>
@@ -108,7 +108,7 @@ export default function Nutrition() {
                       <span className="grow">
                         <span style={{ fontWeight: 600 }}>{e.name}</span>
                         <span className="small muted" style={{ display: 'block' }}>
-                          {fmt(e.grams)} g · {Math.round(mm.protein)} g P · {Math.round(mm.carbs)} g K · {Math.round(mm.fat)} g F
+                          {t('nutrition.entryMeta', { g: fmt(e.grams), p: Math.round(mm.protein), c: Math.round(mm.carbs), f: Math.round(mm.fat) })}
                         </span>
                       </span>
                       <span className="num" style={{ fontWeight: 650 }}>
@@ -119,7 +119,7 @@ export default function Nutrition() {
                 })}
               </div>
             )}
-            <MealActions day={day} meal={m.v} items={items} onSaveRecipe={setRecipeItems} />
+            <MealActions day={day} meal={m} items={items} onSaveRecipe={setRecipeItems} />
           </section>
         )
       })}
@@ -128,24 +128,20 @@ export default function Nutrition() {
 
       <div className="card stack">
         <div className="row between">
-          <h3>Smarte Kalorienanpassung</h3>
-          {s.kcalAdjustment !== 0 && <span className="badge accent">{s.kcalAdjustment > 0 ? '+' : ''}{s.kcalAdjustment} kcal aktiv</span>}
+          <h3>{t('nutrition.smart')}</h3>
+          {s.kcalAdjustment !== 0 && <span className="badge accent">{t('nutrition.smartActive', { delta: signed(s.kcalAdjustment) })}</span>}
         </div>
-        <p className="small muted">{adj.text}</p>
-        {adj.rate != null && (
-          <p className="small">
-            Trend: <strong className="num">{adj.rate > 0 ? '+' : ''}{fmt(adj.rate, 2)} kg/Woche</strong> · Ziel: <strong className="num">{adj.goal > 0 ? '+' : ''}{fmt(adj.goal, 2)} kg/Woche</strong>
-          </p>
-        )}
+        <p className="small muted">{t(`nutrition.adjust.${adj.kind}`, { delta: signed(adj.delta) })}</p>
+        {adj.rate != null && <p className="small num">{t('nutrition.trend', { rate: signed(adj.rate, 2), goal: signed(adj.goal, 2) })}</p>}
         {adj.delta !== 0 && (
           <button
             className="btn primary"
             onClick={() => {
               s.setKcalAdjustment(s.kcalAdjustment + adj.delta)
-              toast('Kalorienziel angepasst')
+              toast(t('nutrition.adjusted'))
             }}
           >
-            Vorschlag übernehmen ({adj.delta > 0 ? '+' : ''}{adj.delta} kcal)
+            {t('nutrition.apply', { delta: signed(adj.delta) })}
           </button>
         )}
       </div>
@@ -183,17 +179,18 @@ function AddFoodSheet({ meal, day, onClose }: { meal: Meal | null; day: string; 
   const [mealSel, setMealSel] = useState<Meal>(meal ?? defaultMeal())
   if (!meal) return null
   const add = (f: Food, grams: number) => {
-    s.addFood({ date: day, meal: mealSel, foodId: f.id, name: f.brand ? `${f.name} (${f.brand})` : f.name, grams, per100: f.per100 })
+    const name = foodName(f, getLang())
+    s.addFood({ date: day, meal: mealSel, foodId: f.id, name: f.brand ? `${name} (${f.brand})` : name, grams, per100: f.per100 })
     if (f.id.startsWith('off-')) s.saveCustomFood(f)
-    toast(`${f.name} eingetragen`)
+    toast(tr('nutrition.logged', { name }))
   }
   return (
-    <Sheet open onClose={onClose} title="Lebensmittel eintragen">
+    <Sheet open onClose={onClose} title={tr('nutrition.addTitle')}>
       <div className="stack lg">
-        <select className="input" value={mealSel} onChange={(e) => setMealSel(e.target.value as Meal)} aria-label="Mahlzeit">
+        <select className="input" value={mealSel} onChange={(e) => setMealSel(e.target.value as Meal)} aria-label={tr('nutrition.mealLabel')}>
           {MEALS.map((m) => (
-            <option key={m.v} value={m.v}>
-              {m.t}
+            <option key={m} value={m}>
+              {mealName(m)}
             </option>
           ))}
         </select>
@@ -212,13 +209,13 @@ function AddFoodSheet({ meal, day, onClose }: { meal: Meal | null; day: string; 
             <Segmented
               value={tab}
               onChange={setTab}
-              label="Eingabeart"
+              label={tr('nutrition.inputMode')}
               options={[
-                { value: 'suche', label: 'Suche' },
-                { value: 'text', label: 'Text' },
-                { value: 'scan', label: 'Scan' },
-                { value: 'rezepte', label: 'Rezepte' },
-                { value: 'eigen', label: 'Eigenes' },
+                { value: 'suche', label: tr('nutrition.tab.suche') },
+                { value: 'text', label: tr('nutrition.tab.text') },
+                { value: 'scan', label: tr('nutrition.tab.scan') },
+                { value: 'rezepte', label: tr('nutrition.tab.rezepte') },
+                { value: 'eigen', label: tr('nutrition.tab.eigen') },
               ]}
             />
             {tab === 'suche' && <SearchTab onPick={setPicked} />}
@@ -255,7 +252,16 @@ function SearchTab({ onPick }: { onPick: (f: Food) => void }) {
   const [error, setError] = useState('')
   const foods = useMemo(() => allFoods(s), [s])
   const recents = recentFoods(s.foods)
-  const local = q.trim().length >= 2 ? foods.filter((f) => f.name.toLowerCase().includes(q.toLowerCase()) || f.brand?.toLowerCase().includes(q.toLowerCase())).slice(0, 30) : []
+  const lang = getLang()
+  const nq = normalize(q)
+  // every language's name and aliases are searchable; the user's cuisine comes first
+  const local =
+    nq.length >= 2
+      ? foods
+          .filter((f) => [...(f.names ? Object.values(f.names) : [f.name]), ...(f.aliases ?? []), f.brand ?? ''].some((n) => normalize(n).includes(nq)))
+          .sort((a, b) => Number(b.region === lang) - Number(a.region === lang))
+          .slice(0, 30)
+      : []
   const abort = useRef<AbortController | null>(null)
   const goOnline = async () => {
     abort.current?.abort()
@@ -263,9 +269,9 @@ function SearchTab({ onPick }: { onPick: (f: Food) => void }) {
     setLoading(true)
     setError('')
     try {
-      setOnline(await searchOff(q.trim(), abort.current.signal))
+      setOnline(await searchOff(q.trim(), abort.current.signal, lang))
     } catch (e) {
-      if ((e as Error).name !== 'AbortError') setError('Online-Suche gerade nicht erreichbar.')
+      if ((e as Error).name !== 'AbortError') setError(tr('nutrition.offline'))
     } finally {
       setLoading(false)
     }
@@ -279,14 +285,14 @@ function SearchTab({ onPick }: { onPick: (f: Food) => void }) {
           if (q.trim()) goOnline()
         }}
       >
-        <input className="input" value={q} onChange={(e) => (setQ(e.target.value), setOnline(null))} placeholder="z. B. Skyr, Haferflocken, Döner" aria-label="Lebensmittel suchen" autoFocus />
+        <input className="input" value={q} onChange={(e) => (setQ(e.target.value), setOnline(null))} placeholder={tr('nutrition.searchPlaceholder')} aria-label={tr('nutrition.searchLabel')} autoFocus />
       </form>
       {q.trim().length < 2 && recents.length > 0 && (
         <>
-          <span className="label">Zuletzt gegessen</span>
+          <span className="label">{tr('nutrition.recent')}</span>
           <div className="card list" style={{ padding: '0 16px' }}>
             {recents.map((r) => (
-              <FoodRow key={r.id} food={{ id: r.foodId ?? r.id, name: r.name, per100: r.per100, portion: r.grams, portionLabel: 'letzte Menge' }} onPick={onPick} />
+              <FoodRow key={r.id} food={{ id: r.foodId ?? r.id, name: r.name, per100: r.per100, portion: r.grams, portionLabel: tr('nutrition.lastAmount') }} onPick={onPick} />
             ))}
           </div>
         </>
@@ -300,13 +306,13 @@ function SearchTab({ onPick }: { onPick: (f: Food) => void }) {
       )}
       {q.trim().length >= 2 && (
         <button className="btn block" onClick={goOnline} disabled={loading}>
-          <Icon name="search" size={18} /> {loading ? 'Suche läuft …' : 'In Open Food Facts suchen (3 Mio.+ Produkte)'}
+          <Icon name="search" size={18} /> {loading ? tr('nutrition.searching') : tr('nutrition.searchOff')}
         </button>
       )}
       {error && <p className="small" style={{ color: 'var(--bad)' }}>{error}</p>}
       {online && (
         <div className="card list" style={{ padding: '0 16px' }}>
-          {online.length === 0 && <p className="empty">Nichts gefunden.</p>}
+          {online.length === 0 && <p className="empty">{tr('nutrition.nothing')}</p>}
           {online.map((f) => (
             <FoodRow key={f.id} food={f} onPick={onPick} />
           ))}
@@ -320,10 +326,10 @@ function FoodRow({ food, onPick }: { food: Food; onPick: (f: Food) => void }) {
   return (
     <button className="list-item" onClick={() => onPick(food)}>
       <span className="grow">
-        <span style={{ fontWeight: 600 }}>{food.name}</span>
+        <span style={{ fontWeight: 600 }}>{foodName(food, getLang())}</span>
         <span className="small muted" style={{ display: 'block' }}>
           {food.brand ? `${food.brand} · ` : ''}
-          {Math.round(food.per100.kcal)} kcal · {fmt(food.per100.protein, 1)} g Protein / 100 g
+          {tr('nutrition.per100', { kcal: Math.round(food.per100.kcal), p: fmt(food.per100.protein, 1) })}
         </span>
       </span>
       <Icon name="plus" size={18} />
@@ -332,18 +338,20 @@ function FoodRow({ food, onPick }: { food: Food; onPick: (f: Food) => void }) {
 }
 
 function AmountPicker({ food, onAdd, onCancel }: { food: Food; onAdd: (grams: number) => void; onCancel: () => void }) {
-  const [grams, setGrams] = useState(food.portion ?? 100)
+  const lang = getLang()
+  const portion = foodPortion(food, lang)
+  const [grams, setGrams] = useState(portion.grams ?? 100)
   const m = macrosOf({ grams, per100: food.per100 })
   return (
     <div className="stack lg">
       <div>
-        <h3>{food.name}</h3>
+        <h3>{foodName(food, lang)}</h3>
         {food.brand && <p className="small muted">{food.brand}</p>}
       </div>
       <div className="row wrap">
-        {food.portion && (
-          <button className="chip" onClick={() => setGrams(food.portion!)}>
-            {food.portionLabel ?? 'Portion'} ({fmt(food.portion)} g)
+        {portion.grams && (
+          <button className="chip" onClick={() => setGrams(portion.grams!)}>
+            {portion.label ?? tr('nutrition.portion')} ({fmt(portion.grams)} g)
           </button>
         )}
         {[50, 100, 150, 200, 250].map((g) => (
@@ -353,21 +361,21 @@ function AmountPicker({ food, onAdd, onCancel }: { food: Food; onAdd: (grams: nu
         ))}
       </div>
       <div className="field">
-        <label htmlFor="grams">Menge in Gramm</label>
+        <label htmlFor="grams">{tr('nutrition.grams')}</label>
         <input id="grams" className="input" inputMode="decimal" value={grams || ''} onChange={(e) => setGrams(parseFloat(e.target.value.replace(',', '.')) || 0)} />
       </div>
       <div className="card grid2" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
         <MiniStat v={Math.round(m.kcal)} l="kcal" />
-        <MiniStat v={fmt(m.protein, 1)} l="Protein" />
-        <MiniStat v={fmt(m.carbs, 1)} l="Kohlenh." />
-        <MiniStat v={fmt(m.fat, 1)} l="Fett" />
+        <MiniStat v={fmt(m.protein, 1)} l={tr('common.protein')} />
+        <MiniStat v={fmt(m.carbs, 1)} l={tr('common.carbsShort')} />
+        <MiniStat v={fmt(m.fat, 1)} l={tr('common.fat')} />
       </div>
       <div className="row">
         <button className="btn grow" onClick={onCancel}>
-          Zurück
+          {tr('common.back')}
         </button>
         <button className="btn primary grow" disabled={!grams} onClick={() => onAdd(grams)}>
-          Eintragen
+          {tr('nutrition.log')}
         </button>
       </div>
     </div>
@@ -389,19 +397,20 @@ function TextTab({ onAdd }: { onAdd: (items: ParsedItem[]) => void }) {
   const s = useStore()
   const foods = useMemo(() => allFoods(s), [s])
   const [text, setText] = useState('')
-  const items = useMemo(() => parseMealText(text, foods), [text, foods])
+  const lang = getLang()
+  const items = useMemo(() => parseMealText(text, foods, lang), [text, foods, lang])
   const found = items.filter((i) => i.food)
   return (
     <div className="stack">
-      <textarea className="input" value={text} onChange={(e) => setText(e.target.value)} placeholder="Schreib einfach, was du gegessen hast: 150g Hähnchen, 200g Reis gekocht und 1 Banane" aria-label="Mahlzeit als Text" />
+      <textarea className="input" value={text} onChange={(e) => setText(e.target.value)} placeholder={tr('nutrition.textPlaceholder')} aria-label={tr('nutrition.textLabel')} />
       {items.length > 0 && (
         <div className="card list" style={{ padding: '0 16px' }}>
           {items.map((it, i) => (
             <div key={i} className="list-item">
               <span className="grow">
-                <span style={{ fontWeight: 600 }}>{it.food ? it.food.name : it.text}</span>
+                <span style={{ fontWeight: 600 }}>{it.food ? foodName(it.food, lang) : it.text}</span>
                 <span className="small muted" style={{ display: 'block' }}>
-                  {it.food ? `${fmt(it.grams)} g · ${Math.round(macrosOf({ grams: it.grams, per100: it.food.per100 }).kcal)} kcal` : 'Nicht erkannt, bitte über die Suche eintragen'}
+                  {it.food ? `${fmt(it.grams)} g · ${Math.round(macrosOf({ grams: it.grams, per100: it.food.per100 }).kcal)} kcal` : tr('nutrition.notRecognized')}
                 </span>
               </span>
               {it.food ? <span className="badge ok">ok</span> : <span className="badge warn">?</span>}
@@ -410,7 +419,7 @@ function TextTab({ onAdd }: { onAdd: (items: ParsedItem[]) => void }) {
         </div>
       )}
       <button className="btn primary block" disabled={!found.length} onClick={() => onAdd(found)}>
-        {found.length ? `${found.length} Lebensmittel eintragen` : 'Eintragen'}
+        {found.length ? tr('nutrition.logN', { n: found.length }) : tr('nutrition.log')}
       </button>
     </div>
   )
@@ -426,13 +435,13 @@ function ScanTab({ onFound }: { onFound: (f: Food) => void }) {
   const lookup = async (c: string) => {
     const local = s.customFoods.find((f) => f.barcode === c)
     if (local) return onFound(local)
-    setStatus('Suche Produkt …')
+    setStatus(tr('nutrition.scanSearching'))
     try {
-      const f = await lookupBarcode(c)
+      const f = await lookupBarcode(c, getLang())
       if (f) onFound(f)
-      else setStatus(`Produkt ${c} nicht gefunden. Leg es unter „Eigenes" an.`)
+      else setStatus(tr('nutrition.scanNotFound', { code: c }))
     } catch {
-      setStatus('Keine Verbindung zu Open Food Facts.')
+      setStatus(tr('nutrition.scanNoConnection'))
     }
   }
   // the camera loop only depends on `scanning`; this always sees the latest lookup
@@ -453,7 +462,7 @@ function ScanTab({ onFound }: { onFound: (f: Food) => void }) {
         const native = (window as unknown as { BarcodeDetector?: typeof Ponyfill }).BarcodeDetector
         const Detector = native ?? (await import('barcode-detector/ponyfill')).BarcodeDetector
         const det = new Detector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e'] })
-        setStatus('Barcode in den Rahmen halten …')
+        setStatus(tr('nutrition.scanHold'))
         while (!stop && video.current) {
           const found = await det.detect(video.current).catch(() => [])
           if (found.length) {
@@ -467,7 +476,7 @@ function ScanTab({ onFound }: { onFound: (f: Food) => void }) {
           await new Promise((r) => setTimeout(r, 250))
         }
       } catch {
-        setStatus('Kamera nicht verfügbar. Gib den Code manuell ein.')
+        setStatus(tr('nutrition.scanNoCamera'))
         setScanning(false)
       }
     })()
@@ -486,12 +495,12 @@ function ScanTab({ onFound }: { onFound: (f: Food) => void }) {
         </div>
       ) : (
         <button className="btn primary block" onClick={() => setScanning(true)}>
-          <Icon name="scan" size={18} /> Kamera starten
+          <Icon name="scan" size={18} /> {tr('nutrition.scanStart')}
         </button>
       )}
       {scanning && (
         <button className="btn block" onClick={() => setScanning(false)}>
-          Abbrechen
+          {tr('common.cancel')}
         </button>
       )}
       <form
@@ -501,9 +510,9 @@ function ScanTab({ onFound }: { onFound: (f: Food) => void }) {
           if (code.trim()) lookup(code.trim())
         }}
       >
-        <input className="input" inputMode="numeric" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} placeholder="EAN manuell eingeben" aria-label="Barcode" />
+        <input className="input" inputMode="numeric" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} placeholder={tr('nutrition.eanPlaceholder')} aria-label="Barcode" />
         <button className="btn" type="submit">
-          Suchen
+          {tr('nutrition.search')}
         </button>
       </form>
       {status && <p className="small muted">{status}</p>}
@@ -521,15 +530,15 @@ function CustomFoodForm({ onSave }: { onSave: (f: Food) => void }) {
   const n = (v: string) => parseFloat(v.replace(',', '.')) || 0
   return (
     <div className="stack">
-      <p className="small muted">Werte pro 100 g, z. B. von der Verpackung oder einem eigenen Rezept.</p>
-      <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name, z. B. Omas Linsensuppe" aria-label="Name" />
+      <p className="small muted">{tr('nutrition.customHint')}</p>
+      <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder={tr('nutrition.customName')} aria-label={tr('nutrition.recipe.name')} />
       <div className="grid2">
-        <input className="input" inputMode="decimal" value={kcal} onChange={(e) => setKcal(e.target.value)} placeholder="kcal" aria-label="Kilokalorien pro 100 g" />
-        <input className="input" inputMode="decimal" value={p} onChange={(e) => setP(e.target.value)} placeholder="Protein g" aria-label="Protein pro 100 g" />
-        <input className="input" inputMode="decimal" value={c} onChange={(e) => setC(e.target.value)} placeholder="Kohlenhydrate g" aria-label="Kohlenhydrate pro 100 g" />
-        <input className="input" inputMode="decimal" value={f} onChange={(e) => setF(e.target.value)} placeholder="Fett g" aria-label="Fett pro 100 g" />
+        <input className="input" inputMode="decimal" value={kcal} onChange={(e) => setKcal(e.target.value)} placeholder="kcal" aria-label={tr('nutrition.customKcal')} />
+        <input className="input" inputMode="decimal" value={p} onChange={(e) => setP(e.target.value)} placeholder={tr('nutrition.customProtein')} aria-label={tr('nutrition.customProteinLabel')} />
+        <input className="input" inputMode="decimal" value={c} onChange={(e) => setC(e.target.value)} placeholder={tr('nutrition.customCarbs')} aria-label={tr('nutrition.customCarbsLabel')} />
+        <input className="input" inputMode="decimal" value={f} onChange={(e) => setF(e.target.value)} placeholder={tr('nutrition.customFat')} aria-label={tr('nutrition.customFatLabel')} />
       </div>
-      <input className="input" inputMode="decimal" value={portion} onChange={(e) => setPortion(e.target.value)} placeholder="Portionsgröße in g (optional)" aria-label="Portionsgröße" />
+      <input className="input" inputMode="decimal" value={portion} onChange={(e) => setPortion(e.target.value)} placeholder={tr('nutrition.customPortion')} aria-label={tr('nutrition.customPortionLabel')} />
       <button
         className="btn primary block"
         disabled={!name.trim() || !n(kcal)}
@@ -539,12 +548,12 @@ function CustomFoodForm({ onSave }: { onSave: (f: Food) => void }) {
             name: name.trim(),
             per100: { kcal: n(kcal), protein: n(p), carbs: n(c), fat: n(f) },
             portion: n(portion) || undefined,
-            portionLabel: n(portion) ? '1 Portion' : undefined,
+            portionLabel: n(portion) ? tr('nutrition.onePortion') : undefined,
             custom: true,
           })
         }
       >
-        Speichern und eintragen
+        {tr('nutrition.saveAndLog')}
       </button>
     </div>
   )
@@ -559,7 +568,7 @@ function EditEntrySheet({ entry, onClose }: { entry: FoodEntry | null; onClose: 
     <Sheet open onClose={onClose} title={entry.name}>
       <div className="stack lg">
         <div className="field">
-          <label htmlFor="edit-grams">Menge in Gramm</label>
+          <label htmlFor="edit-grams">{tr('nutrition.grams')}</label>
           <input id="edit-grams" className="input" inputMode="decimal" value={grams || ''} onChange={(e) => setGrams(parseFloat(e.target.value.replace(',', '.')) || 0)} />
         </div>
         <p className="small muted num">
@@ -573,7 +582,7 @@ function EditEntrySheet({ entry, onClose }: { entry: FoodEntry | null; onClose: 
               onClose()
             }}
           >
-            <Icon name="trash" size={18} /> Löschen
+            <Icon name="trash" size={18} /> {tr('common.delete')}
           </button>
           <button
             className="btn primary grow"
@@ -582,18 +591,18 @@ function EditEntrySheet({ entry, onClose }: { entry: FoodEntry | null; onClose: 
               onClose()
             }}
           >
-            Speichern
+            {tr('common.save')}
           </button>
         </div>
         <button
           className="btn ghost block"
           onClick={() => {
             s.addFood({ ...entry, date: today(), grams })
-            toast('Für heute erneut eingetragen')
+            toast(tr('nutrition.loggedAgain'))
             onClose()
           }}
         >
-          Heute nochmal essen
+          {tr('nutrition.eatAgain')}
         </button>
       </div>
     </Sheet>
