@@ -14,7 +14,7 @@ export default defineConfig({
   projects: [
     { name: 'mobile', use: { ...devices['Pixel 7'] } },
     // smallest common phone width: catches labels and layouts that overflow
-    { name: 'small', use: { ...devices['iPhone SE'], browserName: 'chromium', viewport: { width: 320, height: 568 } }, grep: /every main route/ },
+    { name: 'small', use: { ...devices['iPhone SE'], browserName: 'chromium', viewport: { width: 320, height: 568 } }, grep: /every main route|account/ },
   ],
   webServer: [
     {

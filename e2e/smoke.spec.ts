@@ -126,6 +126,8 @@ test('account: register, data syncs to a second device, logout clears it', async
 
   // logging out with "remove data" brings back the sign-in screen and an empty device
   await laptop.goto('/#/konto')
+  // a long e-mail address must not widen the page
+  expect(await laptop.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
   await laptop.getByRole('button', { name: 'Abmelden' }).click()
   await laptop.getByRole('button', { name: 'Abmelden und Daten vom Gerät entfernen' }).click()
   await expect(laptop.getByRole('heading', { name: 'Willkommen zurück' })).toBeVisible()
