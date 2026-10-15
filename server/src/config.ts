@@ -7,6 +7,8 @@ export interface Config {
   secureCookies: boolean
   smtp?: { host: string; port: number; secure: boolean; user?: string; pass?: string }
   mailFrom: string
+  /** registrations per IP and hour (raised only for end-to-end tests) */
+  registerLimit: number
 }
 
 export function loadConfig(env = process.env): Config {
@@ -26,5 +28,6 @@ export function loadConfig(env = process.env): Config {
         }
       : undefined,
     mailFrom: env.MAIL_FROM ?? 'Zyklus <noreply@localhost>',
+    registerLimit: Number(env.REGISTER_LIMIT_PER_HOUR ?? 5),
   }
 }

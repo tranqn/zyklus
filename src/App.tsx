@@ -68,7 +68,7 @@ const PUBLIC = ['/konto/bestaetigen', '/konto/passwort', '/impressum', '/datensc
 function Gate() {
   const loc = useLocation()
   const ready = useStore((s) => !!s.profile && !!s.meso)
-  const { user, localOnly, checked } = useSync()
+  const { user, checked } = useSync()
   if (PUBLIC.includes(loc.pathname)) {
     return (
       <Routes>
@@ -79,7 +79,7 @@ function Gate() {
       </Routes>
     )
   }
-  if (!user && !localOnly) {
+  if (!user) {
     // a cached user opens instantly; otherwise wait for the session check
     if (!checked) return <div className="app" aria-busy="true" />
     return <AuthScreen />

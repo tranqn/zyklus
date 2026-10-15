@@ -1,0 +1,126 @@
+{
+ "squat": {
+  "duration": 2.65,
+  "label": "Kniebeuge"
+ },
+ "squat_goblet": {
+  "duration": 2.65,
+  "label": "Goblet Squat"
+ },
+ "hinge": {
+  "duration": 2.65,
+  "label": "Hüftbeugen (Rumänisches Kreuzheben)"
+ },
+ "bench_press": {
+  "duration": 2.5,
+  "label": "Bankdrücken"
+ },
+ "push_up": {
+  "duration": 2.25,
+  "label": "Liegestütz"
+ },
+ "curl": {
+  "duration": 2.5,
+  "label": "Bizepscurl"
+ },
+ "squat_bw": {
+  "duration": 2.65,
+  "label": "Kniebeuge (Körpergewicht)"
+ },
+ "deadlift": {
+  "duration": 2.9,
+  "label": "Kreuzheben"
+ },
+ "kb_swing": {
+  "duration": 1.27,
+  "label": "Kettlebell Swing"
+ },
+ "hip_thrust": {
+  "duration": 2.35,
+  "label": "Hip Thrust"
+ },
+ "glute_bridge": {
+  "duration": 2.2,
+  "label": "Glute Bridge"
+ },
+ "lunge": {
+  "duration": 2.45,
+  "label": "Ausfallschritt / Split Squat"
+ },
+ "bulgarian": {
+  "duration": 2.45,
+  "label": "Bulgarische Split Squats"
+ },
+ "leg_press": {
+  "duration": 2.5,
+  "label": "Beinpresse"
+ },
+ "incline_press": {
+  "duration": 2.5,
+  "label": "Schrägbankdrücken"
+ },
+ "dips": {
+  "duration": 2.25,
+  "label": "Dips"
+ },
+ "shoulder_press": {
+  "duration": 2.55,
+  "label": "Schulterdrücken (sitzend)"
+ },
+ "row_bent": {
+  "duration": 2.4,
+  "label": "Vorgebeugtes Rudern"
+ },
+ "row_seated": {
+  "duration": 2.45,
+  "label": "Rudern sitzend (Kabel)"
+ },
+ "pullup": {
+  "duration": 2.65,
+  "label": "Klimmzug"
+ },
+ "lat_pulldown": {
+  "duration": 2.55,
+  "label": "Latzug"
+ },
+ "lateral_raise": {
+  "duration": 2.55,
+  "label": "Seitheben (Frontansicht)"
+ },
+ "triceps_pushdown": {
+  "duration": 2.35,
+  "label": "Trizepsdrücken"
+ },
+ "triceps_overhead": {
+  "duration": 2.45,
+  "label": "Überkopf-Trizepsstrecken"
+ },
+ "skullcrusher": {
+  "duration": 2.25,
+  "label": "Stirndrücken"
+ },
+ "leg_extension": {
+  "duration": 2.5,
+  "label": "Beinstrecker"
+ },
+ "leg_curl_lying": {
+  "duration": 2.45,
+  "label": "Beinbeuger liegend"
+ },
+ "calf_raise": {
+  "duration": 2.1,
+  "label": "Wadenheben"
+ },
+ "crunch": {
+  "duration": 2.05,
+  "label": "Crunch"
+ },
+ "leg_raise_hanging": {
+  "duration": 2.55,
+  "label": "Hängendes Beinheben"
+ },
+ "leg_raise_lying": {
+  "duration": 2.5,
+  "label": "Beinheben liegend"
+ }
+}

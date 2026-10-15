@@ -107,7 +107,7 @@ export default function Onboarding() {
             <div className="eyebrow">Zyklus</div>
             <h1 style={{ fontSize: '2.4rem' }}>Dein Trainingsplan, der mitdenkt.</h1>
             <p className="muted">
-              Ein paar Fragen, dann bekommst du einen Plan mit Mesozyklen, Krafttests, automatischer Progression und Kalorienzielen. Alles bleibt auf deinem Gerät.
+              Ein paar Fragen, dann bekommst du einen Plan mit Mesozyklen, Krafttests, automatischer Progression und Kalorienzielen.
             </p>
             <div className="field">
               <label htmlFor="name">Wie dürfen wir dich nennen? (optional)</label>

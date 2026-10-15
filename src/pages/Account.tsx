@@ -34,17 +34,10 @@ export function AccountPage() {
       </div>
       <div className="stack">
         <div className="eyebrow">Konto</div>
-        <h1 style={{ fontSize: user && user.email.length > 22 ? '1.3rem' : undefined }}>{user ? user.email : 'Kein Konto'}</h1>
+        <h1 style={{ fontSize: user && user.email.length > 22 ? '1.3rem' : undefined }}>{user?.email}</h1>
       </div>
 
-      {!user ? (
-        <div className="card stack">
-          <p className="small muted">Deine Daten liegen gerade nur auf diesem Gerät. Mit einem Konto sind sie gesichert und auf allen deinen Geräten verfügbar. Bestehende Daten werden beim ersten Anmelden übernommen.</p>
-          <button className="btn primary" onClick={() => useSync.setState({ localOnly: false })}>
-            Anmelden oder registrieren
-          </button>
-        </div>
-      ) : (
+      {user && (
         <>
           {!user.verified && <VerifyBanner />}
           <section className="card stack">
