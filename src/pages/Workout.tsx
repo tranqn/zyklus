@@ -7,6 +7,7 @@ import { fmt, nowMs } from '../domain/util'
 import { allExercises, exerciseMap, useStore } from '../store'
 import { Icon, Sheet } from '../ui/kit'
 import { confirmAction, toast } from '../ui/notify'
+import { ExerciseAnimation } from '../ui/ExerciseAnimation'
 
 export default function Workout() {
   const s = useStore()
@@ -345,6 +346,7 @@ export function ExerciseInfo({ ex, onClose }: { ex: Exercise | null; onClose: ()
     <Sheet open={!!ex} onClose={onClose} title={ex?.name}>
       {ex && (
         <div className="stack lg">
+          <ExerciseAnimation exerciseId={ex.id} label={ex.name} />
           <div className="row wrap">
             <span className="badge accent">{MUSCLE_LABEL[ex.primary]}</span>
             {ex.secondary.map((m) => (

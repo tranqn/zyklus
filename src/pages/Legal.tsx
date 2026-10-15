@@ -77,11 +77,11 @@ export function Datenschutz() {
           {OPERATOR.name}, {OPERATOR.street}, {OPERATOR.city}, E-Mail: {OPERATOR.email}
         </p>
       </Section>
-      <Section title="2. Nutzung ohne Konto">
-        <p>Ohne Konto speichert Zyklus alle Eingaben ausschließlich im Speicher deines Browsers (localStorage) auf deinem Gerät. Wir erhalten diese Daten nicht.</p>
+      <Section title="2. Kopie auf deinem Gerät">
+        <p>Damit Zyklus auch offline funktioniert, hält die App eine Kopie deiner Daten im Speicher deines Browsers (localStorage). Beim Abmelden kannst du diese Kopie entfernen.</p>
       </Section>
       <Section title="3. Konto und Synchronisierung">
-        <p>Wenn du ein Konto anlegst, verarbeiten wir:</p>
+        <p>Für die Nutzung ist ein Konto erforderlich. Dabei verarbeiten wir:</p>
         <ul>
           <li>deine E-Mail-Adresse und einen Hash deines Passworts (das Passwort selbst wird nie gespeichert),</li>
           <li>deine App-Daten: Profil (Alter, Größe, Gewicht, Geschlecht, Ziele), Trainingspläne und Trainingsverlauf, Tagesform-Check-ins, Ernährungseinträge, Supplements, Körpergewicht und Körpermaße,</li>

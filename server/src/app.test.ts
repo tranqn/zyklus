@@ -5,7 +5,7 @@ import { openDb, type DB } from './db.ts'
 import type { Mail } from './mail.ts'
 
 const ORIGIN = 'https://mci.example.test'
-const cfg: Config = { port: 0, appOrigin: ORIGIN, dataDir: ':memory:', secureCookies: true, mailFrom: 'test@example.test' }
+const cfg: Config = { port: 0, appOrigin: ORIGIN, dataDir: ':memory:', secureCookies: true, mailFrom: 'test@example.test', registerLimit: 5 }
 
 let db: DB
 let mails: Mail[]

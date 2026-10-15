@@ -20,7 +20,7 @@ export default defineConfig({
     {
       // fresh database per run; mails are printed to the log instead of sent
       command: 'rm -rf .e2e-data && node server/src/index.ts',
-      env: { PORT: '8787', APP_ORIGIN: 'http://localhost:4173', DATA_DIR: '.e2e-data' },
+      env: { PORT: '8787', APP_ORIGIN: 'http://localhost:4173', DATA_DIR: '.e2e-data', REGISTER_LIMIT_PER_HOUR: '100' },
       url: 'http://localhost:8787/api/health',
       reuseExistingServer: false,
       timeout: 30_000,

@@ -39,7 +39,7 @@ export function AuthScreen() {
         <div className="stack" style={{ paddingTop: 24 }}>
           <div className="eyebrow">Zyklus</div>
           <h1 style={{ fontSize: '2.1rem' }}>{mode === 'login' ? 'Willkommen zurück' : 'Konto erstellen'}</h1>
-          <p className="muted">Mit Konto sind dein Plan und dein Verlauf auf allen Geräten da und sicher gespeichert.</p>
+          <p className="muted">Dein Plan und dein Verlauf werden in deinem Konto gespeichert und sind auf allen deinen Geräten da.</p>
         </div>
         <Segmented
           value={mode}
@@ -93,12 +93,6 @@ export function AuthScreen() {
           )}
         </form>
         <div style={{ marginTop: 'auto' }} className="stack">
-          <button className="btn block" onClick={() => useSync.setState({ localOnly: true })}>
-            Ohne Konto nutzen
-          </button>
-          <p className="tiny muted" style={{ textAlign: 'center' }}>
-            Ohne Konto bleiben alle Daten nur auf diesem Gerät. Du kannst später jederzeit ein Konto anlegen.
-          </p>
           <p className="tiny" style={{ textAlign: 'center' }}>
             <Link to="/impressum">Impressum</Link> · <Link to="/datenschutz">Datenschutz</Link>
           </p>

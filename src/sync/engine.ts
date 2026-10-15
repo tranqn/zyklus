@@ -15,17 +15,15 @@ interface SyncState {
   lastSyncedAt?: number
   status: Status
   error?: string
-  /** Chose "use without account" on this device. */
-  localOnly: boolean
   /** /auth/me has answered (or failed) at least once this session. */
   checked: boolean
 }
 
 export const useSync = create<SyncState>()(
-  persist((): SyncState => ({ rev: 0, status: 'idle', localOnly: false, checked: false }), {
+  persist((): SyncState => ({ rev: 0, status: 'idle', checked: false }), {
     name: 'zyklus-sync',
     storage: createJSONStorage(() => localStorage),
-    partialize: (s) => ({ user: s.user, ownerId: s.ownerId, rev: s.rev, lastSyncedAt: s.lastSyncedAt, localOnly: s.localOnly }),
+    partialize: (s) => ({ user: s.user, ownerId: s.ownerId, rev: s.rev, lastSyncedAt: s.lastSyncedAt }),
   }),
 )
 
@@ -151,7 +149,7 @@ async function adopt(user: PublicUser) {
     applyDoc({ v: 1, state: emptyState() as unknown as Record<string, unknown>, stamps: {}, tombstones: {} })
     useSync.setState({ rev: 0 })
   }
-  useSync.setState({ user, ownerId: user.id, localOnly: false })
+  useSync.setState({ user, ownerId: user.id })
   await syncNow()
 }
 

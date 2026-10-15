@@ -28,7 +28,7 @@ export function createApp({ db, cfg, mail, now = Date.now }: Deps) {
   const app = new Hono<Vars>().basePath('/api')
 
   const limits = {
-    register: new RateLimiter(5, 60 * 60 * 1000, now),
+    register: new RateLimiter(cfg.registerLimit, 60 * 60 * 1000, now),
     loginIp: new RateLimiter(20, 15 * 60 * 1000, now),
     loginEmail: new RateLimiter(5, 15 * 60 * 1000, now),
     forgotIp: new RateLimiter(10, 60 * 60 * 1000, now),

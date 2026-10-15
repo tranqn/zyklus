@@ -15,7 +15,9 @@ Mobile-first Trainings-PWA, inspiriert vom Funktionsumfang der MCI-App (MCI Solu
 - **Fortschritt**: Kalender, Serie, Muskel-Map (Sätze pro Muskel und Woche), 1RM-Verlauf, Bestleistungen, Gewichtstrend, Körpermaße (Taille, Hüfte, Arme, Körperfett), Trainingsverlauf
 - **Mobility und Cardio**: 7 geführte Routinen mit Timer, 22 Cardio-Aktivitäten mit MET-basiertem Kalorienverbrauch
 - **Urlaubs- und Krankheitsmodus**: Plan und Serie pausieren, leichter Wiedereinstieg
-- **PWA**: installierbar, offline nutzbar, Daten bleiben lokal im Browser (Sicherung als JSON)
+- **Konten**: Registrierung mit E-Mail und Passwort (Pflicht), E-Mail-Bestätigung, Passwort-Reset, Datenexport, Kontolöschung; Daten werden zwischen Geräten synchronisiert (offline-fähig, Konflikte werden pro Eintrag zusammengeführt)
+- **Übungsanimationen**: 31 animierte Bewegungsmuster für rund 65 Übungen, erzeugt mit EffectCraft (`pnpm anim`, siehe `tools/anim/`), als Lottie im Übungs-Infoblatt
+- **PWA**: installierbar, offline nutzbar
 
 ## Entwicklung
 
@@ -27,8 +29,21 @@ pnpm e2e        # Playwright, mobiles Viewport (Pixel 7)
 pnpm build
 ```
 
-Die Fachlogik liegt in `src/domain/` (ohne React, mit Tests in `src/domain/__tests__/`), die Oberfläche in `src/pages/` und `src/ui/`.
+Die Fachlogik liegt in `src/domain/`, die Synchronisierung in `src/sync/`, die API in `server/` (Hono + node:sqlite, `pnpm --dir server dev` auf Port 8787) (ohne React, mit Tests in `src/domain/__tests__/`), die Oberfläche in `src/pages/` und `src/ui/`.
+
+## Animationen neu erzeugen
+
+Braucht die EffectCraft-CLI (`EFFECTCRAFT_CLI=/pfad/zu/effectcraft-cli`, Standard `~/tools/effectcraft/...`):
+
+```sh
+pnpm anim                 # alle Muster nach public/anim/
+pnpm anim squat --frames  # ein Muster, plus PNG-Kontrollbilder in tools/anim/.work/
+```
+
+## Vor dem öffentlichen Betrieb
+
+- In `src/pages/Legal.tsx` Anschrift und Kontakt-E-Mail eintragen (Platzhalter in eckigen Klammern).
 
 ## Deployment
 
-Push auf `main`: GitHub baut und testet, danach veröffentlicht der Self-hosted-Runner auf dem Hetzner-Server mit `/opt/ci/bin/deploy zyklus --from site`. Caddy-Block und Projektkonfiguration liegen als Kopie in `deploy/`.
+Push auf `main`: GitHub baut und testet (inklusive Playwright), dann deployt der Self-hosted-Runner zuerst die API (`deploy zyklus-api <sha>`, Compose) und danach das Frontend auf dem Hetzner-Server mit `/opt/ci/bin/deploy zyklus --from site`. Caddy-Block und Projektkonfiguration liegen als Kopie in `deploy/`.

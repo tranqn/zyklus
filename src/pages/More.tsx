@@ -14,7 +14,7 @@ export default function More() {
   const mode = useStore((s) => s.settings.mode)
   const user = useSync((s) => s.user)
   const items = [
-    { to: '/konto', icon: 'heart', t: user ? 'Konto' : 'Konto erstellen', d: user ? `${user.email}${user.verified ? '' : ' · nicht bestätigt'}` : 'Daten sichern und auf allen Geräten nutzen' },
+    { to: '/konto', icon: 'heart', t: 'Konto', d: `${user?.email ?? ''}${user && !user.verified ? ' · nicht bestätigt' : ''}` },
     { to: '/mobility', icon: 'stretch', t: 'Mobility', d: 'Geführte Routinen mit Timer' },
     { to: '/cardio', icon: 'run', t: 'Cardio', d: 'Ausdauer eintragen, Kalorien zählen' },
     { to: '/einstellungen', icon: 'settings', t: 'Profil und Einstellungen', d: 'Ziel, Trainingstage, Ausstattung, Daten' },
@@ -483,7 +483,7 @@ export function SettingsPage() {
 
       <section className="card stack">
         <h3>Deine Daten</h3>
-        <p className="small muted">Mit Konto werden deine Daten automatisch gesichert und synchronisiert. Ohne Konto liegen sie nur auf diesem Gerät, dann sichere regelmäßig per Datei.</p>
+        <p className="small muted">Deine Daten werden automatisch in deinem Konto gesichert und synchronisiert. Zusätzlich kannst du jederzeit eine Sicherungsdatei herunterladen.</p>
         <button className="btn" onClick={exportData}>
           Sicherung herunterladen
         </button>

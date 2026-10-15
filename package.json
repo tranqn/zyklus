@@ -10,10 +10,12 @@
     "test": "vitest run",
     "verify": "tsc -b && oxlint && vitest run",
     "preview": "vite preview",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "anim": "node tools/anim/build.mjs"
   },
   "dependencies": {
     "barcode-detector": "^3.2.2",
+    "lottie-web": "^5.13.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.4",

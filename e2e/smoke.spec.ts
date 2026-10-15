@@ -1,10 +1,19 @@
 import { expect, test, type Page } from '@playwright/test'
 
-async function onboard(page: Page, local = true) {
-  if (local) {
-    await page.goto('/')
-    await page.getByRole('button', { name: 'Ohne Konto nutzen' }).click()
-  }
+let counter = 0
+/** Create a fresh account; the app then shows onboarding. */
+async function signUp(page: Page, email = `e2e-${Date.now()}-${counter++}@example.test`, password = 'ein-langes-test-passwort') {
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Registrieren' }).click()
+  await page.getByLabel('E-Mail').fill(email)
+  await page.getByLabel('Passwort').fill(password)
+  await page.getByRole('checkbox').check()
+  await page.getByRole('button', { name: 'Konto erstellen' }).click()
+  return { email, password }
+}
+
+async function onboard(page: Page, register = true) {
+  if (register) await signUp(page)
   await page.getByLabel('Wie dürfen wir dich nennen? (optional)').fill('Testi')
   await page.getByRole('button', { name: 'Plan erstellen' }).click()
   await page.getByRole('button', { name: /Muskelaufbau/ }).click()
@@ -18,6 +27,13 @@ async function onboard(page: Page, local = true) {
 test('onboarding, workout with test set, finish', async ({ page }) => {
   await onboard(page)
   await expect(page.getByText('Woche 1/5 · Einheit 1/3')).toBeVisible()
+
+  // the exercise info sheet plays the EffectCraft animation (Lottie, rendered as SVG)
+  await page.getByRole('link', { name: 'Plan' }).click()
+  await page.getByRole('button', { name: /^Infos zu/ }).first().click()
+  await expect(page.getByRole('img', { name: /^Animation:/ }).locator('svg')).toBeVisible()
+  await page.getByRole('button', { name: 'Schließen' }).click()
+  await page.getByRole('link', { name: 'Heute' }).click()
 
   await page.getByRole('button', { name: 'Training starten' }).click()
   await page.getByRole('dialog').getByRole('button', { name: 'Training starten' }).click()
@@ -98,12 +114,7 @@ test('account: register, data syncs to a second device, logout clears it', async
   const password = 'ein-langes-test-passwort'
 
   const phone = await browser.newPage()
-  await phone.goto('/')
-  await phone.getByRole('button', { name: 'Registrieren' }).click()
-  await phone.getByLabel('E-Mail').fill(email)
-  await phone.getByLabel('Passwort').fill(password)
-  await phone.getByRole('checkbox').check()
-  await phone.getByRole('button', { name: 'Konto erstellen' }).click()
+  await signUp(phone, email, password)
   await onboard(phone, false)
   await expect(phone.getByText('Bitte bestätige deine E-Mail-Adresse')).toBeVisible()
 
