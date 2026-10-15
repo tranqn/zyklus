@@ -83,6 +83,12 @@ test('every main route renders without console errors', async ({ page }) => {
   }
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)
   expect(overflow).toBe(false)
+  // no button may stick out of its card or sheet (long labels must wrap)
+  await page.goto('/#/einstellungen')
+  const wide = await page.evaluate(() =>
+    [...document.querySelectorAll('.btn')].filter((b) => b.getBoundingClientRect().right > window.innerWidth + 1).map((b) => b.textContent),
+  )
+  expect(wide).toEqual([])
   expect(errors).toEqual([])
 })
 
