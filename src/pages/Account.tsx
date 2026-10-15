@@ -34,7 +34,7 @@ export function AccountPage() {
       </div>
       <div className="stack">
         <div className="eyebrow">Konto</div>
-        <h1>{user ? user.email : 'Kein Konto'}</h1>
+        <h1 style={{ fontSize: user && user.email.length > 22 ? '1.3rem' : undefined }}>{user ? user.email : 'Kein Konto'}</h1>
       </div>
 
       {!user ? (

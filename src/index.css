@@ -113,6 +113,13 @@ h3 {
   margin: 0;
   line-height: 1.2;
   letter-spacing: -0.01em;
+  /* long words (emails, exercise names) wrap instead of widening the page */
+  overflow-wrap: anywhere;
+}
+p,
+li,
+.list-item {
+  overflow-wrap: anywhere;
 }
 h1 {
   font-size: 1.75rem;
