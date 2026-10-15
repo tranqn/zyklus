@@ -270,6 +270,12 @@ p {
 }
 .btn.block {
   width: 100%;
+  /* long labels wrap instead of pushing the button out of narrow screens and sheets */
+  white-space: normal;
+  text-align: center;
+  line-height: 1.25;
+  padding-top: 10px;
+  padding-bottom: 10px;
 }
 .btn.sm {
   min-height: 36px;

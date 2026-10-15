@@ -11,7 +11,11 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   // mobile first: the app is built for phones
-  projects: [{ name: 'mobile', use: { ...devices['Pixel 7'] } }],
+  projects: [
+    { name: 'mobile', use: { ...devices['Pixel 7'] } },
+    // smallest common phone width: catches labels and layouts that overflow
+    { name: 'small', use: { ...devices['iPhone SE'], browserName: 'chromium', viewport: { width: 320, height: 568 } }, grep: /every main route/ },
+  ],
   webServer: [
     {
       // fresh database per run; mails are printed to the log instead of sent
