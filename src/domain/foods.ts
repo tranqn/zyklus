@@ -212,3 +212,8 @@ export function foodPortion(f: Food, lang: Lang): { grams?: number; label?: stri
   return { grams: f.portion, label: f.portionLabels?.[lang] ?? f.portionLabel }
 }
 
+
+/** The user's own foods first, then the built-in list. */
+export function allFoods(s: { customFoods: Food[] }): Food[] {
+  return [...s.customFoods, ...FOODS]
+}

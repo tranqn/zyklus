@@ -4,12 +4,12 @@ import type { BarcodeDetector as Ponyfill } from 'barcode-detector/ponyfill'
 import { lookupBarcode, searchOff } from '../domain/openfoodfacts'
 import type { Food, FoodEntry, Meal } from '../domain/types'
 import { addDays, fmt, formatDate, today, uid } from '../domain/util'
-import { allFoods, recentFoods, useStore } from '../store'
+import { recentFoods, useStore } from '../store'
 import { Bar, Icon, Ring, Segmented, Sheet } from '../ui/kit'
 import { toast } from '../ui/notify'
 import { MealActions, RecipeTab, SaveRecipeSheet, SupplementsCard } from './NutritionExtras'
 import { getLang, t as tr, useT } from '../i18n'
-import { foodName, foodPortion } from '../domain/foods'
+import { allFoods, foodName, foodPortion } from '../domain/foods'
 
 const MEALS: Meal[] = ['fruehstueck', 'mittag', 'abend', 'snack']
 const mealName = (m: Meal) => tr(`nutrition.meal.${m}` as 'nutrition.meal.mittag')

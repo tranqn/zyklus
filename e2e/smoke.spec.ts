@@ -155,3 +155,19 @@ test('account: register, data syncs to a second device, logout clears it', async
   const stored = await laptop.evaluate(() => JSON.parse(localStorage.getItem('zyklus-v1') ?? '{}').state?.profile ?? null)
   expect(stored).toBeNull()
 })
+
+test('pages load on demand and still open offline', async ({ page, context }) => {
+  await onboard(page)
+  // the service worker controls the page and the idle prefetch has cached the lazy page chunks
+  await page.waitForFunction(async () => {
+    if (!navigator.serviceWorker.controller) return false
+    const keys = await (await caches.open('zyklus-v3')).keys()
+    return ['Nutrition', 'Progress', 'More'].every((n) => keys.some((r) => r.url.includes(`/assets/${n}-`)))
+  })
+  await context.setOffline(true)
+  await page.getByRole('link', { name: 'Ernährung' }).click()
+  await expect(page.locator('h1')).toBeVisible()
+  await page.getByRole('link', { name: 'Fortschritt' }).click()
+  await expect(page.getByRole('heading', { name: 'Deine Entwicklung' })).toBeVisible()
+  await context.setOffline(false)
+})
