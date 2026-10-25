@@ -72,3 +72,17 @@ test('switching the language in settings applies everywhere and survives a reloa
   await page.getByRole('button', { name: 'English' }).click()
   await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible()
 })
+
+test('Vietnamese meal planner without overflow', async ({ page }) => {
+  await signUpVi(page)
+  await page.goto('/#/ernaehrung')
+  await page.getByRole('button', { name: 'Thực đơn' }).click()
+  await page.getByRole('button', { name: 'Tạo thực đơn' }).click()
+  await expect(page.getByText('Đã tạo thực đơn')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Hôm nay ăn thêm gì?' })).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+  await page.getByRole('button', { name: 'Danh sách đi chợ' }).click()
+  await expect(page.getByRole('dialog', { name: 'Danh sách đi chợ' }).getByRole('heading', { name: 'Đồ khô và gia vị' })).toBeVisible()
+  const text = await page.locator('body').innerText()
+  expect(text).not.toMatch(/\b(Zubereitung|Zutaten|Einkaufsliste|Frühstück|Mittagessen|Portionen?)\b/)
+})

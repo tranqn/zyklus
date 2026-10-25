@@ -798,3 +798,29 @@ a {
     transition: none;
   }
 }
+
+.planner-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+.planner-days .chip {
+  min-width: 0;
+  padding: 6px 0;
+  justify-content: center;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.planner-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 8px;
+}
+.planner-actions .btn {
+  min-width: 0;
+  padding: 0 8px;
+  gap: 4px;
+  white-space: normal;
+  line-height: 1.15;
+}

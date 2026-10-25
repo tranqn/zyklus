@@ -22,6 +22,8 @@ type Row = {
 
 const ROWS: Row[] = [
   // Fleisch, Fisch, Eier
+  { id: 'haehnchenschenkel', n: ['Hähnchenschenkel ohne Haut (roh)', 'Chicken thigh, skinless (raw)', 'Đùi gà bỏ da (sống)'], m: [120, 19.5, 0, 4.5], p: [130, '1 Schenkel', '1 thigh', '1 cái'] },
+  { id: 'rind-mager', n: ['Rindfleisch mager, Hüfte (roh)', 'Lean beef, rump (raw)', 'Thịt bò nạc (sống)'], m: [115, 22, 0, 3], p: [125] },
   { id: 'haehnchenbrust', n: ['Hähnchenbrust (roh)', 'Chicken breast (raw)', 'Ức gà (sống)'], m: [110, 23, 0, 1.5], p: [150, '1 Filet', '1 fillet', '1 miếng'] },
   { id: 'putenbrust', n: ['Putenbrust (roh)', 'Turkey breast (raw)', 'Ức gà tây (sống)'], m: [105, 24, 0, 1], p: [150, '1 Filet', '1 fillet', '1 miếng'] },
   { id: 'rinderhack', n: ['Rinderhack (roh)', 'Ground beef (raw)', 'Thịt bò xay (sống)'], m: [250, 18, 0, 20], p: [125] },
@@ -37,6 +39,10 @@ const ROWS: Row[] = [
   { id: 'kochschinken', n: ['Kochschinken', 'Cooked ham', 'Giăm bông'], m: [110, 19, 1, 3.5], p: [20, '1 Scheibe', '1 slice', '1 lát'], region: 'de' },
   { id: 'salami', n: ['Salami', 'Salami', 'Xúc xích Ý (salami)'], m: [380, 22, 1, 32], p: [10, '1 Scheibe', '1 slice', '1 lát'], region: 'de' },
   // Milchprodukte
+  { id: 'milch-laktosefrei', n: ['Laktosefreie Milch 1,5 %', 'Lactose-free milk 1.5%', 'Sữa không lactose 1,5%'], m: [47, 3.4, 4.8, 1.5], p: [250, '1 Glas', '1 glass', '1 ly'] },
+  { id: 'skyr-laktosefrei', n: ['Skyr laktosefrei', 'Lactose-free skyr', 'Skyr không lactose'], m: [63, 11, 4, 0.2], p: [150, '1 Portion', '1 serving', '1 phần'] },
+  { id: 'magerquark-laktosefrei', n: ['Magerquark laktosefrei', 'Lactose-free quark', 'Phô mai quark không lactose'], m: [67, 12, 4, 0.3], p: [250] },
+  { id: 'sojajoghurt', n: ['Sojajoghurt natur', 'Plain soy yogurt', 'Sữa chua đậu nành'], m: [50, 4, 2, 2.3], p: [150] },
   { id: 'magerquark', n: ['Magerquark', 'Low-fat quark', 'Phô mai tươi ít béo (quark)'], m: [67, 12, 4, 0.3], p: [250, '1 Becher', '1 tub', '1 hộp'], region: 'de' },
   { id: 'skyr', n: ['Skyr natur', 'Skyr (plain)', 'Sữa chua Skyr không đường'], m: [63, 11, 4, 0.2], p: [150, '1 Portion', '1 serving', '1 phần'] },
   { id: 'griech-joghurt', n: ['Griechischer Joghurt 10 %', 'Greek yoghurt 10%', 'Sữa chua Hy Lạp 10%'], m: [120, 4, 4, 10], p: [150] },
@@ -51,7 +57,10 @@ const ROWS: Row[] = [
   { id: 'harzer', n: ['Harzer Käse', 'Harzer cheese', 'Phô mai Harzer'], m: [115, 27, 0, 0.5], p: [50], region: 'de' },
   { id: 'butter', n: ['Butter', 'Butter', 'Bơ lạt'], m: [740, 0.7, 0.6, 82], p: [10, '1 Portion', '1 pat', '1 phần'] },
   { id: 'proteinpulver', n: ['Whey Proteinpulver', 'Whey protein powder', 'Bột Whey protein'], m: [380, 78, 6, 5], p: [30, '1 Messlöffel', '1 scoop', '1 muỗng'] },
+  { id: 'sojaprotein', n: ['Sojaprotein-Isolat (Pulver)', 'Soy protein isolate (powder)', 'Bột đạm đậu nành'], m: [370, 86, 2, 2], p: [30, '1 Messlöffel', '1 scoop', '1 muỗng'] },
   // Getreide, Beilagen
+  { id: 'reisnudeln-roh', aka: ['bánh phở khô'], n: ['Reisnudeln (trocken)', 'Rice noodles (dry)', 'Bún / bánh phở khô'], m: [360, 6, 80, 0.6], p: [90, '1 Portion', '1 serving', '1 phần'] },
+  { id: 'speisestaerke', n: ['Speisestärke', 'Cornstarch', 'Bột năng / bột bắp'], m: [350, 0.3, 86, 0.1], p: [10, '1 EL', '1 tbsp', '1 muỗng canh'] },
   { id: 'haferflocken', n: ['Haferflocken', 'Rolled oats', 'Yến mạch'], m: [370, 13.5, 59, 7], p: [50, '1 Portion', '1 serving', '1 phần'] },
   { id: 'reis-roh', n: ['Reis (roh)', 'Rice (uncooked)', 'Gạo (sống)'], m: [350, 7, 78, 0.6], p: [75, '1 Portion', '1 serving', '1 phần'] },
   { id: 'reis-gekocht', n: ['Reis (gekocht)', 'Rice (cooked)', 'Cơm trắng'], m: [130, 2.7, 28, 0.3], p: [200], pvi: [150, '1 chén'], aka: ['cơm', 'rice', 'Reis'] },
@@ -71,6 +80,8 @@ const ROWS: Row[] = [
   { id: 'cornflakes', n: ['Cornflakes', 'Cornflakes', 'Ngũ cốc cornflakes'], m: [375, 7, 84, 0.9], p: [40] },
   { id: 'muesli', n: ['Müsli (ungezuckert)', 'Muesli (unsweetened)', 'Ngũ cốc muesli không đường'], m: [360, 10, 60, 7], p: [50] },
   // Hülsenfrüchte, Soja
+  { id: 'linsen-braun-roh', n: ['Braune / Beluga-Linsen (roh)', 'Brown / beluga lentils (dry)', 'Đậu lăng nâu / đen (khô)'], m: [330, 24, 48, 1.5], p: [60] },
+  { id: 'weisse-bohnen-dose', n: ['Weiße Bohnen (Dose, abgetropft)', 'White beans (canned, drained)', 'Đậu trắng (đóng hộp, để ráo)'], m: [90, 6.5, 12, 0.5], p: [120] },
   { id: 'linsen-roh', n: ['Rote Linsen (roh)', 'Red lentils (uncooked)', 'Đậu lăng đỏ (sống)'], m: [340, 25, 50, 1.5], p: [75] },
   { id: 'kichererbsen-dose', n: ['Kichererbsen (Dose, abgetropft)', 'Chickpeas (canned, drained)', 'Đậu gà (hộp, để ráo)'], m: [120, 7, 16, 2.5], p: [120] },
   { id: 'kidneybohnen-dose', n: ['Kidneybohnen (Dose)', 'Kidney beans (canned)', 'Đậu đỏ tây (hộp)'], m: [95, 7, 13, 0.5], p: [120] },
@@ -78,6 +89,9 @@ const ROWS: Row[] = [
   { id: 'tempeh', n: ['Tempeh', 'Tempeh', 'Tempeh (đậu nành lên men)'], m: [195, 19, 9, 11], p: [100] },
   { id: 'edamame', n: ['Edamame', 'Edamame', 'Đậu nành Nhật (edamame)'], m: [120, 11, 9, 5], p: [100] },
   // Gemüse
+  { id: 'blumenkohl', n: ['Blumenkohl', 'Cauliflower', 'Súp lơ trắng'], m: [23, 2, 2.5, 0.3], p: [150] },
+  { id: 'gruene-bohnen', n: ['Grüne Bohnen', 'Green beans', 'Đậu que'], m: [25, 1.8, 4.3, 0.2], p: [100] },
+  { id: 'kimchi', n: ['Kimchi', 'Kimchi', 'Kim chi'], m: [15, 1.1, 2.4, 0.5], p: [50] },
   { id: 'brokkoli', n: ['Brokkoli', 'Broccoli', 'Bông cải xanh'], m: [34, 3, 3, 0.4], p: [200] },
   { id: 'spinat', n: ['Spinat', 'Spinach', 'Rau chân vịt (cải bó xôi)'], m: [23, 2.9, 1, 0.4], p: [100] },
   { id: 'paprika', n: ['Paprika', 'Bell pepper', 'Ớt chuông'], m: [30, 1, 5, 0.3], p: [150, '1 Paprika', '1 pepper', '1 quả'] },
@@ -92,6 +106,7 @@ const ROWS: Row[] = [
   { id: 'erbsen', n: ['Erbsen (TK)', 'Peas (frozen)', 'Đậu Hà Lan (đông lạnh)'], m: [80, 6, 11, 0.5], p: [150] },
   { id: 'tk-gemuese', n: ['TK-Gemüsemischung', 'Frozen mixed vegetables', 'Rau củ trộn đông lạnh'], m: [45, 2.5, 6, 0.5], p: [200] },
   // Obst
+  { id: 'orangensaft', n: ['Orangensaft', 'Orange juice', 'Nước cam'], m: [45, 0.7, 9, 0.2], p: [200, '1 Glas', '1 glass', '1 ly'] },
   { id: 'banane', n: ['Banane', 'Banana', 'Chuối'], m: [95, 1.1, 21, 0.3], p: [120, '1 Banane', '1 banana', '1 quả'] },
   { id: 'apfel', n: ['Apfel', 'Apple', 'Táo'], m: [55, 0.3, 12, 0.2], p: [150, '1 Apfel', '1 apple', '1 quả'] },
   { id: 'beeren-tk', n: ['Beerenmischung (TK)', 'Mixed berries (frozen)', 'Quả mọng trộn (đông lạnh)'], m: [45, 1, 8, 0.4], p: [150] },
@@ -101,6 +116,12 @@ const ROWS: Row[] = [
   { id: 'weintrauben', n: ['Weintrauben', 'Grapes', 'Nho'], m: [70, 0.7, 16, 0.3], p: [125] },
   { id: 'datteln', n: ['Datteln (getrocknet)', 'Dates (dried)', 'Chà là khô'], m: [290, 2, 65, 0.5], p: [8, '1 Dattel', '1 date', '1 quả'] },
   // Fette, Nüsse
+  { id: 'sesam', n: ['Sesam', 'Sesame seeds', 'Mè (vừng)'], m: [570, 18, 12, 50], p: [10, '1 EL', '1 tbsp', '1 muỗng canh'] },
+  { id: 'cashew', n: ['Cashewkerne', 'Cashews', 'Hạt điều'], m: [580, 18, 27, 44], p: [30, '1 Handvoll', '1 handful', '1 nắm'] },
+  { id: 'leinsamen', n: ['Leinsamen (geschrotet)', 'Flaxseed (ground)', 'Hạt lanh (xay)'], m: [490, 18, 1.6, 42], p: [10, '1 EL', '1 tbsp', '1 muỗng canh'] },
+  { id: 'hanfsamen', n: ['Hanfsamen (geschält)', 'Hemp hearts', 'Hạt gai dầu (bóc vỏ)'], m: [560, 31, 4.7, 49], p: [10, '1 EL', '1 tbsp', '1 muỗng canh'] },
+  { id: 'kokosmilch', n: ['Kokosmilch', 'Coconut milk', 'Nước cốt dừa'], m: [190, 1.8, 3, 20], p: [100] },
+  { id: 'kokosmilch-light', n: ['Kokosmilch light', 'Light coconut milk', 'Nước cốt dừa ít béo'], m: [75, 0.7, 2, 7], p: [100] },
   { id: 'olivenoel', n: ['Olivenöl', 'Olive oil', 'Dầu ô liu'], m: [880, 0, 0, 100], p: [10, '1 EL', '1 tbsp', '1 muỗng canh'] },
   { id: 'rapsoel', n: ['Rapsöl', 'Rapeseed oil', 'Dầu ăn (dầu hạt cải)'], m: [880, 0, 0, 100], p: [10, '1 EL', '1 tbsp', '1 muỗng canh'] },
   { id: 'erdnussbutter', n: ['Erdnussbutter', 'Peanut butter', 'Bơ đậu phộng'], m: [600, 25, 14, 49], p: [15, '1 EL', '1 tbsp', '1 muỗng canh'] },
@@ -109,6 +130,16 @@ const ROWS: Row[] = [
   { id: 'avocado', n: ['Avocado', 'Avocado', 'Bơ (quả)'], m: [160, 2, 3.5, 15], p: [150, '1 Avocado', '1 avocado', '1 quả'] },
   { id: 'chiasamen', n: ['Chiasamen', 'Chia seeds', 'Hạt chia'], m: [490, 17, 8, 31], p: [15, '1 EL', '1 tbsp', '1 muỗng canh'] },
   // Snacks, Sonstiges
+  { id: 'sojasauce', aka: ['xì dầu', 'nước tương'], n: ['Sojasauce', 'Soy sauce', 'Xì dầu (nước tương)'], m: [53, 8, 5, 0.6], p: [15, '1 EL', '1 tbsp', '1 muỗng canh'] },
+  { id: 'austernsauce', n: ['Austernsauce', 'Oyster sauce', 'Dầu hào'], m: [51, 1.4, 11, 0.3], p: [15, '1 EL', '1 tbsp', '1 muỗng canh'] },
+  { id: 'gochujang', n: ['Gochujang (Chilipaste)', 'Gochujang (chili paste)', 'Tương ớt Gochujang'], m: [230, 6, 40, 2.3], p: [15, '1 EL', '1 tbsp', '1 muỗng canh'] },
+  { id: 'doubanjiang', n: ['Doubanjiang (Bohnen-Chilipaste)', 'Doubanjiang (chili bean paste)', 'Tương đậu ớt Tứ Xuyên'], m: [150, 8, 12, 8], p: [15, '1 EL', '1 tbsp', '1 muỗng canh'] },
+  { id: 'misopaste', n: ['Misopaste', 'Miso paste', 'Tương miso'], m: [200, 12, 26, 6], p: [15, '1 EL', '1 tbsp', '1 muỗng canh'] },
+  { id: 'mirin', n: ['Mirin (süßer Reiswein)', 'Mirin (sweet rice wine)', 'Rượu mirin'], m: [240, 0.3, 43, 0], p: [15, '1 EL', '1 tbsp', '1 muỗng canh'] },
+  { id: 'bruehe', n: ['Brühe (zubereitet)', 'Broth (prepared)', 'Nước dùng'], m: [6, 0.6, 0.5, 0.2], p: [250] },
+  { id: 'zucker', n: ['Zucker', 'Sugar', 'Đường'], m: [400, 0, 100, 0], p: [5, '1 TL', '1 tsp', '1 muỗng cà phê'] },
+  { id: 'ahornsirup', n: ['Ahornsirup', 'Maple syrup', 'Siro lá phong'], m: [260, 0, 67, 0], p: [10, '1 TL', '1 tsp', '1 muỗng cà phê'] },
+  { id: 'kakao', n: ['Kakaopulver (ungesüßt)', 'Cocoa powder (unsweetened)', 'Bột ca cao (không đường)'], m: [360, 20, 11, 11], p: [5, '1 TL', '1 tsp', '1 muỗng cà phê'] },
   { id: 'zartbitter', n: ['Zartbitterschokolade 70 %', 'Dark chocolate 70%', 'Sô cô la đen 70%'], m: [570, 9, 33, 43], p: [20, '2 Stück', '2 pieces', '2 miếng'] },
   { id: 'proteinriegel', n: ['Proteinriegel', 'Protein bar', 'Thanh protein'], m: [360, 33, 30, 12], p: [60, '1 Riegel', '1 bar', '1 thanh'] },
   { id: 'honig', n: ['Honig', 'Honey', 'Mật ong'], m: [305, 0.4, 76, 0], p: [20, '1 TL', '1 tsp', '1 muỗng'] },

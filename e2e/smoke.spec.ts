@@ -171,3 +171,50 @@ test('pages load on demand and still open offline', async ({ page, context }) =>
   await expect(page.getByRole('heading', { name: 'Deine Entwicklung' })).toBeVisible()
   await context.setOffline(false)
 })
+
+test('meal planner: create a week, recipe, swap, log, shopping list, vegan', async ({ page }) => {
+  await onboard(page)
+  await page.getByRole('link', { name: 'Ernährung' }).click()
+  await page.getByRole('button', { name: 'Planer', exact: true }).click()
+  await page.getByRole('button', { name: 'Plan erstellen' }).click()
+  await expect(page.getByText('Plan erstellt')).toBeVisible()
+
+  // every main meal of today is planned
+  for (const meal of ['Frühstück', 'Mittagessen', 'Abendessen']) await expect(page.locator('section.card .eyebrow', { hasText: meal })).toBeVisible()
+  const first = page.locator('section.card').first()
+  const dish = (await first.locator('h3').innerText()).trim()
+
+  await first.getByRole('button', { name: `Rezept für ${dish}` }).click()
+  await expect(page.getByRole('dialog', { name: dish }).getByRole('heading', { name: 'Zubereitung' })).toBeVisible()
+  await page.getByRole('button', { name: 'Schließen' }).click()
+
+  await first.getByRole('button', { name: `${dish} tauschen` }).click()
+  await page.getByRole('dialog', { name: 'Gericht tauschen' }).locator('.list-item').first().click()
+  await expect(page.getByText('Getauscht')).toBeVisible()
+  const swapped = (await first.locator('h3').innerText()).trim()
+  expect(swapped).not.toBe(dish)
+
+  // logging puts the ingredients into today's diary
+  await first.getByRole('button', { name: `${swapped} ins Tagebuch eintragen` }).click()
+  await expect(first.getByText('Eingetragen', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Tagebuch', exact: true }).click()
+  await expect(page.locator('section.card .list-item').first()).toBeVisible()
+  await page.getByRole('button', { name: 'Planer', exact: true }).click()
+
+  await page.getByRole('button', { name: 'Einkaufsliste' }).click()
+  const list = page.getByRole('dialog', { name: 'Einkaufsliste' })
+  await expect(list.getByRole('heading', { name: 'Vorrat' })).toBeVisible()
+  const box = list.getByRole('checkbox').first()
+  await box.check()
+  await expect(box).toBeChecked()
+  await page.getByRole('button', { name: 'Schließen' }).click()
+
+  await page.getByRole('button', { name: 'Vorlieben' }).first().click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Vegan' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Speichern' }).click()
+  page.once('dialog', (d) => d.accept())
+  await page.getByRole('button', { name: 'Neu vorschlagen' }).click()
+  await expect(page.locator('.badge', { hasText: 'Vegan' })).toBeVisible()
+  // the suggestions card offers dishes for what is still open today
+  await expect(page.getByRole('heading', { name: 'Was passt heute noch?' })).toBeVisible()
+})

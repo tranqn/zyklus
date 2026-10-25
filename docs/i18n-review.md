@@ -470,6 +470,87 @@ Generiert mit `pnpm i18n:review`. Korrekturen direkt in `src/i18n/ns/*.ts` bzw. 
 | `supplements.preset.zink` | Zink | Zinc | Kẽm |
 | `supplements.preset.koffein` | Koffein | Caffeine | Caffeine |
 
+## planner
+
+| Key | Deutsch | English | Tiếng Việt |
+|---|---|---|---|
+| `view` | Ansicht | View | Chế độ xem |
+| `tabDiary` | Tagebuch | Diary | Nhật ký |
+| `tabPlanner` | Planer | Planner | Thực đơn |
+| `eyebrow` | Ernährungsplaner | Meal planner | Lên thực đơn |
+| `title` | Wochenplan | Weekly plan | Thực đơn tuần |
+| `thisWeek` | Diese Woche | This week | Tuần này |
+| `nextWeek` | Nächste Woche | Next week | Tuần sau |
+| `weekOf` | Woche ab {date} | Week of {date} | Tuần từ {date} |
+| `empty` | Noch kein Plan für diese Woche. Der Planer stellt Frühstück, Mittag, Abend und Snacks zusammen, passend zu deinem Ziel von {kcal} kcal und {protein} g Eiweiß pro Tag. | No plan for this week yet. The planner puts together breakfast, lunch, dinner and snacks to fit your goal of {kcal} kcal and {protein} g protein a day. | Tuần này chưa có thực đơn. Ứng dụng sẽ gợi ý bữa sáng, trưa, tối và bữa phụ phù hợp với mục tiêu {kcal} kcal và {protein} g đạm mỗi ngày của bạn. |
+| `create` | Plan erstellen | Create plan | Tạo thực đơn |
+| `created` | Plan erstellt | Plan created | Đã tạo thực đơn |
+| `regenerate` | Neu vorschlagen | Suggest again | Gợi ý lại |
+| `regenerateConfirm` | Alle noch nicht eingetragenen Mahlzeiten ab heute neu planen? | Replan all meals from today that are not logged yet? | Lên lại tất cả các bữa từ hôm nay chưa được ghi? |
+| `prefs` | Vorlieben | Preferences | Sở thích |
+| `prefsTitle` | Vorlieben für den Planer | Planner preferences | Sở thích ăn uống |
+| `prefsHint` | Gilt für neue Vorschläge. Bestehende Pläne bleiben, bis du neu vorschlagen lässt. | Applies to new suggestions. Existing plans stay until you ask for new ones. | Áp dụng cho các gợi ý mới. Thực đơn hiện có giữ nguyên cho đến khi bạn gợi ý lại. |
+| `diet` | Ernährung | Diet | Chế độ ăn |
+| `dietOpt.alles` | Alles | Everything | Ăn tất cả |
+| `dietOpt.pescetarisch` | Pescetarisch | Pescatarian | Ăn cá, không thịt |
+| `dietOpt.vegetarisch` | Vegetarisch | Vegetarian | Ăn chay (có trứng, sữa) |
+| `dietOpt.vegan` | Vegan | Vegan | Thuần chay |
+| `lactoseFree` | Laktosefrei | Lactose-free | Không lactose |
+| `noNuts` | Ohne Nüsse | No nuts | Không các loại hạt |
+| `noPork` | Ohne Schweinefleisch | No pork | Không thịt heo |
+| `quick` | Nur schnelle Gerichte (bis 20 min) | Quick dishes only (up to 20 min) | Chỉ món nhanh (tối đa 20 phút) |
+| `mealPrep` | Meal-Prep: Mittagessen für 2 bis 3 Tage vorkochen | Meal prep: cook lunch for 2 to 3 days | Nấu sẵn: bữa trưa nấu một lần cho 2 đến 3 ngày |
+| `save` | Speichern | Save | Lưu |
+| `saved` | Vorlieben gespeichert | Preferences saved | Đã lưu sở thích |
+| `planned` | Geplant | Planned | Dự kiến |
+| `goal` | Ziel | Goal | Mục tiêu |
+| `portions` | {f} [[n\|Portion\|Portionen]] | {f} [[n\|serving\|servings]] | {f} phần |
+| `minutes` | {n} min | {n} min | {n} phút |
+| `keeps` | [[n\|hält 1 Tag\|hält {n} Tage]] | [[n\|keeps 1 day\|keeps {n} days]] | để được {n} ngày |
+| `recipe` | Rezept | Recipe | Công thức |
+| `recipeFor` | Rezept für {dish} | Recipe for {dish} | Công thức {dish} |
+| `swap` | Tauschen | Swap | Đổi món |
+| `swapFor` | {dish} tauschen | Swap {dish} | Đổi món {dish} |
+| `log` | Eintragen | Log | Ghi lại |
+| `logFor` | {dish} ins Tagebuch eintragen | Log {dish} in the diary | Ghi {dish} vào nhật ký |
+| `logged` | Eingetragen | Logged | Đã ghi |
+| `loggedToast` | {dish} eingetragen | {dish} logged | Đã ghi {dish} |
+| `swapTitle` | Gericht tauschen | Swap dish | Đổi món |
+| `swapHint` | Gleiche Mahlzeit, Portion auf ähnliche Kalorien angepasst. | Same meal, serving adjusted to similar calories. | Cùng bữa, khẩu phần điều chỉnh để lượng calo tương tự. |
+| `swapped` | Getauscht | Swapped | Đã đổi món |
+| `ingredients` | Zutaten | Ingredients | Nguyên liệu |
+| `steps` | Zubereitung | Method | Cách làm |
+| `also` | Außerdem: {list} | Also: {list} | Thêm: {list} |
+| `lactoseNote` | Mit laktosefreien Varianten. | With lactose-free versions. | Dùng loại không lactose. |
+| `suggestTitle` | Was passt heute noch? | What still fits today? | Hôm nay ăn thêm gì? |
+| `suggestOpen` | Noch offen: {kcal} kcal · {protein} g Eiweiß | Still open: {kcal} kcal · {protein} g protein | Còn lại: {kcal} kcal · {protein} g đạm |
+| `suggestDone` | Dein Tagesziel ist erreicht. | You have reached your goal for today. | Bạn đã đạt mục tiêu hôm nay. |
+| `toDiary` | Ins Tagebuch | Add to diary | Ghi vào nhật ký |
+| `toDiaryFor` | {dish} ins Tagebuch | Add {dish} to the diary | Ghi {dish} vào nhật ký |
+| `shopping` | Einkaufsliste | Shopping list | Danh sách đi chợ |
+| `rangeRest` | Ab heute | From today | Từ hôm nay |
+| `rangeWeek` | Ganze Woche | Whole week | Cả tuần |
+| `shoppingEmpty` | Keine offenen Mahlzeiten in diesem Zeitraum. | No open meals in this period. | Không còn bữa nào trong khoảng này. |
+| `shoppingExtras` | Gewürze und Frisches | Spices and fresh extras | Gia vị và rau thơm |
+| `pieces` | ≈ {n} Stk. | ≈ {n} pcs | khoảng {n} quả |
+| `shoppingHint` | Mengen für die geplanten Portionen. Haken werden mit deinem Konto synchronisiert. | Amounts for the planned servings. Ticks sync with your account. | Số lượng theo các khẩu phần đã lên. Dấu tích được đồng bộ với tài khoản. |
+| `cat.gemuese` | Gemüse | Vegetables | Rau củ |
+| `cat.obst` | Obst | Fruit | Trái cây |
+| `cat.protein` | Eiweißquellen | Protein sources | Nguồn đạm |
+| `cat.milch` | Milch und Alternativen | Dairy and alternatives | Sữa và đồ thay sữa |
+| `cat.kohlenhydrate` | Reis, Nudeln, Brot | Rice, noodles, bread | Gạo, bún, bánh mì |
+| `cat.vorrat` | Vorrat | Pantry | Đồ khô và gia vị |
+| `cuisine.vn` | Vietnamesisch | Vietnamese | Việt Nam |
+| `cuisine.kr` | Koreanisch | Korean | Hàn Quốc |
+| `cuisine.th` | Thailändisch | Thai | Thái Lan |
+| `cuisine.jp` | Japanisch | Japanese | Nhật Bản |
+| `cuisine.cn` | Chinesisch | Chinese | Trung Hoa |
+| `cuisine.de` | Deutsch | German | Đức |
+| `cuisine.med` | Mediterran | Mediterranean | Địa Trung Hải |
+| `cuisine.fusion` | Fusion | Fusion | Kết hợp |
+| `proteinRule` | Richtwert: pro Hauptmahlzeit etwa {g} g Eiweiß (0,4 g pro kg Körpergewicht, verteilt auf mindestens 4 Mahlzeiten). | Guide: about {g} g protein per main meal (0.4 g per kg body weight, spread over at least 4 meals). | Tham khảo: mỗi bữa chính khoảng {g} g đạm (0,4 g cho mỗi kg cân nặng, chia ít nhất 4 bữa). |
+| `valuesNote` | Nährwerte aus Standardtabellen, echte Produkte weichen um 5 bis 10 % ab. | Nutrition values from standard tables; real products differ by 5 to 10%. | Giá trị dinh dưỡng theo bảng chuẩn, sản phẩm thực tế có thể chênh 5 đến 10%. |
+
 ## progress
 
 | Key | Deutsch | English | Tiếng Việt |
@@ -882,6 +963,8 @@ Generiert mit `pnpm i18n:review`. Korrekturen direkt in `src/i18n/ns/*.ts` bzw. 
 
 | ID | Deutsch | English | Tiếng Việt | kcal/100 g |
 |---|---|---|---|---|
+| `haehnchenschenkel` | Hähnchenschenkel ohne Haut (roh) | Chicken thigh, skinless (raw) | Đùi gà bỏ da (sống) | 120 |
+| `rind-mager` | Rindfleisch mager, Hüfte (roh) | Lean beef, rump (raw) | Thịt bò nạc (sống) | 115 |
 | `haehnchenbrust` | Hähnchenbrust (roh) | Chicken breast (raw) | Ức gà (sống) | 110 |
 | `putenbrust` | Putenbrust (roh) | Turkey breast (raw) | Ức gà tây (sống) | 105 |
 | `rinderhack` | Rinderhack (roh) | Ground beef (raw) | Thịt bò xay (sống) | 250 |
@@ -896,6 +979,10 @@ Generiert mit `pnpm i18n:review`. Korrekturen direkt in `src/i18n/ns/*.ts` bzw. 
 | `eiklar` | Eiklar | Egg white | Lòng trắng trứng | 50 |
 | `kochschinken` | Kochschinken | Cooked ham | Giăm bông | 110 |
 | `salami` | Salami | Salami | Xúc xích Ý (salami) | 380 |
+| `milch-laktosefrei` | Laktosefreie Milch 1,5 % | Lactose-free milk 1.5% | Sữa không lactose 1,5% | 47 |
+| `skyr-laktosefrei` | Skyr laktosefrei | Lactose-free skyr | Skyr không lactose | 63 |
+| `magerquark-laktosefrei` | Magerquark laktosefrei | Lactose-free quark | Phô mai quark không lactose | 67 |
+| `sojajoghurt` | Sojajoghurt natur | Plain soy yogurt | Sữa chua đậu nành | 50 |
 | `magerquark` | Magerquark | Low-fat quark | Phô mai tươi ít béo (quark) | 67 |
 | `skyr` | Skyr natur | Skyr (plain) | Sữa chua Skyr không đường | 63 |
 | `griech-joghurt` | Griechischer Joghurt 10 % | Greek yoghurt 10% | Sữa chua Hy Lạp 10% | 120 |
@@ -910,6 +997,9 @@ Generiert mit `pnpm i18n:review`. Korrekturen direkt in `src/i18n/ns/*.ts` bzw. 
 | `harzer` | Harzer Käse | Harzer cheese | Phô mai Harzer | 115 |
 | `butter` | Butter | Butter | Bơ lạt | 740 |
 | `proteinpulver` | Whey Proteinpulver | Whey protein powder | Bột Whey protein | 380 |
+| `sojaprotein` | Sojaprotein-Isolat (Pulver) | Soy protein isolate (powder) | Bột đạm đậu nành | 370 |
+| `reisnudeln-roh` | Reisnudeln (trocken) | Rice noodles (dry) | Bún / bánh phở khô | 360 |
+| `speisestaerke` | Speisestärke | Cornstarch | Bột năng / bột bắp | 350 |
 | `haferflocken` | Haferflocken | Rolled oats | Yến mạch | 370 |
 | `reis-roh` | Reis (roh) | Rice (uncooked) | Gạo (sống) | 350 |
 | `reis-gekocht` | Reis (gekocht) | Rice (cooked) | Cơm trắng | 130 |
@@ -928,12 +1018,17 @@ Generiert mit `pnpm i18n:review`. Korrekturen direkt in `src/i18n/ns/*.ts` bzw. 
 | `reiswaffel` | Reiswaffel | Rice cake | Bánh gạo | 385 |
 | `cornflakes` | Cornflakes | Cornflakes | Ngũ cốc cornflakes | 375 |
 | `muesli` | Müsli (ungezuckert) | Muesli (unsweetened) | Ngũ cốc muesli không đường | 360 |
+| `linsen-braun-roh` | Braune / Beluga-Linsen (roh) | Brown / beluga lentils (dry) | Đậu lăng nâu / đen (khô) | 330 |
+| `weisse-bohnen-dose` | Weiße Bohnen (Dose, abgetropft) | White beans (canned, drained) | Đậu trắng (đóng hộp, để ráo) | 90 |
 | `linsen-roh` | Rote Linsen (roh) | Red lentils (uncooked) | Đậu lăng đỏ (sống) | 340 |
 | `kichererbsen-dose` | Kichererbsen (Dose, abgetropft) | Chickpeas (canned, drained) | Đậu gà (hộp, để ráo) | 120 |
 | `kidneybohnen-dose` | Kidneybohnen (Dose) | Kidney beans (canned) | Đậu đỏ tây (hộp) | 95 |
 | `tofu` | Tofu natur | Tofu (plain) | Đậu hũ (đậu phụ) | 125 |
 | `tempeh` | Tempeh | Tempeh | Tempeh (đậu nành lên men) | 195 |
 | `edamame` | Edamame | Edamame | Đậu nành Nhật (edamame) | 120 |
+| `blumenkohl` | Blumenkohl | Cauliflower | Súp lơ trắng | 23 |
+| `gruene-bohnen` | Grüne Bohnen | Green beans | Đậu que | 25 |
+| `kimchi` | Kimchi | Kimchi | Kim chi | 15 |
 | `brokkoli` | Brokkoli | Broccoli | Bông cải xanh | 34 |
 | `spinat` | Spinat | Spinach | Rau chân vịt (cải bó xôi) | 23 |
 | `paprika` | Paprika | Bell pepper | Ớt chuông | 30 |
@@ -947,6 +1042,7 @@ Generiert mit `pnpm i18n:review`. Korrekturen direkt in `src/i18n/ns/*.ts` bzw. 
 | `mais-dose` | Mais (Dose) | Sweetcorn (canned) | Bắp ngô (hộp) | 85 |
 | `erbsen` | Erbsen (TK) | Peas (frozen) | Đậu Hà Lan (đông lạnh) | 80 |
 | `tk-gemuese` | TK-Gemüsemischung | Frozen mixed vegetables | Rau củ trộn đông lạnh | 45 |
+| `orangensaft` | Orangensaft | Orange juice | Nước cam | 45 |
 | `banane` | Banane | Banana | Chuối | 95 |
 | `apfel` | Apfel | Apple | Táo | 55 |
 | `beeren-tk` | Beerenmischung (TK) | Mixed berries (frozen) | Quả mọng trộn (đông lạnh) | 45 |
@@ -955,6 +1051,12 @@ Generiert mit `pnpm i18n:review`. Korrekturen direkt in `src/i18n/ns/*.ts` bzw. 
 | `kiwi` | Kiwi | Kiwi | Kiwi | 60 |
 | `weintrauben` | Weintrauben | Grapes | Nho | 70 |
 | `datteln` | Datteln (getrocknet) | Dates (dried) | Chà là khô | 290 |
+| `sesam` | Sesam | Sesame seeds | Mè (vừng) | 570 |
+| `cashew` | Cashewkerne | Cashews | Hạt điều | 580 |
+| `leinsamen` | Leinsamen (geschrotet) | Flaxseed (ground) | Hạt lanh (xay) | 490 |
+| `hanfsamen` | Hanfsamen (geschält) | Hemp hearts | Hạt gai dầu (bóc vỏ) | 560 |
+| `kokosmilch` | Kokosmilch | Coconut milk | Nước cốt dừa | 190 |
+| `kokosmilch-light` | Kokosmilch light | Light coconut milk | Nước cốt dừa ít béo | 75 |
 | `olivenoel` | Olivenöl | Olive oil | Dầu ô liu | 880 |
 | `rapsoel` | Rapsöl | Rapeseed oil | Dầu ăn (dầu hạt cải) | 880 |
 | `erdnussbutter` | Erdnussbutter | Peanut butter | Bơ đậu phộng | 600 |
@@ -962,6 +1064,16 @@ Generiert mit `pnpm i18n:review`. Korrekturen direkt in `src/i18n/ns/*.ts` bzw. 
 | `walnuesse` | Walnüsse | Walnuts | Óc chó | 680 |
 | `avocado` | Avocado | Avocado | Bơ (quả) | 160 |
 | `chiasamen` | Chiasamen | Chia seeds | Hạt chia | 490 |
+| `sojasauce` | Sojasauce | Soy sauce | Xì dầu (nước tương) | 53 |
+| `austernsauce` | Austernsauce | Oyster sauce | Dầu hào | 51 |
+| `gochujang` | Gochujang (Chilipaste) | Gochujang (chili paste) | Tương ớt Gochujang | 230 |
+| `doubanjiang` | Doubanjiang (Bohnen-Chilipaste) | Doubanjiang (chili bean paste) | Tương đậu ớt Tứ Xuyên | 150 |
+| `misopaste` | Misopaste | Miso paste | Tương miso | 200 |
+| `mirin` | Mirin (süßer Reiswein) | Mirin (sweet rice wine) | Rượu mirin | 240 |
+| `bruehe` | Brühe (zubereitet) | Broth (prepared) | Nước dùng | 6 |
+| `zucker` | Zucker | Sugar | Đường | 400 |
+| `ahornsirup` | Ahornsirup | Maple syrup | Siro lá phong | 260 |
+| `kakao` | Kakaopulver (ungesüßt) | Cocoa powder (unsweetened) | Bột ca cao (không đường) | 360 |
 | `zartbitter` | Zartbitterschokolade 70 % | Dark chocolate 70% | Sô cô la đen 70% | 570 |
 | `proteinriegel` | Proteinriegel | Protein bar | Thanh protein | 360 |
 | `honig` | Honig | Honey | Mật ong | 305 |

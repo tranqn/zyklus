@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useMemo, useRef, useState, type ReactNode } from 'react'
 import { macrosOf, normalize, parseMealText, suggestAdjustment, targets, totals, burnedToday, type ParsedItem } from '../domain/nutrition'
 import type { BarcodeDetector as Ponyfill } from 'barcode-detector/ponyfill'
 import { lookupBarcode, searchOff } from '../domain/openfoodfacts'
@@ -8,6 +8,7 @@ import { recentFoods, useStore } from '../store'
 import { Bar, Icon, Ring, Segmented, Sheet } from '../ui/kit'
 import { toast } from '../ui/notify'
 import { MealActions, RecipeTab, SaveRecipeSheet, SupplementsCard } from './NutritionExtras'
+import MealPlanner from './MealPlanner'
 import { getLang, t as tr, useT } from '../i18n'
 import { allFoods, foodName, foodPortion } from '../domain/foods'
 
@@ -21,6 +22,44 @@ function defaultMeal(): Meal {
 }
 
 export default function Nutrition() {
+  const [view, setView] = useState<'tagebuch' | 'planer'>('tagebuch')
+  const { t } = useT()
+  return (
+    <div className="page">
+      {view === 'tagebuch' ? (
+        <Diary switcher={<ViewSwitch value={view} onChange={setView} />} />
+      ) : (
+        <>
+          <div className="page-head">
+            <div>
+              <div className="eyebrow">{t('planner.eyebrow')}</div>
+              <h1>{t('planner.title')}</h1>
+            </div>
+          </div>
+          <ViewSwitch value={view} onChange={setView} />
+          <MealPlanner />
+        </>
+      )}
+    </div>
+  )
+}
+
+function ViewSwitch({ value, onChange }: { value: 'tagebuch' | 'planer'; onChange: (v: 'tagebuch' | 'planer') => void }) {
+  const { t } = useT()
+  return (
+    <Segmented
+      value={value}
+      onChange={onChange}
+      label={t('planner.view')}
+      options={[
+        { value: 'tagebuch', label: t('planner.tabDiary') },
+        { value: 'planer', label: t('planner.tabPlanner') },
+      ]}
+    />
+  )
+}
+
+function Diary({ switcher }: { switcher: ReactNode }) {
   const s = useStore()
   const [day, setDay] = useState(today())
   const [addMeal, setAddMeal] = useState<Meal | null>(null)
@@ -36,7 +75,7 @@ export default function Nutrition() {
   const adj = suggestAdjustment(profile, s.weights)
 
   return (
-    <div className="page">
+    <>
       <div className="page-head">
         <div>
           <div className="eyebrow">{t('nutrition.eyebrow')}</div>
@@ -51,6 +90,7 @@ export default function Nutrition() {
           </button>
         </div>
       </div>
+      {switcher}
 
       <div className="card row" style={{ gap: 16 }}>
         <Ring value={tot.kcal} max={budget} size={116} stroke={11}>
@@ -149,7 +189,7 @@ export default function Nutrition() {
       <AddFoodSheet key={addMeal ?? 'zu'} meal={addMeal} day={day} onClose={() => setAddMeal(null)} />
       <SaveRecipeSheet key={recipeItems ? 'offen' : 'zu'} items={recipeItems} onClose={() => setRecipeItems(null)} />
       <EditEntrySheet key={editEntry?.id ?? 'zu'} entry={editEntry} onClose={() => setEditEntry(null)} />
-    </div>
+    </>
   )
 }
 
