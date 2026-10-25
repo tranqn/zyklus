@@ -122,5 +122,73 @@
  "leg_raise_lying": {
   "duration": 2.5,
   "label": "Beinheben liegend"
+ },
+ "fly_front": {
+  "duration": 2.7,
+  "label": "Fliegende / Crossover (Frontansicht)"
+ },
+ "face_pull": {
+  "duration": 2.4,
+  "label": "Face Pulls"
+ },
+ "inverted_row": {
+  "duration": 2.5,
+  "label": "Umgekehrtes Rudern"
+ },
+ "pike": {
+  "duration": 2.2,
+  "label": "Pike-Liegestütz"
+ },
+ "bench_dips": {
+  "duration": 2.2,
+  "label": "Bankdips"
+ },
+ "sissy_squat": {
+  "duration": 2.7,
+  "label": "Sissy Squat"
+ },
+ "spanish_squat": {
+  "duration": 2.85,
+  "label": "Spanish Squat"
+ },
+ "leg_curl_seated": {
+  "duration": 2.6,
+  "label": "Beinbeuger sitzend"
+ },
+ "nordic_curl": {
+  "duration": 3.6,
+  "label": "Nordic Curl"
+ },
+ "slider_curl": {
+  "duration": 2.7,
+  "label": "Beinbeuger mit Handtuch"
+ },
+ "kickback": {
+  "duration": 2.3,
+  "label": "Kickbacks am Kabel"
+ },
+ "seated_calf": {
+  "duration": 2.2,
+  "label": "Wadenheben sitzend"
+ },
+ "cable_crunch": {
+  "duration": 2.55,
+  "label": "Kabel-Crunch"
+ },
+ "pallof": {
+  "duration": 2.4,
+  "label": "Pallof Press"
+ },
+ "dead_bug": {
+  "duration": 2.75,
+  "label": "Dead Bug"
+ },
+ "farmer_hold": {
+  "duration": 3,
+  "label": "Farmer Hold"
+ },
+ "dead_hang": {
+  "duration": 3.2,
+  "label": "Toter Hang"
  }
 }

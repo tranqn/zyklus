@@ -279,4 +279,142 @@ export const PATTERNS = {
       { pose: { torso: 270, armN: [92, 90], armF: [92, 90], legN: [4, 6, 96], legF: [6, 8, 98], root: { by: 'hip', at: [190, ANKLE_Y - 8] } }, hold: 0.25, move: 1.1 },
     ],
   },
+  // ---- added 2026-10-25: remaining exercises ----
+  fly_front: {
+    label: 'Fliegende / Crossover (Frontansicht)',
+    props: [{ type: 'dumbbells' }],
+    phases: [
+      { pose: stand({ armN: [95, 92], armF: [265, 268], legN: feet(196), legF: feet(164) }), hold: 0.2, move: 1.1 },
+      { pose: stand({ armN: [160, 205], armF: [200, 155], legN: feet(196), legF: feet(164) }), hold: 0.3, move: 1.1 },
+    ],
+  },
+  face_pull: {
+    label: 'Face Pulls',
+    props: [{ type: 'handle' }],
+    phases: [
+      { pose: stand({ torso: 356, armN: hands(270, 68, 'fwd'), armF: hands(266, 70, 'fwd') }), hold: 0.15, move: 0.9 },
+      { pose: stand({ torso: 356, armN: hands(186, 56, 'fwd'), armF: hands(182, 58, 'fwd') }), hold: 0.35, move: 1.0 },
+    ],
+  },
+  inverted_row: {
+    label: 'Umgekehrtes Rudern',
+    props: [{ type: 'bar', x: 70, y: 190 }],
+    phases: [
+      { pose: { torso: 274, armN: hands(70, 194, 'fwd'), armF: hands(70, 194, 'fwd'), legN: { ik: [315, 310], bend: 'back', foot: 20 }, legF: { ik: [315, 310], bend: 'back', foot: 20 }, root: { by: 'hip', at: [164, 300] } }, hold: 0.2, move: 1.0 },
+      { pose: { torso: 291, armN: hands(70, 194, 'fwd'), armF: hands(70, 194, 'fwd'), legN: { ik: [315, 310], bend: 'back', foot: 20 }, legF: { ik: [315, 310], bend: 'back', foot: 20 }, root: { by: 'hip', at: [173, 255] } }, hold: 0.3, move: 1.0 },
+    ],
+  },
+  pike: {
+    label: 'Pike-Liegestütz',
+    phases: [
+      { pose: { torso: 233, armN: hands(112, 318, 'fwd'), armF: hands(112, 318, 'fwd'), legN: { ik: [262, ANKLE_Y], bend: 'back', foot: 150 }, legF: { ik: [262, ANKLE_Y], bend: 'back', foot: 150 }, root: { by: 'hip', at: [200, 170] } }, hold: 0.2, move: 1.0 },
+      { pose: { torso: 226, armN: hands(112, 318, 'fwd'), armF: hands(112, 318, 'fwd'), legN: { ik: [262, ANKLE_Y], bend: 'back', foot: 150 }, legF: { ik: [262, ANKLE_Y], bend: 'back', foot: 150 }, root: { by: 'hip', at: [196, 188] } }, hold: 0.1, move: 0.9 },
+    ],
+  },
+  bench_dips: {
+    label: 'Bankdips',
+    props: [{ type: 'bench', x: 100, y: 236, w: 80 }],
+    phases: [
+      { pose: { torso: 358, armN: hands(136, 234, 'back'), armF: hands(136, 234, 'back'), legN: { ik: [275, 312], bend: 'fwd', foot: 30 }, legF: { ik: [271, 312], bend: 'fwd', foot: 30 }, root: { by: 'hip', at: [148, 222] } }, hold: 0.2, move: 1.0 },
+      { pose: { torso: 2, armN: hands(136, 234, 'back'), armF: hands(136, 234, 'back'), legN: { ik: [275, 312], bend: 'fwd', foot: 30 }, legF: { ik: [271, 312], bend: 'fwd', foot: 30 }, root: { by: 'hip', at: [152, 270] } }, hold: 0.1, move: 0.9 },
+    ],
+  },
+  sissy_squat: {
+    label: 'Sissy Squat',
+    props: [{ type: 'block', x: 252, y: 196, w: 8, h: 252 }],
+    phases: [
+      { pose: stand({ armN: hands(246, 150, 'back'), armF: hands(246, 152, 'back'), root: { by: 'hip', at: [180, 166] } }), hold: 0.25, move: 1.3 },
+      { pose: stand({ torso: 330, armN: hands(246, 150, 'back'), armF: hands(246, 152, 'back'), legN: { ik: [186, 306], bend: 'fwd', foot: 130 }, legF: { ik: [182, 306], bend: 'fwd', foot: 130 }, root: { by: 'hip', at: [191, 196] } }), hold: 0.15, move: 1.0 },
+    ],
+  },
+  spanish_squat: {
+    label: 'Spanish Squat',
+    props: [{ type: 'block', x: 46, y: 262, w: 10, h: 120 }],
+    phases: [
+      { pose: stand({ armN: [120, 100], armF: [118, 98], legN: feet(190), legF: feet(186) }), hold: 0.25, move: 1.2 },
+      { pose: stand({ torso: 352, armN: [92, 90], armF: [90, 88], legN: feet(190), legF: feet(186), root: { by: 'hip', at: [114, 244] } }), hold: 0.4, move: 1.0 },
+    ],
+  },
+  leg_curl_seated: {
+    label: 'Beinbeuger sitzend',
+    props: [{ type: 'block', x: 150, y: 250, w: 64, h: 14 }, { type: 'block', x: 118, y: 196, w: 14, h: 100 }, { type: 'anklepad' }],
+    phases: [
+      { pose: { torso: 352, armN: [170, 110], armF: [170, 110], legN: [92, 100, 12], legF: [92, 102, 14], root: { by: 'hip', at: [140, 234] } }, hold: 0.15, move: 1.0 },
+      { pose: { torso: 352, armN: [170, 110], armF: [170, 110], legN: [92, 200, 110], legF: [92, 202, 112], root: { by: 'hip', at: [140, 234] } }, hold: 0.35, move: 1.1 },
+    ],
+  },
+  nordic_curl: {
+    label: 'Nordic Curl',
+    props: [{ type: 'block', x: 100, y: 304, w: 18, h: 16 }],
+    phases: [
+      { pose: { torso: 0, armN: [178, 178], armF: [176, 176], legN: { ik: [106, 312], bend: 'fwd', foot: 270 }, legF: { ik: [106, 312], bend: 'fwd', foot: 270 }, root: { by: 'hip', at: [180, 234] } }, hold: 0.3, move: 2.2 },
+      { pose: { torso: 50, armN: [140, 150], armF: [138, 148], legN: { ik: [106, 312], bend: 'fwd', foot: 270 }, legF: { ik: [106, 312], bend: 'fwd', foot: 270 }, root: { by: 'hip', at: [240, 262] } }, hold: 0.2, move: 0.9 },
+    ],
+  },
+  slider_curl: {
+    label: 'Beinbeuger mit Handtuch',
+    props: [{ type: 'anklepad' }],
+    phases: [
+      { pose: { torso: 260, armN: [100, 92], armF: [100, 92], legN: { ik: [318, 312], bend: 'fwd', foot: 20 }, legF: { ik: [318, 312], bend: 'fwd', foot: 20 }, root: { by: 'hip', at: [180, 290] } }, hold: 0.2, move: 1.1 },
+      { pose: { torso: 243, armN: [100, 92], armF: [100, 92], legN: { ik: [232, 312], bend: 'fwd', foot: 20 }, legF: { ik: [232, 312], bend: 'fwd', foot: 20 }, root: { by: 'hip', at: [172, 264] } }, hold: 0.3, move: 1.1 },
+    ],
+  },
+  kickback: {
+    label: 'Kickbacks am Kabel',
+    props: [{ type: 'block', x: 262, y: 196, w: 10, h: 252 }, { type: 'anklepad' }],
+    phases: [
+      { pose: stand({ torso: 15, armN: hands(254, 118, 'back'), armF: hands(254, 120, 'back'), legN: [184, 184, 90], legF: feet(184) }), hold: 0.15, move: 0.9 },
+      { pose: stand({ torso: 18, armN: hands(254, 118, 'back'), armF: hands(254, 120, 'back'), legN: [222, 226, 150], legF: feet(184) }), hold: 0.35, move: 0.9 },
+    ],
+  },
+  seated_calf: {
+    label: 'Wadenheben sitzend',
+    props: [{ type: 'block', x: 132, y: 256, w: 64, h: 14 }, { type: 'kneepad' }],
+    phases: [
+      { pose: { torso: 0, armN: [150, 110], armF: [150, 110], legN: feet(218), legF: feet(214), root: { by: 'hip', at: [140, 242] } }, hold: 0.2, move: 0.8 },
+      { pose: { torso: 0, armN: [150, 110], armF: [150, 110], legN: { ik: [218, ANKLE_Y - 16], bend: 'fwd', foot: 128 }, legF: { ik: [214, ANKLE_Y - 16], bend: 'fwd', foot: 128 }, root: { by: 'hip', at: [140, 242] } }, hold: 0.4, move: 0.8 },
+    ],
+  },
+  cable_crunch: {
+    label: 'Kabel-Crunch',
+    props: [{ type: 'handle' }],
+    phases: [
+      { pose: { torso: 15, armN: hands(238, 122, 'back'), armF: hands(236, 124, 'back'), legN: { ik: [126, 312], bend: 'fwd', foot: 270 }, legF: { ik: [126, 312], bend: 'fwd', foot: 270 }, root: { by: 'hip', at: [200, 232] } }, hold: 0.2, move: 1.0 },
+      { pose: { torso: 112, armN: hands(298, 262, 'back'), armF: hands(296, 264, 'back'), legN: { ik: [126, 312], bend: 'fwd', foot: 270 }, legF: { ik: [126, 312], bend: 'fwd', foot: 270 }, root: { by: 'hip', at: [196, 234] } }, hold: 0.35, move: 1.0 },
+    ],
+  },
+  pallof: {
+    label: 'Pallof Press',
+    props: [{ type: 'handle' }],
+    phases: [
+      { pose: stand({ armN: hands(198, 112, 'back'), armF: hands(196, 114, 'back'), legN: feet(196), legF: feet(162) }), hold: 0.2, move: 0.8 },
+      { pose: stand({ armN: hands(278, 106, 'back'), armF: hands(276, 108, 'back'), legN: feet(196), legF: feet(162) }), hold: 0.6, move: 0.8 },
+    ],
+  },
+  dead_bug: {
+    label: 'Dead Bug',
+    phases: [
+      { pose: { torso: 270, armN: [2, 2], armF: [4, 4], legN: [2, 90, 0], legF: [4, 92, 2], root: { by: 'hip', at: [190, ANKLE_Y - 10] } }, hold: 0.25, move: 1.1 },
+      { pose: { torso: 270, armN: [262, 264], armF: [4, 4], legN: [2, 90, 0], legF: [92, 94, 10], root: { by: 'hip', at: [190, ANKLE_Y - 10] } }, hold: 0.3, move: 1.1 },
+    ],
+  },
+  farmer_hold: {
+    label: 'Farmer Hold',
+    props: [{ type: 'dumbbells', d: 28 }],
+    phases: [
+      { pose: stand({ armN: [182, 182], armF: [180, 180], legN: feet(190), legF: feet(170) }), hold: 0.6, move: 0.9 },
+      { pose: stand({ torso: 1, armN: [182, 182], armF: [180, 180], legN: feet(190), legF: feet(170), root: { by: 'hip', at: [X - 4, ANKLE_Y - 152] } }), hold: 0.6, move: 0.9 },
+    ],
+  },
+  dead_hang: {
+    label: 'Toter Hang',
+    floor: false,
+    props: [{ type: 'bar', x: 182, y: 40 }],
+    phases: [
+      // knees bent like the pull-up so the figure fits; straight arms, the body sways slightly
+      // (the rig has no shoulder blades, so a scapular pull would bend the elbows)
+      { pose: { torso: 0, armN: hands(182, 46, 'back'), armF: hands(182, 46, 'back'), legN: [176, 226, 160], legF: [180, 232, 166], root: { by: 'hip', at: [180, 250] } }, hold: 0.4, move: 1.2 },
+      { pose: { torso: 5, armN: hands(182, 46, 'back'), armF: hands(182, 46, 'back'), legN: [172, 222, 156], legF: [176, 228, 162], root: { by: 'hip', at: [174, 250] } }, hold: 0.4, move: 1.2 },
+    ],
+  },
 }

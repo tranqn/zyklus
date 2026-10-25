@@ -112,7 +112,7 @@ var upperF = seg("Oberarm hinten", ${LEN.upperArm}, ${WIDTH.upperArm}, ${far}, t
 var foreF = seg("Unterarm hinten", ${LEN.forearm}, ${WIDTH.forearm}, ${far}, upperF, [0, ${LEN.upperArm}]); keys(foreF, ${js(rot.foreF)});
 `)
   for (const p of props) {
-    if (p.type === 'dumbbells') lines.push(`disc("Hantel hinten", 22, ${js(COLOR.gear)}, foreF, [0, ${LEN.forearm + 2}]);`)
+    if (p.type === 'dumbbells') lines.push(`disc("Hantel hinten", ${p.d ?? 22}, ${js(COLOR.gear)}, foreF, [0, ${LEN.forearm + 2}]);`)
   }
   lines.push(`
 var head = disc("Kopf", ${HEAD_R * 2}, ${near}, torso, [0, ${LEN.torso + LEN.neck}]);
@@ -127,10 +127,11 @@ var foreN = seg("Unterarm vorn", ${LEN.forearm}, ${WIDTH.forearm}, ${near}, uppe
     // bars sit in front of the hands that grip them
     if (p.type === 'bar') lines.push(`var bar = shape("Stange"); var barg = grp(bar); rect(barg, 120, 8, ${p.x}, ${p.y}, 4); fill(barg, ${js(COLOR.gear)});`)
     if (p.type === 'plate') lines.push(`disc("Hantelscheibe", ${p.d ?? 52}, ${js(COLOR.gear)}, foreN, [0, ${LEN.forearm + 2}]);`)
-    if (p.type === 'dumbbells') lines.push(`disc("Hantel vorn", 22, ${js(COLOR.gear)}, foreN, [0, ${LEN.forearm + 2}]);`)
+    if (p.type === 'dumbbells') lines.push(`disc("Hantel vorn", ${p.d ?? 22}, ${js(COLOR.gear)}, foreN, [0, ${LEN.forearm + 2}]);`)
     if (p.type === 'backbar') lines.push(`disc("Hantelscheibe", 52, ${js(COLOR.gear)}, torso, [0, ${LEN.torso - 6}]);`)
     if (p.type === 'hipbar') lines.push(`disc("Hantelscheibe", 52, ${js(COLOR.gear)}, hip, [0, -20]);`)
     if (p.type === 'handle') lines.push(`disc("Griff", 14, ${js(COLOR.gear)}, foreN, [0, ${LEN.forearm + 2}]);`)
+    if (p.type === 'kneepad') lines.push(`disc("Polster", 24, ${js(COLOR.gear)}, thighN, [0, ${LEN.thigh - 4}]);`)
     if (p.type === 'anklepad') lines.push(`disc("Polster", 22, ${js(COLOR.gear)}, shinN, [0, ${LEN.shin - 6}]);`)
     if (p.type === 'footplate') lines.push(`var fp = shape("Fußplatte"); var fpg = grp(fp); rect(fpg, 10, 64, 0, 0, 3); fill(fpg, ${js(COLOR.gear)}); fp.parent = footN; tr(fp).property("ADBE Position").setValue([0, ${LEN.foot / 2}]); tr(fp).property("ADBE Rotate Z").setValue(90);`)
   }
