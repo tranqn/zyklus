@@ -1,20 +1,44 @@
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect, type ComponentType } from 'react'
 import { HashRouter, NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { useStore } from './store'
 import { Icon, ToastHost } from './ui/kit'
-import Onboarding from './pages/Onboarding'
 import Today from './pages/Today'
-import Workout from './pages/Workout'
-import Plan from './pages/Plan'
-import Nutrition from './pages/Nutrition'
-import Progress from './pages/Progress'
-import MesoReview from './pages/MesoReview'
-import More, { Cardio, Knowledge, Mobility, ModePage, SettingsPage } from './pages/More'
-import { AccountPage } from './pages/Account'
-import { AuthScreen, ResetPage, VerifyPage } from './pages/Auth'
-import { Datenschutz, Impressum } from './pages/Legal'
+import { AuthScreen } from './pages/Auth'
 import { checkSession, startSync, useSync } from './sync/engine'
 import { useLang, useT } from './i18n'
+
+// The first screens (Heute, sign-in) ship in the entry chunk; every other page loads on demand and is
+// prefetched once the app is idle, so navigation stays instant and the pages are cached for offline use.
+const loaders: (() => Promise<unknown>)[] = []
+function page<M, K extends keyof M>(load: () => Promise<M>, name: K) {
+  loaders.push(load)
+  return lazy(() => load().then((m) => ({ default: m[name] as ComponentType })))
+}
+const Onboarding = page(() => import('./pages/Onboarding'), 'default')
+const Workout = page(() => import('./pages/Workout'), 'default')
+const Plan = page(() => import('./pages/Plan'), 'default')
+const Nutrition = page(() => import('./pages/Nutrition'), 'default')
+const Progress = page(() => import('./pages/Progress'), 'default')
+const MesoReview = page(() => import('./pages/MesoReview'), 'default')
+const More = page(() => import('./pages/More'), 'default')
+const Mobility = page(() => import('./pages/More'), 'Mobility')
+const Cardio = page(() => import('./pages/More'), 'Cardio')
+const SettingsPage = page(() => import('./pages/More'), 'SettingsPage')
+const ModePage = page(() => import('./pages/More'), 'ModePage')
+const Knowledge = page(() => import('./pages/More'), 'Knowledge')
+const AccountPage = page(() => import('./pages/Account'), 'AccountPage')
+const VerifyPage = page(() => import('./pages/Auth'), 'VerifyPage')
+const ResetPage = page(() => import('./pages/Auth'), 'ResetPage')
+const Impressum = page(() => import('./pages/Legal'), 'Impressum')
+const Datenschutz = page(() => import('./pages/Legal'), 'Datenschutz')
+
+function prefetchPages() {
+  const run = () => loaders.forEach((load) => load().catch(() => {}))
+  if ('requestIdleCallback' in window) requestIdleCallback(run, { timeout: 4000 })
+  else setTimeout(run, 1500)
+}
+
+const pending = <div className="page" aria-busy="true" />
 
 const TABS = [
   { to: '/', icon: 'home', label: 'shell.nav.today' },
@@ -31,6 +55,7 @@ function Shell() {
   return (
     <div className="app">
       <main>
+        <Suspense fallback={pending}>
         <Routes>
           <Route path="/" element={<Today />} />
           <Route path="/training" element={<Workout />} />
@@ -47,6 +72,7 @@ function Shell() {
           <Route path="/konto" element={<AccountPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </Suspense>
       </main>
       {!hideNav && (
         <nav className="nav" aria-label={t('shell.nav.main')}>
@@ -73,12 +99,14 @@ function Gate() {
   const { user, checked } = useSync()
   if (PUBLIC.includes(loc.pathname)) {
     return (
+      <Suspense fallback={pending}>
       <Routes>
         <Route path="/konto/bestaetigen" element={<VerifyPage />} />
         <Route path="/konto/passwort" element={<ResetPage />} />
         <Route path="/impressum" element={<Impressum />} />
         <Route path="/datenschutz" element={<Datenschutz />} />
       </Routes>
+      </Suspense>
     )
   }
   if (!user) {
@@ -86,7 +114,13 @@ function Gate() {
     if (!checked) return <div className="app" aria-busy="true" />
     return <AuthScreen />
   }
-  return ready ? <Shell /> : <Onboarding />
+  return ready ? (
+    <Shell />
+  ) : (
+    <Suspense fallback={pending}>
+      <Onboarding />
+    </Suspense>
+  )
 }
 
 export default function App() {
@@ -102,6 +136,7 @@ export default function App() {
   useEffect(() => {
     const stop = startSync()
     checkSession()
+    prefetchPages()
     return stop
   }, [])
   return (

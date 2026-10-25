@@ -1,5 +1,12 @@
 // Offline cache: app shell network-first, hashed assets cache-first.
-const CACHE = 'zyklus-v2'
+const CACHE = 'zyklus-v3'
+// sw.js stays the same across deploys, so old hashed chunks are pruned here instead of on activate:
+// keep the newest entries (one deploy is about 20 chunks; the running version is always the newest)
+const MAX_ASSETS = 60
+async function pruneAssets(cache) {
+  const assets = (await cache.keys()).filter((r) => new URL(r.url).pathname.includes('/assets/'))
+  await Promise.all(assets.slice(0, Math.max(0, assets.length - MAX_ASSETS)).map((r) => cache.delete(r)))
+}
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(['./', './index.html', './manifest.webmanifest', './icon.svg'])))
   self.skipWaiting()
@@ -19,8 +26,10 @@ self.addEventListener('fetch', (e) => {
         (hit) =>
           hit ||
           fetch(e.request).then((res) => {
-            const copy = res.clone()
-            caches.open(CACHE).then((c) => c.put(e.request, copy))
+            if (res.ok) {
+              const copy = res.clone()
+              caches.open(CACHE).then((c) => c.put(e.request, copy).then(() => pruneAssets(c)))
+            }
             return res
           }),
       ),

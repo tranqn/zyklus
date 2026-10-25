@@ -1,7 +1,6 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware'
 import { EXERCISES } from './domain/exercises'
-import { FOODS } from './domain/foods'
 import { generateMesocycle } from './domain/planner'
 import { applyTestResult, bestE1rm, cyclePosition } from './domain/progression'
 import type {
@@ -452,10 +451,6 @@ export function allExercises(s: Pick<State, 'customExercises'>): Exercise[] {
 
 export function exerciseMap(s: Pick<State, 'customExercises'>): Map<string, Exercise> {
   return new Map(allExercises(s).map((e) => [e.id, e]))
-}
-
-export function allFoods(s: Pick<State, 'customFoods'>): Food[] {
-  return [...s.customFoods, ...FOODS]
 }
 
 /** Best estimated 1RM per finished session for one exercise (for charts). */

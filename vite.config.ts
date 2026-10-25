@@ -18,6 +18,14 @@ const api: Record<string, ProxyOptions> = { '/api': { target: 'http://localhost:
 export default defineConfig({
   base: './',
   plugins: [react()],
+  build: {
+    rolldownOptions: {
+      output: {
+        // the framework changes rarely: its own chunk stays cached across app deploys
+        codeSplitting: { groups: [{ name: 'vendor', test: /node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler|zustand)[\\/]/ }] },
+      },
+    },
+  },
   server: { proxy: { ...off, ...api } },
   preview: { proxy: { ...off, ...api } },
   // Playwright specs in e2e/ are not vitest tests
