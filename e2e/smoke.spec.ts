@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 
 let counter = 0
 /** Create a fresh account; the app then shows onboarding. */
-async function signUp(page: Page, email = `e2e-${Date.now()}-${counter++}@example.test`, password = 'ein-langes-test-passwort') {
+async function signUp(page: Page, email = `e2e-${Date.now()}-${counter++}-${Math.random().toString(36).slice(2, 8)}@example.test`, password = 'ein-langes-test-passwort') {
   await page.goto('/')
   await page.getByRole('button', { name: 'Registrieren' }).click()
   await page.getByLabel('E-Mail').fill(email)
@@ -57,6 +57,16 @@ test('onboarding, workout with test set, finish', async ({ page }) => {
   await page.reload()
   await expect(page.getByText('Woche 1/5 · Einheit 2/3')).toBeVisible()
   await page.getByRole('link', { name: 'Fortschritt' }).click()
+
+  // body graphic: tapping a muscle opens its detail sheet; recovery mode recolors it
+  const figure = page.getByRole('group', { name: 'Körpergrafik der trainierten Muskeln' })
+  await figure.getByRole('button', { name: /^Brust:/ }).focus()
+  await page.keyboard.press('Enter')
+  await expect(page.getByRole('dialog', { name: 'Brust' })).toBeVisible()
+  await page.getByRole('button', { name: 'Schließen' }).click()
+  await page.getByRole('button', { name: 'Erholung' }).click()
+  await expect(figure.getByRole('button', { name: /^Brust: (Belastet|Erholt sich|Keine Daten)$/ })).toBeVisible()
+
   await page.getByRole('button', { name: 'Verlauf' }).click()
   await expect(page.getByText('Ganzkörper A').first()).toBeVisible()
 })

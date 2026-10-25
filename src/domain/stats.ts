@@ -40,18 +40,82 @@ export function streak(s: ActivitySources): number {
   return n
 }
 
+/** Weighted hard sets an exercise gives each muscle: primary counts 1, secondary 0.5. */
+function muscleShare(ex: Exercise, sets: number): [Muscle, number][] {
+  return [[ex.primary, sets], ...ex.secondary.map((m): [Muscle, number] => [m, sets * 0.5])]
+}
+
+function sessionMuscleSets(s: WorkoutSession, lib: Map<string, Exercise>): Partial<Record<Muscle, number>> {
+  const out: Partial<Record<Muscle, number>> = {}
+  for (const e of s.exercises) {
+    const ex = lib.get(e.exerciseId)
+    const n = workSets(e).length
+    if (!ex || !n) continue
+    for (const [m, v] of muscleShare(ex, n)) out[m] = (out[m] ?? 0) + v
+  }
+  return out
+}
+
 /** Hard sets per muscle in the week starting `weekStart`: primary counts 1, secondary 0.5. */
 export function weeklyMuscleSets(sessions: WorkoutSession[], lib: Map<string, Exercise>, weekStart = startOfWeek(today())): Record<Muscle, number> {
   const end = addDays(weekStart, 7)
   const out = {} as Record<Muscle, number>
   for (const s of sessions) {
     if (!s.finishedAt || s.date < weekStart || s.date >= end) continue
+    for (const [m, v] of Object.entries(sessionMuscleSets(s, lib)) as [Muscle, number][]) out[m] = (out[m] ?? 0) + v
+  }
+  return out
+}
+
+export interface MuscleContribution {
+  exerciseId: string
+  sets: number
+  primary: boolean
+}
+
+/** Which exercises fed a muscle in the week starting `weekStart`, largest share first. */
+export function muscleContributions(sessions: WorkoutSession[], lib: Map<string, Exercise>, muscle: Muscle, weekStart = startOfWeek(today())): MuscleContribution[] {
+  const end = addDays(weekStart, 7)
+  const by = new Map<string, MuscleContribution>()
+  for (const s of sessions) {
+    if (!s.finishedAt || s.date < weekStart || s.date >= end) continue
     for (const e of s.exercises) {
       const ex = lib.get(e.exerciseId)
-      if (!ex) continue
       const n = workSets(e).length
-      out[ex.primary] = (out[ex.primary] ?? 0) + n
-      for (const m of ex.secondary) out[m] = (out[m] ?? 0) + n * 0.5
+      if (!ex || !n) continue
+      const share = muscleShare(ex, n).find(([m]) => m === muscle)
+      if (!share) continue
+      const cur = by.get(ex.id) ?? { exerciseId: ex.id, sets: 0, primary: ex.primary === muscle }
+      cur.sets += share[1]
+      by.set(ex.id, cur)
+    }
+  }
+  return [...by.values()].sort((a, b) => b.sets - a.sets)
+}
+
+export interface MuscleRecovery {
+  /** finishedAt of the last session that trained the muscle */
+  last: string
+  /** weighted sets in that session */
+  sets: number
+  /** 0..1, 1 = recovered */
+  ready: number
+  hoursLeft: number
+}
+
+/**
+ * Rough recovery guide per muscle from the last session that trained it: about 24 h plus 6 h per weighted set,
+ * capped at 96 h (2 sets ≈ 36 h, 4 ≈ 48 h, 8 ≈ 72 h). A rule of thumb, not a measurement.
+ */
+export function muscleRecovery(sessions: WorkoutSession[], lib: Map<string, Exercise>, now = Date.now()): Partial<Record<Muscle, MuscleRecovery>> {
+  const out: Partial<Record<Muscle, MuscleRecovery>> = {}
+  const done = sessions.filter((s) => s.finishedAt && new Date(s.finishedAt).getTime() <= now).sort((a, b) => (a.finishedAt! < b.finishedAt! ? 1 : -1))
+  for (const s of done) {
+    for (const [m, sets] of Object.entries(sessionMuscleSets(s, lib)) as [Muscle, number][]) {
+      if (out[m]) continue
+      const need = Math.min(96, 24 + 6 * sets)
+      const hours = (now - new Date(s.finishedAt!).getTime()) / 3_600_000
+      out[m] = { last: s.finishedAt!, sets, ready: Math.min(1, hours / need), hoursLeft: Math.max(0, Math.ceil(need - hours)) }
     }
   }
   return out

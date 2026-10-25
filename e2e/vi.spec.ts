@@ -6,7 +6,7 @@ async function signUpVi(page: Page) {
   // browser language vi-VN: the app starts in Vietnamese
   await expect(page.getByRole('heading', { name: 'Chào mừng bạn trở lại' })).toBeVisible()
   await page.getByRole('button', { name: 'Đăng ký' }).click()
-  await page.getByLabel('Email').fill(`vi-${Date.now()}-${n++}@example.test`)
+  await page.getByLabel('Email').fill(`vi-${Date.now()}-${n++}-${Math.random().toString(36).slice(2, 8)}@example.test`)
   await page.getByLabel('Mật khẩu').fill('mot-mat-khau-dai-123')
   await page.getByRole('checkbox').check()
   await page.getByRole('button', { name: 'Tạo tài khoản' }).click()
