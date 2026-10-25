@@ -23,8 +23,16 @@ export function createMailer(cfg: Config): Mailer {
     auth: cfg.smtp.user ? { user: cfg.smtp.user, pass: cfg.smtp.pass } : undefined,
   })
   return async (m) => {
-    await transport.sendMail({ from: cfg.mailFrom, to: m.to, subject: m.subject, text: m.text })
+    const info = await transport.sendMail({ from: cfg.mailFrom, to: m.to, subject: m.subject, text: m.text })
+    console.log(`mail sent to=${maskEmail(m.to)} subject="${m.subject}" id=${info.messageId} response="${info.response}"`)
   }
+}
+
+/** keeps the log useful without storing full addresses: "namquoctran24@gmail.com" -> "na***@gmail.com" */
+export function maskEmail(email: string): string {
+  const at = email.lastIndexOf('@')
+  if (at < 1) return '***'
+  return `${email.slice(0, Math.min(2, at))}***${email.slice(at)}`
 }
 
 type Template = (link: string) => Omit<Mail, 'to'>
