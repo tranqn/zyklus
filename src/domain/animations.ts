@@ -94,4 +94,11 @@ export const ANIMATION: Record<string, string> = {
   'dead-bug': 'dead_bug',
   'farmers-walk-reps': 'farmer_hold',
   'toter-hang': 'dead_hang',
+  'kh-fliegende': 'fly_front',
+  'reverse-butterfly': 'rear_fly',
+  'vorgebeugtes-seitheben': 'rear_raise_bent',
+  'band-pull-apart': 'pull_apart',
+  abduktoren: 'hip_abduction_seated',
+  'band-abduktion': 'clamshell',
+  handgelenkcurls: 'wrist_curl',
 }

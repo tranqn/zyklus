@@ -190,5 +190,29 @@
  "dead_hang": {
   "duration": 3.2,
   "label": "Toter Hang"
+ },
+ "wrist_curl": {
+  "duration": 2.2,
+  "label": "Handgelenkcurls (sitzend, Unterarme auf den Oberschenkeln)"
+ },
+ "rear_fly": {
+  "duration": 2.55,
+  "label": "Reverse Butterfly (Frontansicht, sitzend)"
+ },
+ "pull_apart": {
+  "duration": 2.35,
+  "label": "Band Pull-Aparts (Frontansicht)"
+ },
+ "rear_raise_bent": {
+  "duration": 2.35,
+  "label": "Vorgebeugtes Seitheben (Frontansicht, Oberkörper zur Kamera geneigt)"
+ },
+ "hip_abduction_seated": {
+  "duration": 2.55,
+  "label": "Abduktorenmaschine (Frontansicht, Oberschenkel zeigen zur Kamera)"
+ },
+ "clamshell": {
+  "duration": 2.4,
+  "label": "Clamshell (Seitlage, Band über den Knien)"
  }
 }

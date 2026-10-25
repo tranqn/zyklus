@@ -104,6 +104,8 @@ function mixPose(p, q, t) {
     legN: arr(p.legN, q.legN),
     legF: arr(p.legF, q.legF),
     root: { by: p.root.by, at: [lerp(p.root.at[0], q.root.at[0], t), lerp(p.root.at[1], q.root.at[1], t)] },
+    // hand angle relative to the forearm (only drawn with the wristdb prop)
+    wrist: lerp(p.wrist ?? 0, q.wrist ?? 0, t),
   }
 }
 
