@@ -80,6 +80,9 @@ html {
   /* anything scrolled into view (focus, anchors) stays clear of the fixed bottom nav */
   scroll-padding-bottom: calc(var(--nav-h) + var(--safe-b) + 16px);
   scroll-padding-top: calc(var(--safe-t) + 8px);
+  /* no rubber band at the page edges: on iOS it drags the fixed nav up and shows empty space below it.
+     Only the root element controls the viewport, the same rule on body is ignored. */
+  overscroll-behavior: none;
 }
 html,
 body {
@@ -89,7 +92,6 @@ body {
 }
 body {
   min-height: 100dvh;
-  overscroll-behavior-y: none;
   line-height: 1.45;
   font-size: 16px;
 }
