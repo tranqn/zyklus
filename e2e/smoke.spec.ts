@@ -120,13 +120,14 @@ test('every main route renders without console errors', async ({ page }) => {
 
 test('account: register, data syncs to a second device, logout clears it', async ({ browser }) => {
   test.setTimeout(60_000)
-  const email = `e2e-${Date.now()}@example.test`
+  const email = `e2e-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.test`
   const password = 'ein-langes-test-passwort'
 
   const phone = await browser.newPage()
   await signUp(phone, email, password)
   await onboard(phone, false)
   await expect(phone.getByText('Bitte bestätige deine E-Mail-Adresse')).toBeVisible()
+  await expect(phone.getByText(/Schau im Spam-Ordner/)).toBeVisible()
 
   // log something and wait for the upload
   await phone.getByRole('link', { name: 'Mehr' }).click()
@@ -154,6 +155,13 @@ test('account: register, data syncs to a second device, logout clears it', async
   await expect(laptop.getByRole('heading', { name: 'Willkommen zurück' })).toBeVisible()
   const stored = await laptop.evaluate(() => JSON.parse(localStorage.getItem('zyklus-v1') ?? '{}').state?.profile ?? null)
   expect(stored).toBeNull()
+
+  // forgot password confirms the request and points to the spam folder
+  await laptop.getByRole('button', { name: 'Passwort vergessen?' }).click()
+  await laptop.getByRole('dialog').getByLabel('E-Mail').fill(email)
+  await laptop.getByRole('button', { name: 'Link senden' }).click()
+  await expect(laptop.getByText(/eine Stunde gültig/)).toBeVisible()
+  await expect(laptop.getByRole('dialog').getByText(/Schau im Spam-Ordner/)).toBeVisible()
 })
 
 test('pages load on demand and still open offline', async ({ page, context }) => {
