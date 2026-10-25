@@ -6,7 +6,7 @@ import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { openDb, type DB } from './db.ts'
-import type { Mail } from './mail.ts'
+import { maskEmail, type Mail } from './mail.ts'
 
 const ORIGIN = 'https://mci.example.test'
 const cfg: Config = { port: 0, appOrigin: ORIGIN, dataDir: ':memory:', secureCookies: true, mailFrom: 'test@example.test', registerLimit: 5 }
@@ -249,5 +249,13 @@ describe('language', () => {
     old.close()
     const db2 = openDb(file)
     expect(db2.prepare('SELECT locale FROM users').get()).toEqual({ locale: 'de' })
+  })
+})
+
+describe('mail log', () => {
+  it('masks addresses', () => {
+    expect(maskEmail('namquoctran24@gmail.com')).toBe('na***@gmail.com')
+    expect(maskEmail('a@b.de')).toBe('a***@b.de')
+    expect(maskEmail('kaputt')).toBe('***')
   })
 })
