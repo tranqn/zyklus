@@ -4,7 +4,7 @@ import { FOODS } from '../foods'
 import { parseMealText, suggestAdjustment, targets } from '../nutrition'
 import { estimateMinutes, generateMesocycle, targetRir, weekSets } from '../planner'
 import { applyTestResult, buildSession, cyclePosition, e1rm, nextTarget, pctFor } from '../progression'
-import { streak } from '../stats'
+import { muscleContributions, muscleRecovery, streak, weeklyMuscleSets } from '../stats'
 import type { Profile, SessionExercise, WorkoutSession } from '../types'
 import { addDays, today } from '../util'
 
@@ -160,5 +160,45 @@ describe('streak', () => {
     const src = { sessions: [], mobility: [{ date: t }, { date: addDays(t, -1) }, { date: addDays(t, -3) }], cardio: [], foods: [], weights: [], frozenDays: [addDays(t, -2)] }
     expect(streak(src)).toBe(3)
     expect(streak({ ...src, frozenDays: [] })).toBe(2)
+  })
+})
+
+describe('muscle map', () => {
+  const set = (reps: number) => ({ kind: 'arbeit', targetReps: reps, targetRir: 2, weight: 60, reps, done: true }) as SessionExercise['sets'][number]
+  const exercise = (exerciseId: string, n: number) => ({ key: exerciseId, exerciseId, slot: 'brust_compound', repMin: 6, repMax: 10, restSec: 120, sets: Array.from({ length: n }, () => set(8)) }) as SessionExercise
+  const session = (id: string, date: string, finishedAt: string, exercises: SessionExercise[]) =>
+    ({ id, mesoId: 'm', planDayId: 'd', dayName: 'A', week: 1, deload: false, date, startedAt: finishedAt, finishedAt, exercises }) as WorkoutSession
+  const week = '2026-10-19'
+  const sessions = [
+    session('a', '2026-10-20', '2026-10-20T18:00:00Z', [exercise('bankdruecken-lh', 4), exercise('klimmzuege', 3)]),
+    session('b', '2026-10-22', '2026-10-22T18:00:00Z', [exercise('bankdruecken-kh', 2)]),
+  ]
+
+  it('counts secondary muscles half and lists contributing exercises', () => {
+    const sets = weeklyMuscleSets(sessions, lib, week)
+    expect(sets.brust).toBe(6)
+    expect(sets.trizeps).toBe(3)
+    expect(sets.bizeps).toBe(1.5)
+    const tri = muscleContributions(sessions, lib, 'trizeps', week)
+    expect(tri.map((c) => [c.exerciseId, c.sets, c.primary])).toEqual([
+      ['bankdruecken-lh', 2, false],
+      ['bankdruecken-kh', 1, false],
+    ])
+    expect(muscleContributions(sessions, lib, 'brust', '2026-10-26')).toEqual([])
+  })
+
+  it('estimates recovery from the last session that hit the muscle', () => {
+    const now = new Date('2026-10-23T18:00:00Z').getTime()
+    const r = muscleRecovery(sessions, lib, now)
+    // chest: last hit by session b (2 sets -> 36 h needed), 24 h ago
+    expect(r.brust?.last).toBe('2026-10-22T18:00:00Z')
+    expect(r.brust?.ready).toBeCloseTo(24 / 36)
+    expect(r.brust?.hoursLeft).toBe(12)
+    // back: session a, 3 sets -> 42 h, 72 h ago -> recovered
+    expect(r.ruecken?.ready).toBe(1)
+    expect(r.ruecken?.hoursLeft).toBe(0)
+    expect(r.waden).toBeUndefined()
+    // sessions finishing after "now" are ignored
+    expect(muscleRecovery(sessions, lib, new Date('2026-10-21T00:00:00Z').getTime()).brust?.sets).toBe(4)
   })
 })

@@ -490,6 +490,35 @@ Generiert mit `pnpm i18n:review`. Korrekturen direkt in `src/i18n/ns/*.ts` bzw. 
 | `prevWeek` | Vorherige Woche | Previous week | Tuần trước |
 | `nextWeek` | Nächste Woche | Next week | Tuần sau |
 | `weekFrom` | Woche ab {date} | Week from {date} | Tuần từ {date} |
+| `body.figure` | Körpergrafik der trainierten Muskeln | Body graphic of trained muscles | Hình cơ thể với các nhóm cơ đã tập |
+| `body.mode` | Ansicht | View | Chế độ xem |
+| `body.volume` | Volumen | Volume | Khối lượng |
+| `body.recovery` | Erholung | Recovery | Hồi phục |
+| `body.front` | Vorne | Front | Mặt trước |
+| `body.back` | Hinten | Back | Mặt sau |
+| `body.tapHint` | Tippe auf einen Muskel für Details. | Tap a muscle for details. | Chạm vào một nhóm cơ để xem chi tiết. |
+| `body.recoveryHint` | Faustregel aus deiner letzten Einheit: rund 24 Stunden plus 6 pro Satz, höchstens 4 Tage. | Rule of thumb from your last session: about 24 hours plus 6 per set, at most 4 days. | Ước tính từ buổi tập gần nhất: khoảng 24 giờ cộng 6 giờ cho mỗi hiệp, tối đa 4 ngày. |
+| `body.none` | keine | none | không |
+| `body.state.fresh` | Belastet | Loaded | Đang mỏi |
+| `body.state.recovering` | Erholt sich | Recovering | Đang hồi phục |
+| `body.state.ready` | Bereit | Ready | Sẵn sàng |
+| `body.state.none` | Keine Daten | No data | Chưa có dữ liệu |
+| `body.setsLabel` | {muscle}: {sets} Sätze | {muscle}: {sets} sets | {muscle}: {sets} hiệp |
+| `body.recoveryLabel` | {muscle}: {state} | {muscle}: {state} | {muscle}: {state} |
+| `body.percent` | {n} % | {n}% | {n}% |
+| `body.sets` | [[n\|Satz\|Sätze]] | [[n\|set\|sets]] | hiệp |
+| `body.level.none` | In dieser Woche nicht trainiert. | Not trained this week. | Tuần này chưa tập. |
+| `body.level.low` | Wenig: unter 5 Sätzen tut sich kaum etwas. | Low: under 5 sets does very little. | Ít: dưới 5 hiệp gần như không tạo tiến bộ. |
+| `body.level.maintain` | Erhaltung: 5 bis 9 Sätze halten das Niveau. | Maintenance: 5 to 9 sets hold your level. | Duy trì: 5 đến 9 hiệp giữ được mức hiện tại. |
+| `body.level.target` | Im Zielbereich von 10 bis 20 Sätzen. | In the target range of 10 to 20 sets. | Trong khoảng mục tiêu 10 đến 20 hiệp. |
+| `body.level.high` | Über 20 Sätze: achte besonders auf Erholung. | Over 20 sets: pay extra attention to recovery. | Trên 20 hiệp: hãy đặc biệt chú ý hồi phục. |
+| `body.lastTrained` | Zuletzt trainiert: {date} | Last trained: {date} | Tập lần cuối: {date} |
+| `body.readyNow` | Erholt und bereit für die nächste Einheit. | Recovered and ready for the next session. | Đã hồi phục, sẵn sàng cho buổi tập tiếp theo. |
+| `body.hoursLeft` | Noch etwa {h} Stunden bis zur vollen Erholung. | About {h} hours until fully recovered. | Còn khoảng {h} giờ nữa để hồi phục hoàn toàn. |
+| `body.noRecent` | Noch keine Einheit für diesen Muskel. | No session for this muscle yet. | Chưa có buổi tập nào cho nhóm cơ này. |
+| `body.exercises` | Übungen in dieser Woche | Exercises this week | Bài tập trong tuần này |
+| `body.secondary` | Nebenmuskel | Secondary muscle | Cơ phụ |
+| `body.setsShort` | {sets} Sätze | {sets} sets | {sets} hiệp |
 | `prevMonth` | Vorheriger Monat | Previous month | Tháng trước |
 | `nextMonth` | Nächster Monat | Next month | Tháng sau |
 | `legendStrength` | Krafttraining | Strength training | Tập tạ |

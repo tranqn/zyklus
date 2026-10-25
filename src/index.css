@@ -348,6 +348,10 @@ p {
   background: var(--warn-soft);
   color: var(--warn);
 }
+.badge.bad {
+  background: color-mix(in srgb, var(--bad) 14%, transparent);
+  color: var(--bad);
+}
 
 .field {
   display: flex;
@@ -768,4 +772,29 @@ a {
 .legal p,
 .legal li {
   font-size: 0.92rem;
+}
+
+.bodymap {
+  display: block;
+  width: 100%;
+  max-width: 380px;
+  margin: 0 auto;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.bm-muscle {
+  cursor: pointer;
+  outline: none;
+}
+.bm-muscle path {
+  transition: fill 0.25s ease;
+}
+.bm-muscle:focus-visible path {
+  stroke: var(--accent);
+  stroke-width: 1.6;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bm-muscle path {
+    transition: none;
+  }
 }

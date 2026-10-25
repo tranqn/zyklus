@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
 import { weightTrend } from '../domain/nutrition'
 import { workSets } from '../domain/progression'
-import { personalRecords, sessionMinutes, sessionSets, sessionVolume, streak, weeklyMuscleSets } from '../domain/stats'
+import { muscleContributions, muscleRecovery, personalRecords, sessionMinutes, sessionSets, sessionVolume, streak, weeklyMuscleSets, type MuscleRecovery } from '../domain/stats'
 import type { MeasureSite, Muscle, WorkoutSession } from '../domain/types'
 import { addDays, fmt, formatDate, parseDay, startOfWeek, today } from '../domain/util'
 import { e1rmHistory, exerciseMap, useStore } from '../store'
+import { BodyMap } from '../ui/BodyMap'
 import { Bar, Icon, LineChart, Segmented, Sheet } from '../ui/kit'
 import { confirmAction, toast } from '../ui/notify'
 import { getLocale } from '../i18n/lang'
@@ -47,13 +48,9 @@ export default function Progress() {
 
 function Overview() {
   const s = useStore()
-  const lib = useMemo(() => exerciseMap(s), [s])
-  const [weekOffset, setWeekOffset] = useState(0)
   const done = s.sessions.filter((x) => x.finishedAt)
-  const weekStart = addDays(startOfWeek(today()), weekOffset * 7)
+  const weekStart = startOfWeek(today())
   const thisWeek = done.filter((x) => x.date >= weekStart && x.date < addDays(weekStart, 7))
-  const muscles = weeklyMuscleSets(s.sessions, lib, weekStart)
-  const order: Muscle[] = ['brust', 'ruecken', 'schultern', 'bizeps', 'trizeps', 'quadrizeps', 'beinbeuger', 'gesaess', 'waden', 'bauch', 'unterarme']
   const totalVolume = done.reduce((a, x) => a + sessionVolume(x), 0)
   return (
     <>
@@ -78,12 +75,46 @@ function Overview() {
 
       <Calendar />
 
-      <div className="card stack">
-        <div className="row between">
-          <div>
-            <h3>{tr('progress.muscleMap')}</h3>
-            <p className="tiny muted">{tr('progress.muscleMapHint')}</p>
-          </div>
+      <MuscleCard />
+    </>
+  )
+}
+
+const MUSCLE_ORDER: Muscle[] = ['brust', 'ruecken', 'schultern', 'bizeps', 'trizeps', 'quadrizeps', 'beinbeuger', 'gesaess', 'waden', 'bauch', 'unterarme']
+type MapMode = 'volumen' | 'erholung'
+
+/** Sequential scale for weekly sets: 0 = empty, 20+ = full accent. */
+const volumeFill = (v: number) => (v <= 0 ? 'var(--line)' : `color-mix(in srgb, var(--accent) ${Math.round(25 + 75 * Math.min(v, 20) / 20)}%, var(--line))`)
+
+type RecoveryState = 'fresh' | 'recovering' | 'ready' | 'none'
+const recoveryState = (r?: MuscleRecovery): RecoveryState => (!r ? 'none' : r.ready >= 1 ? 'ready' : r.ready < 0.5 ? 'fresh' : 'recovering')
+const BADGE: Record<RecoveryState, string> = { fresh: 'bad', recovering: 'warn', ready: 'ok', none: '' }
+const RECOVERY_COLOR: Record<RecoveryState, string> = { fresh: 'var(--bad)', recovering: 'var(--warn)', ready: 'var(--ok)', none: 'var(--line)' }
+
+function MuscleCard() {
+  const s = useStore()
+  const lib = useMemo(() => exerciseMap(s), [s])
+  const [mode, setMode] = useState<MapMode>('volumen')
+  const [weekOffset, setWeekOffset] = useState(0)
+  const [picked, setPicked] = useState<Muscle>()
+  const weekStart = addDays(startOfWeek(today()), weekOffset * 7)
+  const sets = weeklyMuscleSets(s.sessions, lib, weekStart)
+  const recovery = useMemo(() => muscleRecovery(s.sessions, lib), [s.sessions, lib])
+  const name = (m: Muscle) => tkr(`labels.muscle.${m}`)
+  const volume = mode === 'volumen'
+  const fill = (m: Muscle) => (volume ? volumeFill(sets[m] ?? 0) : RECOVERY_COLOR[recoveryState(recovery[m])])
+  const label = (m: Muscle) =>
+    volume
+      ? tr('progress.body.setsLabel', { muscle: name(m), sets: fmt(sets[m] ?? 0, 1) })
+      : tr('progress.body.recoveryLabel', { muscle: name(m), state: tkr(`progress.body.state.${recoveryState(recovery[m])}`) })
+  return (
+    <div className="card stack">
+      <div className="row between">
+        <div>
+          <h3>{tr('progress.muscleMap')}</h3>
+          <p className="tiny muted">{volume ? tr('progress.muscleMapHint') : tr('progress.body.recoveryHint')}</p>
+        </div>
+        {volume && (
           <div className="row" style={{ gap: 4 }}>
             <button className="icon-btn" aria-label={tr('progress.prevWeek')} onClick={() => setWeekOffset(weekOffset - 1)}>
               <Icon name="back" size={18} />
@@ -92,27 +123,110 @@ function Overview() {
               <Icon name="chevron" size={18} />
             </button>
           </div>
+        )}
+      </div>
+      <Segmented
+        value={mode}
+        onChange={setMode}
+        label={tr('progress.body.mode')}
+        options={[
+          { value: 'volumen', label: tr('progress.body.volume') },
+          { value: 'erholung', label: tr('progress.body.recovery') },
+        ]}
+      />
+      {volume && <span className="tiny muted">{tr('progress.weekFrom', { date: formatDate(weekStart) })}</span>}
+      <BodyMap title={tr('progress.body.figure')} front={tr('progress.body.front')} back={tr('progress.body.back')} fill={fill} label={label} selected={picked} onSelect={setPicked} />
+      {volume ? (
+        <div className="row tiny muted" style={{ gap: 8 }} aria-hidden="true">
+          <span>{tr('progress.body.none')}</span>
+          <span className="grow" style={{ height: 8, borderRadius: 4, background: 'linear-gradient(to right, var(--line), var(--accent))' }} />
+          <span className="num">20+</span>
         </div>
-        <span className="tiny muted">{tr('progress.weekFrom', { date: formatDate(weekStart) })}</span>
-        {order.map((m) => {
-          const v = muscles[m] ?? 0
-          const color = v >= 10 ? 'var(--ok)' : v >= 5 ? 'var(--warn)' : 'var(--muted)'
+      ) : (
+        <div className="row wrap tiny muted" style={{ gap: 12 }}>
+          {(['fresh', 'recovering', 'ready'] as const).map((k) => (
+            <span key={k} className="row" style={{ gap: 6 }}>
+              <span style={{ width: 10, height: 10, borderRadius: 3, background: RECOVERY_COLOR[k] }} />
+              {tr(`progress.body.state.${k}`)}
+            </span>
+          ))}
+        </div>
+      )}
+      <p className="tiny muted">{tr('progress.body.tapHint')}</p>
+      <div className="list">
+        {MUSCLE_ORDER.map((m) => {
+          const v = sets[m] ?? 0
+          const r = recovery[m]
           return (
-            <div key={m} className="row" style={{ gap: 10 }}>
-              <span className="small" style={{ width: 92, fontWeight: 600 }}>
-                {tkr(`labels.muscle.${m}`)}
+            <button key={m} className="list-item" style={{ minHeight: 40, padding: '6px 0' }} onClick={() => setPicked(m)} aria-label={label(m)}>
+              <span className="small" style={{ width: 92, fontWeight: 600, overflowWrap: 'anywhere' }}>
+                {name(m)}
               </span>
               <div className="grow">
-                <Bar value={v} max={20} color={color} />
+                {volume ? <Bar value={v} max={20} color={v >= 10 ? 'var(--ok)' : v >= 5 ? 'var(--warn)' : 'var(--muted)'} /> : <Bar value={r?.ready ?? 0} max={1} color={RECOVERY_COLOR[recoveryState(r)]} />}
               </div>
-              <span className="small num" style={{ width: 30, textAlign: 'right' }}>
-                {fmt(v, 1)}
+              <span className="small num" style={{ width: 40, textAlign: 'right' }}>
+                {volume ? fmt(v, 1) : r ? tr('progress.body.percent', { n: Math.round(r.ready * 100) }) : '–'}
               </span>
-            </div>
+            </button>
           )
         })}
       </div>
-    </>
+      <MuscleSheet muscle={picked} weekStart={weekStart} sets={picked ? sets[picked] ?? 0 : 0} recovery={picked ? recovery[picked] : undefined} onClose={() => setPicked(undefined)} />
+    </div>
+  )
+}
+
+function MuscleSheet({ muscle, weekStart, sets, recovery, onClose }: { muscle?: Muscle; weekStart: string; sets: number; recovery?: MuscleRecovery; onClose: () => void }) {
+  const s = useStore()
+  const lib = useMemo(() => exerciseMap(s), [s])
+  const items = muscle ? muscleContributions(s.sessions, lib, muscle, weekStart) : []
+  const level = sets <= 0 ? 'none' : sets < 5 ? 'low' : sets < 10 ? 'maintain' : sets <= 20 ? 'target' : 'high'
+  const state = recoveryState(recovery)
+  return (
+    <Sheet open={!!muscle} onClose={onClose} title={muscle ? tkr(`labels.muscle.${muscle}`) : ''}>
+      <div className="stack">
+        <span className="tiny muted">{tr('progress.weekFrom', { date: formatDate(weekStart) })}</span>
+        <div className="row" style={{ gap: 8, alignItems: 'baseline' }}>
+          <span className="num" style={{ fontSize: '2rem', fontWeight: 750 }}>
+            {fmt(sets, 1)}
+          </span>
+          <span className="muted">{tr('progress.body.sets', { n: sets })}</span>
+        </div>
+        <p className="small">{tkr(`progress.body.level.${level}`)}</p>
+        <div className="card stack" style={{ background: 'var(--surface-2)', boxShadow: 'none' }}>
+          <div className="row between">
+            <strong>{tr('progress.body.recovery')}</strong>
+            <span className={`badge ${BADGE[state]}`}>{tkr(`progress.body.state.${state}`)}</span>
+          </div>
+          {recovery ? (
+            <>
+              <Bar value={recovery.ready} max={1} color={RECOVERY_COLOR[state]} />
+              <span className="small">{recovery.ready >= 1 ? tr('progress.body.readyNow') : tr('progress.body.hoursLeft', { h: recovery.hoursLeft })}</span>
+              <span className="tiny muted">{tr('progress.body.lastTrained', { date: formatDate(today(new Date(recovery.last)), { weekday: 'short', day: 'numeric', month: 'short' }) })}</span>
+            </>
+          ) : (
+            <span className="small muted">{tr('progress.body.noRecent')}</span>
+          )}
+        </div>
+        {items.length > 0 && (
+          <>
+            <h3>{tr('progress.body.exercises')}</h3>
+            <div className="list">
+              {items.map((c) => (
+                <div key={c.exerciseId} className="list-item">
+                  <span className="grow" style={{ fontWeight: 600, overflowWrap: 'anywhere' }}>
+                    {exerciseName(lib.get(c.exerciseId)!)}
+                  </span>
+                  {!c.primary && <span className="badge">{tr('progress.body.secondary')}</span>}
+                  <span className="small num muted">{tr('progress.body.setsShort', { sets: fmt(c.sets, 1) })}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </Sheet>
   )
 }
 
