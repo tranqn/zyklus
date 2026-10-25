@@ -115,6 +115,7 @@ function ForgotSheet({ initialEmail, onClose }: { initialEmail: string; onClose:
       {sent ? (
         <div className="stack lg">
           <p>{tr('account.resetSent')}</p>
+          <p className="small muted">{tr('account.spamHint')}</p>
           <button className="btn primary block" onClick={onClose}>
             {tr('common.okay')}
           </button>

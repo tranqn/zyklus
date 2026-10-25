@@ -93,6 +93,7 @@ export function VerifyBanner() {
     <div className="card stack" style={{ background: 'var(--warn-soft)', borderColor: 'transparent' }}>
       <strong>{tr('account.page.verifyTitle')}</strong>
       <p className="small">{tr('account.page.verifyText')}</p>
+      <p className="small">{tr('account.spamHint')}</p>
       <button
         className="btn sm"
         style={{ alignSelf: 'flex-start' }}

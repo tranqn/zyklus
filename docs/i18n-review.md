@@ -792,7 +792,8 @@ Generiert mit `pnpm i18n:review`. Korrekturen direkt in `src/i18n/ns/*.ts` bzw. 
 | `created` | Konto erstellt. Bitte bestätige deine E-Mail. | Account created. Please confirm your email. | Đã tạo tài khoản. Vui lòng xác nhận email của bạn. |
 | `forgot` | Passwort vergessen? | Forgot password? | Quên mật khẩu? |
 | `resetTitle` | Passwort zurücksetzen | Reset password | Đặt lại mật khẩu |
-| `resetSent` | Wenn es ein Konto mit dieser E-Mail gibt, haben wir dir einen Link geschickt. Er ist eine Stunde gültig. Schau auch im Spam-Ordner nach. | If an account exists for this email, we have sent you a link. It is valid for one hour. Please also check your spam folder. | Nếu email này có tài khoản, chúng tôi đã gửi cho bạn một đường dẫn. Đường dẫn có hiệu lực trong một giờ. Hãy kiểm tra cả thư mục thư rác. |
+| `resetSent` | Wenn es ein Konto mit dieser E-Mail gibt, haben wir dir einen Link geschickt. Er ist eine Stunde gültig. | If an account exists for this email, we have sent you a link. It is valid for one hour. | Nếu email này có tài khoản, chúng tôi đã gửi cho bạn một đường dẫn. Đường dẫn có hiệu lực trong một giờ. |
+| `spamHint` | Keine E-Mail bekommen? Schau im Spam-Ordner und bei Gmail auch unter „Werbung“ nach. Markiere die E-Mail dort als „Kein Spam“, dann landen die nächsten direkt im Posteingang. | No email? Check your spam folder and, in Gmail, the Promotions tab. Mark the email as "Not spam" there so the next ones go straight to your inbox. | Không thấy email? Hãy kiểm tra thư mục Thư rác (Spam) và với Gmail cả mục Quảng cáo. Đánh dấu email đó là "Không phải thư rác" để các email sau vào thẳng hộp thư đến. |
 | `sendLink` | Link senden | Send link | Gửi đường dẫn |
 | `verifying` | E-Mail wird bestätigt … | Confirming your email … | Đang xác nhận email … |
 | `verified` | E-Mail bestätigt | Email confirmed | Đã xác nhận email |
