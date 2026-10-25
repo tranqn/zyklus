@@ -10,5 +10,6 @@ import { nutrition } from './ns/nutrition'
 import { progress } from './ns/progress'
 import { more } from './ns/more'
 import { account } from './ns/account'
+import { planner } from './ns/planner'
 
-export const MESSAGES = { common, labels, program, shell, onboarding, today, workout, plan, nutrition, progress, more, account }
+export const MESSAGES = { common, labels, program, shell, onboarding, today, workout, plan, nutrition, planner, progress, more, account }

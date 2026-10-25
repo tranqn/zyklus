@@ -1,3 +1,5 @@
+import type { MealPrefs } from './meals'
+
 export type Goal = 'muskelaufbau' | 'fettabbau' | 'rekomposition' | 'kraft'
 export type Level = 'anfaenger' | 'fortgeschritten' | 'profi'
 export type Location = 'studio' | 'zuhause'
@@ -253,6 +255,8 @@ export interface Settings {
   reentryPending?: boolean
   /** UI language, synced with the account (de | en | vi) */
   language?: 'de' | 'en' | 'vi'
+  /** meal planner preferences (see domain/meals.ts) */
+  mealPrefs?: MealPrefs
 }
 
 export interface RecipeItem {

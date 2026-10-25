@@ -22,6 +22,7 @@ import type {
   WeightEntry,
   WorkoutSession,
 } from './domain/types'
+import type { PlannedMeal } from './domain/meals'
 import { addDays, daysBetween, today, uid } from './domain/util'
 
 export interface State {
@@ -44,6 +45,10 @@ export interface State {
   /** date -> ids of supplements taken that day */
   supplementLog: Record<string, string[]>
   measurements: Measurement[]
+  /** meal planner: one item per day and meal slot */
+  mealPlan: PlannedMeal[]
+  /** shopping list items ticked off, as `${weekStart}:${foodId}` */
+  shoppingChecked: string[]
   settings: Settings
   /** Days frozen by vacation/sick mode, so the streak survives them. */
   frozenDays: string[]
@@ -70,6 +75,13 @@ interface Actions {
   regeneratePlan(): void
   saveCheckIn(c: CheckIn): void
   addFood(e: Omit<FoodEntry, 'id'>): void
+  addFoods(entries: Omit<FoodEntry, 'id'>[]): void
+  /** replaces the not yet logged meals on these dates */
+  setMealPlan(dates: string[], meals: PlannedMeal[]): void
+  updatePlannedMeal(id: string, patch: Partial<PlannedMeal>): void
+  /** logs a planned meal into the diary (entries computed by the caller) */
+  logPlannedMeal(id: string, entries: Omit<FoodEntry, 'id'>[]): void
+  toggleShopping(key: string): void
   updateFood(id: string, patch: Partial<FoodEntry>): void
   removeFood(id: string): void
   saveCustomFood(f: Food): void
@@ -130,6 +142,8 @@ const initial: State = {
   supplements: [],
   supplementLog: {},
   measurements: [],
+  mealPlan: [],
+  shoppingChecked: [],
   settings: {
     restTimerSound: true,
     restTimerVibrate: true,
@@ -312,6 +326,33 @@ export const useStore = create<State & Actions>()(
 
       addFood(e) {
         set((s) => ({ foods: [...s.foods, { ...e, id: uid() }] }))
+      },
+      addFoods(entries) {
+        set((s) => ({ foods: [...s.foods, ...entries.map((e) => ({ ...e, id: uid() }))] }))
+      },
+      setMealPlan(dates, meals) {
+        const days = new Set(dates)
+        // plans older than five weeks are dropped; logged meals stay as they were eaten
+        const keepFrom = addDays(today(), -35)
+        set((s) => {
+          const kept = s.mealPlan.filter((p) => p.date >= keepFrom && (!days.has(p.date) || p.logged))
+          const taken = new Set(kept.map((p) => p.id))
+          return { mealPlan: [...kept, ...meals.filter((m) => !taken.has(m.id))] }
+        })
+      },
+      updatePlannedMeal(id, patch) {
+        set((s) => ({ mealPlan: s.mealPlan.map((p) => (p.id === id ? { ...p, ...patch } : p)) }))
+      },
+      logPlannedMeal(id, entries) {
+        set((s) => ({
+          foods: [...s.foods, ...entries.map((e) => ({ ...e, id: uid() }))],
+          mealPlan: s.mealPlan.map((p) => (p.id === id ? { ...p, logged: true } : p)),
+        }))
+      },
+      toggleShopping(key) {
+        // ticks from weeks that are over are dropped along the way
+        const from = addDays(today(), -14)
+        set((s) => ({ shoppingChecked: s.shoppingChecked.includes(key) ? s.shoppingChecked.filter((k) => k !== key) : [...s.shoppingChecked.filter((k) => k.slice(0, 10) >= from), key] }))
       },
       updateFood(id, patch) {
         set((s) => ({ foods: s.foods.map((f) => (f.id === id ? { ...f, ...patch } : f)) }))

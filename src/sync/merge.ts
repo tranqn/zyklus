@@ -18,6 +18,7 @@ export const COLLECTIONS = {
   customFoods: 'id',
   customExercises: 'id',
   pastMesos: 'id',
+  mealPlan: 'id',
 } as const
 
 export type CollectionKey = keyof typeof COLLECTIONS
