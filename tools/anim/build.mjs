@@ -39,6 +39,17 @@ const r2 = (n) => Math.round(n * 100) / 100
 const js = (v) => JSON.stringify(v)
 
 function emit(name, spec) {
+  // spec.len shortens segments for foreshortened views (e.g. thighs pointing at the camera)
+  const saved = { ...LEN }
+  Object.assign(LEN, spec.len ?? {})
+  try {
+    return emitPattern(name, spec)
+  } finally {
+    Object.assign(LEN, saved)
+  }
+}
+
+function emitPattern(name, spec) {
   const { frames, duration } = sample(spec.phases, spec.step ?? 0.1)
   const times = frames.map((f) => r2(f.t))
   const P = frames.map((f) => f.pose)
@@ -56,6 +67,7 @@ function emit(name, spec) {
     foreN: P.map((p) => p.armN[1] - p.armN[0]),
     upperF: P.map((p) => p.armF[0] - p.torso),
     foreF: P.map((p) => p.armF[1] - p.armF[0]),
+    wrist: P.map((p) => p.wrist ?? 0),
   }
   for (const k of Object.keys(rot)) rot[k] = unwrap(rot[k]).map(r2)
   const hip = P.map((p) => [r2(p.root.at[0]), r2(p.root.at[1])])
@@ -113,6 +125,7 @@ var foreF = seg("Unterarm hinten", ${LEN.forearm}, ${WIDTH.forearm}, ${far}, upp
 `)
   for (const p of props) {
     if (p.type === 'dumbbells') lines.push(`disc("Hantel hinten", ${p.d ?? 22}, ${js(COLOR.gear)}, foreF, [0, ${LEN.forearm + 2}]);`)
+    if (p.type === 'wristdb') lines.push(`var handF = seg("Hand hinten", 14, 12, ${far}, foreF, [0, ${LEN.forearm}]); keys(handF, ${js(rot.wrist)}); disc("Hantel hinten", 20, ${js(COLOR.gear)}, handF, [0, 16]);`)
   }
   lines.push(`
 var head = disc("Kopf", ${HEAD_R * 2}, ${near}, torso, [0, ${LEN.torso + LEN.neck}]);
@@ -128,6 +141,7 @@ var foreN = seg("Unterarm vorn", ${LEN.forearm}, ${WIDTH.forearm}, ${near}, uppe
     if (p.type === 'bar') lines.push(`var bar = shape("Stange"); var barg = grp(bar); rect(barg, 120, 8, ${p.x}, ${p.y}, 4); fill(barg, ${js(COLOR.gear)});`)
     if (p.type === 'plate') lines.push(`disc("Hantelscheibe", ${p.d ?? 52}, ${js(COLOR.gear)}, foreN, [0, ${LEN.forearm + 2}]);`)
     if (p.type === 'dumbbells') lines.push(`disc("Hantel vorn", ${p.d ?? 22}, ${js(COLOR.gear)}, foreN, [0, ${LEN.forearm + 2}]);`)
+    if (p.type === 'wristdb') lines.push(`var handN = seg("Hand vorn", 14, 12, ${near}, foreN, [0, ${LEN.forearm}], OL); keys(handN, ${js(rot.wrist)}); disc("Hantel vorn", 20, ${js(COLOR.gear)}, handN, [0, 16]);`)
     if (p.type === 'backbar') lines.push(`disc("Hantelscheibe", 52, ${js(COLOR.gear)}, torso, [0, ${LEN.torso - 6}]);`)
     if (p.type === 'hipbar') lines.push(`disc("Hantelscheibe", 52, ${js(COLOR.gear)}, hip, [0, -20]);`)
     if (p.type === 'handle') lines.push(`disc("Griff", 14, ${js(COLOR.gear)}, foreN, [0, ${LEN.forearm + 2}]);`)

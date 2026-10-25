@@ -417,4 +417,54 @@ export const PATTERNS = {
       { pose: { torso: 5, armN: hands(182, 46, 'back'), armF: hands(182, 46, 'back'), legN: [172, 222, 156], legF: [176, 228, 162], root: { by: 'hip', at: [174, 250] } }, hold: 0.4, move: 1.2 },
     ],
   },
+  wrist_curl: {
+    label: 'Handgelenkcurls (sitzend, Unterarme auf den Oberschenkeln)',
+    props: [{ type: 'block', x: 132, y: 256, w: 64, h: 14 }, { type: 'wristdb' }],
+    phases: [
+      { pose: { torso: 28, armN: hands(236, 226, 'back'), armF: hands(232, 228, 'back'), legN: feet(222), legF: feet(218), root: { by: 'hip', at: [140, 242] }, wrist: 55 }, hold: 0.2, move: 0.8 },
+      { pose: { torso: 28, armN: hands(236, 226, 'back'), armF: hands(232, 228, 'back'), legN: feet(222), legF: feet(218), root: { by: 'hip', at: [140, 242] }, wrist: -45 }, hold: 0.4, move: 0.8 },
+    ],
+  },
+  rear_fly: {
+    label: 'Reverse Butterfly (Frontansicht, sitzend)',
+    len: { thigh: 46 },
+    props: [{ type: 'block', x: 180, y: 236, w: 76, h: 14 }, { type: 'handle' }],
+    phases: [
+      { pose: { torso: 0, armN: [150, 222], armF: [210, 138], legN: [160, 180, 90], legF: [200, 180, 270], root: { by: 'hip', at: [180, 222] } }, hold: 0.2, move: 1.0 },
+      { pose: { torso: 0, armN: [90, 94], armF: [270, 266], legN: [160, 180, 90], legF: [200, 180, 270], root: { by: 'hip', at: [180, 222] } }, hold: 0.35, move: 1.0 },
+    ],
+  },
+  pull_apart: {
+    label: 'Band Pull-Aparts (Frontansicht)',
+    phases: [
+      { pose: stand({ armN: [140, 230], armF: [220, 130], legN: [172, 178, 90], legF: [188, 182, 270], root: { by: 'hip', at: [X, ANKLE_Y - 151] } }), hold: 0.2, move: 0.9 },
+      { pose: stand({ armN: [90, 92], armF: [270, 268], legN: [172, 178, 90], legF: [188, 182, 270], root: { by: 'hip', at: [X, ANKLE_Y - 151] } }), hold: 0.35, move: 0.9 },
+    ],
+  },
+  rear_raise_bent: {
+    label: 'Vorgebeugtes Seitheben (Frontansicht, Oberkörper zur Kamera geneigt)',
+    len: { torso: 54 },
+    props: [{ type: 'dumbbells' }],
+    phases: [
+      { pose: stand({ armN: [176, 180], armF: [184, 180], legN: [170, 178, 90], legF: [190, 182, 270], root: { by: 'hip', at: [X, ANKLE_Y - 150] } }), hold: 0.2, move: 0.9 },
+      { pose: stand({ armN: [100, 106], armF: [260, 254], legN: [170, 178, 90], legF: [190, 182, 270], root: { by: 'hip', at: [X, ANKLE_Y - 150] } }), hold: 0.35, move: 0.9 },
+    ],
+  },
+  hip_abduction_seated: {
+    label: 'Abduktorenmaschine (Frontansicht, Oberschenkel zeigen zur Kamera)',
+    len: { thigh: 46 },
+    props: [{ type: 'block', x: 180, y: 236, w: 76, h: 14 }],
+    phases: [
+      { pose: { torso: 0, armN: [168, 176], armF: [192, 184], legN: [166, 180, 90], legF: [194, 180, 270], root: { by: 'hip', at: [180, 222] } }, hold: 0.2, move: 1.0 },
+      { pose: { torso: 0, armN: [168, 176], armF: [192, 184], legN: [122, 176, 90], legF: [238, 184, 270], root: { by: 'hip', at: [180, 222] } }, hold: 0.35, move: 1.0 },
+    ],
+  },
+  clamshell: {
+    label: 'Clamshell (Seitlage, Band über den Knien)',
+    len: { thigh: 50 },
+    phases: [
+      { pose: { torso: 270, armN: [95, 92], armF: [265, 265], legN: [100, 260, 262], legF: [102, 262, 264], root: { by: 'hip', at: [240, 298] } }, hold: 0.2, move: 0.9 },
+      { pose: { torso: 270, armN: [95, 92], armF: [265, 265], legN: [52, 236, 250], legF: [102, 262, 264], root: { by: 'hip', at: [240, 298] } }, hold: 0.4, move: 0.9 },
+    ],
+  },
 }
