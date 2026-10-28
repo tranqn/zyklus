@@ -86,7 +86,7 @@ test('mobility: the player shows the move animation', async ({ page }) => {
 test('today: change the training days in the week strip', async ({ page }) => {
   await onboard(page)
   await expect(page.getByText('Woche 1/5 · Einheit 1/3')).toBeVisible()
-  await page.getByRole('button', { name: 'Tage ändern' }).click()
+  await page.getByRole('button', { name: 'Trainingstage ändern' }).click()
   // same number of days: only the weekdays move, the plan stays
   const days = page.getByRole('button', { name: /: Trainingstag$/ })
   const on = await days.evaluateAll((els) => els.map((e) => e.getAttribute('aria-pressed') === 'true'))
@@ -98,7 +98,7 @@ test('today: change the training days in the week strip', async ({ page }) => {
 
   // one more day rebuilds the plan after a confirmation
   page.once('dialog', (d) => d.accept())
-  await page.getByRole('button', { name: 'Tage ändern' }).click()
+  await page.getByRole('button', { name: 'Trainingstage ändern' }).click()
   const now = await days.evaluateAll((els) => els.map((e) => e.getAttribute('aria-pressed') === 'true'))
   await days.nth(now.indexOf(false)).click()
   await page.getByRole('button', { name: 'Fertig' }).click()
