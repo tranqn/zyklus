@@ -110,3 +110,41 @@ export const ANIMATION: Record<string, string> = {
   'dragon-flag': 'dragon_flag',
   'dragon-flag-tuck': 'dragon_flag_tuck',
 }
+
+/**
+ * Mobility move (German name from domain/activities.ts) -> animation pattern. Moves that turn or
+ * tilt out of the side view (90/90, lying twist, open book, neck tilt, shoulder rolls) and box
+ * breathing have no entry: the player shows their cue only.
+ */
+export const MOBILITY_ANIMATION: Record<string, string> = {
+  'Katze-Kuh': 'cat_cow',
+  'Kindhaltung mit Seitneigung': 'child_pose',
+  'Weltbeste Dehnung': 'worlds_greatest',
+  'Herabschauender Hund': 'down_dog',
+  'Tiefe Hocke halten': 'deep_squat_hold',
+  Armkreisen: 'arm_circles',
+  'Hüftbeuger-Dehnung kniend': 'hip_flexor_kneel',
+  Taube: 'pigeon',
+  Froschdehnung: 'frog',
+  'Cossack Squat': 'cossack',
+  'Thread the Needle': 'thread_needle',
+  Wandengel: 'wall_angels',
+  'Brustdehnung im Türrahmen': 'doorway_chest',
+  'Schulter-Dislocates mit Band': 'band_dislocates',
+  'Knie zur Brust': 'knees_chest',
+  'Glute Bridge halten': 'glute_bridge',
+  'Bird Dog': 'bird_dog',
+  Kindhaltung: 'child_pose',
+  'Beinbeuger-Dehnung': 'hamstring_stretch',
+  'Quadrizeps-Dehnung': 'quad_stretch',
+  'Latissimus-Dehnung': 'lat_stretch',
+  'Waden-Dehnung an der Wand': 'calf_wall',
+  'Stehende Hüftbeuger-Dehnung': 'standing_hip_flexor',
+  'Vorbeuge hängen lassen': 'forward_fold',
+  Brustöffner: 'chest_opener',
+  'Knie-zur-Wand': 'knee_to_wall',
+  'Wadenheben langsam': 'calf_raise',
+  'Spanish Squat halten': 'spanish_squat',
+  'Tibialis heben': 'tibialis_raise',
+  'Tiefe Hocke mit Gewichtsverlagerung': 'deep_squat_hold',
+}

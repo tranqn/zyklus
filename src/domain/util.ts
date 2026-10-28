@@ -5,6 +5,18 @@ export function nowMs(): number {
   return Date.now()
 }
 
+/** A workout still open after this many hours was forgotten: no running timer, end time capped. */
+export const STALE_SESSION_H = 4
+
+export function isStaleSession(startedAt: string, now: number): boolean {
+  return now - new Date(startedAt).getTime() > STALE_SESSION_H * 3_600_000
+}
+
+/** End time to store for a session: now, at most STALE_SESSION_H after the start (keeps recovery stats sane). */
+export function sessionEndMs(startedAt: string, now: number): number {
+  return Math.min(now, new Date(startedAt).getTime() + STALE_SESSION_H * 3_600_000)
+}
+
 export function currentHour(): number {
   return new Date().getHours()
 }
