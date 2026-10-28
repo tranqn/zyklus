@@ -227,13 +227,14 @@ function WeekCard() {
             {t('today.editDone')}
           </button>
         ) : (
-          <div className="row" style={{ gap: 12 }}>
-            <button className="link-btn small" onClick={() => setDraft(profile.trainingDays)}>
-              {t('today.editDays')}
-            </button>
+          <div className="row" style={{ gap: 4 }}>
             <Link to="/fortschritt" className="small">
               {t('today.calendar')}
             </Link>
+            {/* negative margin keeps the head as tall as the plain text row */}
+            <button className="icon-btn plain" style={{ margin: '-10px -10px -10px 0' }} aria-label={t('today.editDays')} title={t('today.editDays')} onClick={() => setDraft(profile.trainingDays)}>
+              <Icon name="settings" size={20} />
+            </button>
           </div>
         )}
       </div>

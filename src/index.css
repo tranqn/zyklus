@@ -786,15 +786,6 @@ textarea.input {
 a {
   color: var(--accent);
 }
-/* button that reads like a link (next to real links in a card head) */
-.link-btn {
-  border: 0;
-  background: none;
-  padding: 0;
-  color: var(--accent);
-  font-weight: inherit;
-  text-decoration: underline;
-}
 /* text-like buttons line up with the card's content edge */
 .btn.ghost.sm {
   padding: 0 10px;
