@@ -5,9 +5,10 @@ import { useT } from '../i18n'
 
 type Player = { play(): void; pause(): void; destroy(): void; goToAndStop(v: number, frame: boolean): void }
 
-/** Looping Lottie animation of an exercise, loaded only when the sheet opens. */
-export function ExerciseAnimation({ exerciseId, label }: { exerciseId: string; label: string }) {
-  const pattern = ANIMATION[exerciseId]
+/** Looping Lottie animation of an exercise (by id) or of a pattern directly (mobility moves),
+ * loaded only when it is shown. */
+export function ExerciseAnimation({ exerciseId, pattern: direct, label, size = 320 }: { exerciseId?: string; pattern?: string; label: string; size?: number }) {
+  const pattern = direct ?? (exerciseId ? ANIMATION[exerciseId] : undefined)
   const { t } = useT()
   const box = useRef<HTMLDivElement>(null)
   const player = useRef<Player | null>(null)
@@ -38,8 +39,8 @@ export function ExerciseAnimation({ exerciseId, label }: { exerciseId: string; l
 
   if (!pattern || failed) return null
   return (
-    <figure style={{ margin: 0, position: 'relative' }}>
-      <div ref={box} role="img" aria-label={t('shell.anim.label', { name: label })} style={{ width: '100%', maxWidth: 320, aspectRatio: '1', margin: '0 auto', background: 'var(--surface-2)', borderRadius: 16 }} />
+    <figure style={{ margin: '0 auto', position: 'relative', width: '100%', maxWidth: size }}>
+      <div ref={box} role="img" aria-label={t('shell.anim.label', { name: label })} style={{ width: '100%', aspectRatio: '1', background: 'var(--surface-2)', borderRadius: 16 }} />
       <button
         className="icon-btn"
         style={{ position: 'absolute', right: 8, bottom: 8, background: 'var(--surface)' }}

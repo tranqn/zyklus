@@ -5,10 +5,10 @@ import { estimateMinutes, isDeload, targetRir } from '../domain/planner'
 import { buildSession, cyclePosition } from '../domain/progression'
 import { streak } from '../domain/stats'
 import type { CheckIn, Muscle } from '../domain/types'
-import { addDays, currentHour, fmt, formatDate, startOfWeek, today, weekdayIndex } from '../domain/util'
+import { addDays, currentHour, fmt, formatDate, isStaleSession, nowMs, startOfWeek, today, weekdayIndex } from '../domain/util'
 import { exerciseMap, useStore } from '../store'
 import { Bar, Icon, Ring, Sheet, Stepper } from '../ui/kit'
-import { toast } from '../ui/notify'
+import { confirmAction, toast } from '../ui/notify'
 import { CheckInSheet } from './CheckInSheet'
 import { VerifyBanner } from './Account'
 import { useSync } from '../sync/engine'
@@ -20,7 +20,7 @@ export default function Today() {
   const s = useStore()
   const nav = useNavigate()
   const user = useSync((x) => x.user)
-  const { t, lang } = useT()
+  const { t } = useT()
   const [checkIn, setCheckIn] = useState(false)
   const [weightOpen, setWeightOpen] = useState(false)
   const profile = s.profile!
@@ -38,8 +38,7 @@ export default function Today() {
   const burned = burnedToday(s.cardio, d)
   const streakN = streak(s)
   const isTrainingDay = profile.trainingDays.includes(weekdayIndex(d))
-  const weekStart = startOfWeek(d)
-  const doneDates = new Set(s.sessions.filter((x) => x.finishedAt).map((x) => x.date))
+  const [now] = useState(() => nowMs())
   const lastWeight = s.weights[s.weights.length - 1]
   const hour = currentHour()
   const hello = hour < 11 ? t('today.morning') : hour < 18 ? t('today.hello') : t('today.evening')
@@ -100,6 +99,7 @@ export default function Today() {
             {t('today.running')}
           </div>
           <h2>{sessionDayName(s.active)}</h2>
+          {isStaleSession(s.active.startedAt, now) && <p className="small">{t('today.staleRunning', { date: formatDate(s.active.date, { weekday: 'long', day: 'numeric', month: 'long' }) })}</p>}
           <span className="btn" style={{ background: 'var(--accent-ink)', color: 'var(--accent)', border: 0, alignSelf: 'flex-start' }}>
             {t('today.resume')}
           </span>
@@ -143,26 +143,7 @@ export default function Today() {
         </div>
       )}
 
-      <div className="card stack">
-        <div className="row between">
-          <h3>{t('today.thisWeek')}</h3>
-          <Link to="/fortschritt" className="small">
-            {t('today.calendar')}
-          </Link>
-        </div>
-        <div className="week-strip">
-          {weekdaysShort(lang).map((w, i) => {
-            const date = addDays(weekStart, i)
-            const cls = ['d', doneDates.has(date) ? 'done' : profile.trainingDays.includes(i) ? 'plan' : '', date === d ? 'today' : ''].join(' ')
-            return (
-              <div key={w} className="day-dot">
-                {w}
-                <span className={cls}>{Number(date.slice(8))}</span>
-              </div>
-            )
-          })}
-        </div>
-      </div>
+      <WeekCard />
 
       <Link to="/ernaehrung" className="card row" style={{ gap: 16, textDecoration: 'none', color: 'inherit' }}>
         <Ring value={eaten.kcal} max={goal.kcal + burned} size={104} stroke={10}>
@@ -203,6 +184,83 @@ export default function Today() {
 
       <CheckInSheet open={checkIn} muscles={muscles} onClose={() => setCheckIn(false)} onDone={start} />
       <WeightSheet open={weightOpen} onClose={() => setWeightOpen(false)} />
+    </div>
+  )
+}
+
+/** This week at a glance; "Tage ändern" turns the days into toggles for the training days. */
+function WeekCard() {
+  const s = useStore()
+  const { t, lang } = useT()
+  const profile = s.profile!
+  const [draft, setDraft] = useState<number[] | null>(null)
+  const d = today()
+  const weekStart = startOfWeek(d)
+  const doneDates = new Set(s.sessions.filter((x) => x.finishedAt).map((x) => x.date))
+  const names = weekdaysShort(lang)
+
+  const toggle = (i: number) => setDraft((cur) => {
+    const days = cur ?? profile.trainingDays
+    return days.includes(i) ? days.filter((x) => x !== i) : [...days, i].sort((a, b) => a - b)
+  })
+  const save = () => {
+    if (!draft) return
+    if (draft.length < 2 || draft.length > 6) return toast(t('today.daysRange'))
+    if (draft.join() === profile.trainingDays.join()) return setDraft(null)
+    if (draft.length === profile.daysPerWeek) {
+      s.updateProfile({ trainingDays: draft })
+    } else {
+      // a different number of days needs a different split
+      if (!confirmAction(t('today.daysRegen', { n: draft.length }))) return
+      s.updateProfile({ trainingDays: draft, daysPerWeek: draft.length }, true)
+    }
+    setDraft(null)
+    toast(t('today.daysSaved'))
+  }
+
+  return (
+    <div className="card stack">
+      <div className="row between">
+        <h3>{t('today.thisWeek')}</h3>
+        {draft ? (
+          <button className="btn primary sm" onClick={save}>
+            {t('today.editDone')}
+          </button>
+        ) : (
+          <div className="row" style={{ gap: 12 }}>
+            <button className="link-btn small" onClick={() => setDraft(profile.trainingDays)}>
+              {t('today.editDays')}
+            </button>
+            <Link to="/fortschritt" className="small">
+              {t('today.calendar')}
+            </Link>
+          </div>
+        )}
+      </div>
+      <div className="week-strip">
+        {names.map((w, i) => {
+          const date = addDays(weekStart, i)
+          if (draft) {
+            const on = draft.includes(i)
+            return (
+              <div key={w} className="day-dot">
+                {w}
+                <button className={`d ${on ? 'on' : ''} ${date === d ? 'today' : ''}`} aria-pressed={on} aria-label={t('today.dayToggle', { day: w })} onClick={() => toggle(i)}>
+                  {Number(date.slice(8))}
+                </button>
+              </div>
+            )
+          }
+          const cls = ['d', doneDates.has(date) ? 'done' : profile.trainingDays.includes(i) ? 'plan' : '', date === d ? 'today' : ''].join(' ')
+          return (
+            <div key={w} className="day-dot">
+              {w}
+              <span className={cls}>{Number(date.slice(8))}</span>
+            </div>
+          )
+        })}
+      </div>
+      {draft && <p className="small muted">{t('today.editHint')}</p>}
     </div>
   )
 }

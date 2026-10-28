@@ -39,6 +39,21 @@ const flag = (torso, legN, legF) => ({
 
 const seatedLegs = (hipX, footX = hipX + 70) => ({ legN: feet(footX), legF: feet(footX - 6) })
 
+
+// ---- mobility helpers ----
+const KNEE_Y = FLOOR_Y - 9
+/** kneeling leg: thigh down to the knee on the floor, shin flat behind it */
+const kneel = (thigh = 180) => [thigh, 270, 270]
+/** on hands and knees: knee under the hip; armN/armF default to hands on the floor below the shoulder */
+const quad = (torso, over = {}) => {
+  const hip = over.hip ?? [150, KNEE_Y - LEN.thigh]
+  const d = dir(torso)
+  const sx = hip[0] + d[0] * LEN.torso
+  return { torso, armN: hands(sx, FLOOR_Y - 6, 'fwd'), armF: hands(sx - 4, FLOOR_Y - 6, 'fwd'), legN: kneel(), legF: kneel(), ...over, root: { by: 'hip', at: hip } }
+}
+/** front view standing legs (see pull_apart) */
+const frontLegs = { legN: [172, 178, 90], legF: [188, 182, 270] }
+
 export const PATTERNS = {
   squat: {
     label: 'Kniebeuge',
@@ -519,6 +534,207 @@ export const PATTERNS = {
     phases: [
       { pose: flag(232, [52, 142, 142], [54, 144, 144]), hold: 0.3, move: 1.8 },
       { pose: flag(254, [74, 150, 150], [76, 152, 152]), hold: 0.15, move: 1.0 },
+    ],
+  },
+  // ---- added 2026-10-28: mobility routines (domain/activities.ts) ----
+  cat_cow: {
+    label: 'Katze-Kuh',
+    phases: [
+      { pose: quad(82), hold: 0.4, move: 1.4 },
+      { pose: quad(72), hold: 0.4, move: 1.4 },
+    ],
+  },
+
+  // sitting on the heels: thigh forward to the knee on the floor, shin flat back, chest on the thighs
+  child_pose: {
+    label: 'Kindhaltung',
+    phases: [
+      { pose: { torso: 106, armN: hands(330, FLOOR_Y - 6), armF: hands(326, FLOOR_Y - 6), legN: [119, 270, 270], legF: [120, 270, 270], root: { by: 'hip', at: [138, 275] } }, hold: 0.8, move: 1.6 },
+      { pose: { torso: 103, armN: hands(338, FLOOR_Y - 6), armF: hands(334, FLOOR_Y - 6), legN: [123, 270, 270], legF: [124, 270, 270], root: { by: 'hip', at: [134, 272] } }, hold: 0.8, move: 1.6 },
+    ],
+  },
+
+  worlds_greatest: {
+    label: 'Weltbeste Dehnung',
+    phases: [
+      { pose: { torso: 62, armN: hands(238, FLOOR_Y - 14), armF: hands(226, FLOOR_Y - 6), legN: { ik: [252, ANKLE_Y], bend: 'fwd', foot: 90 }, legF: { ik: [78, ANKLE_Y], bend: 'fwd', foot: 150 }, root: { by: 'hip', at: [178, 258] } }, hold: 0.4, move: 1.3 },
+      { pose: { torso: 48, armN: hands(238, 40), armF: hands(226, FLOOR_Y - 6), legN: { ik: [252, ANKLE_Y], bend: 'fwd', foot: 90 }, legF: { ik: [78, ANKLE_Y], bend: 'fwd', foot: 150 }, root: { by: 'hip', at: [178, 254] } }, hold: 0.5, move: 1.3 },
+    ],
+  },
+  down_dog: {
+    label: 'Herabschauender Hund',
+    phases: [
+      { pose: { torso: 131, armN: hands(291, FLOOR_Y - 6), armF: hands(287, FLOOR_Y - 6), legN: { ik: [66, ANKLE_Y], bend: 'back', foot: 90 }, legF: { ik: [62, ANKLE_Y], bend: 'back', foot: 90 }, root: { by: 'hip', at: [140, 185] } }, hold: 0.3, move: 0.9 },
+      { pose: { torso: 131, armN: hands(291, FLOOR_Y - 6), armF: hands(287, FLOOR_Y - 6), legN: { ik: [78, ANKLE_Y - 14], bend: 'fwd', foot: 140 }, legF: { ik: [62, ANKLE_Y], bend: 'back', foot: 90 }, root: { by: 'hip', at: [140, 185] } }, hold: 0.3, move: 0.9 },
+      { pose: { torso: 131, armN: hands(291, FLOOR_Y - 6), armF: hands(287, FLOOR_Y - 6), legN: { ik: [66, ANKLE_Y], bend: 'back', foot: 90 }, legF: { ik: [62, ANKLE_Y], bend: 'back', foot: 90 }, root: { by: 'hip', at: [140, 185] } }, hold: 0.3, move: 0.9 },
+      { pose: { torso: 131, armN: hands(291, FLOOR_Y - 6), armF: hands(287, FLOOR_Y - 6), legN: { ik: [66, ANKLE_Y], bend: 'back', foot: 90 }, legF: { ik: [74, ANKLE_Y - 14], bend: 'fwd', foot: 140 }, root: { by: 'hip', at: [140, 185] } }, hold: 0.3, move: 0.9 },
+    ],
+  },
+  deep_squat_hold: {
+    label: 'Tiefe Hocke',
+    phases: [
+      { pose: stand({ torso: 26, armN: hands(214, 222), armF: hands(212, 224), root: { by: 'hip', at: [X - 34, ANKLE_Y - 52] } }), hold: 0.6, move: 1.4 },
+      { pose: stand({ torso: 20, armN: hands(216, 214), armF: hands(214, 216), root: { by: 'hip', at: [X - 32, ANKLE_Y - 58] } }), hold: 0.6, move: 1.4 },
+    ],
+  },
+  arm_circles: {
+    label: 'Armkreisen',
+    phases: [
+      { pose: stand({ armN: [180, 180], armF: [180, 180] }), move: 0.6 },
+      { pose: stand({ armN: [90, 90], armF: [90, 90] }), move: 0.6 },
+      { pose: stand({ armN: [0, 0], armF: [0, 0] }), move: 0.6 },
+      { pose: stand({ armN: [270, 270], armF: [270, 270] }), move: 0.6 },
+    ],
+  },
+  hip_flexor_kneel: {
+    label: 'Hüftbeuger-Dehnung kniend',
+    phases: [
+      { pose: { torso: 0, armN: [172, 168], armF: [170, 166], legN: { ik: [248, ANKLE_Y], bend: 'fwd', foot: 90 }, legF: kneel(204), root: { by: 'hip', at: [178, 246] } }, hold: 0.5, move: 1.4 },
+      { pose: { torso: 354, armN: [168, 164], armF: [166, 162], legN: { ik: [248, ANKLE_Y], bend: 'fwd', foot: 90 }, legF: kneel(214), root: { by: 'hip', at: [192, 252] } }, hold: 0.8, move: 1.4 },
+    ],
+  },
+  pigeon: {
+    label: 'Taube',
+    phases: [
+      { pose: { torso: 12, armN: hands(222, FLOOR_Y - 10), armF: hands(218, FLOOR_Y - 10), legN: [110, 270, 270], legF: [262, 268, 180], root: { by: 'hip', at: [190, 292] } }, hold: 0.5, move: 1.8 },
+      { pose: { torso: 86, armN: hands(336, FLOOR_Y - 6), armF: hands(332, FLOOR_Y - 6), legN: [110, 270, 270], legF: [262, 268, 180], root: { by: 'hip', at: [190, 294] } }, hold: 0.9, move: 1.6 },
+    ],
+  },
+  frog: {
+    label: 'Froschdehnung (Knie weit auseinander)',
+    phases: [
+      { pose: { torso: 104, armN: hands(304, FLOOR_Y - 6), armF: hands(300, FLOOR_Y - 6), legN: kneel(180), legF: kneel(180), root: { by: 'hip', at: [160, KNEE_Y - LEN.thigh] } }, hold: 0.4, move: 1.5 },
+      { pose: { torso: 100, armN: hands(304, FLOOR_Y - 6), armF: hands(300, FLOOR_Y - 6), legN: kneel(140), legF: kneel(140), root: { by: 'hip', at: [160 - 50, KNEE_Y - 60] } }, hold: 0.6, move: 1.5 },
+    ],
+  },
+  cossack: {
+    label: 'Cossack Squat (Frontansicht)',
+    phases: [
+      { pose: { torso: 0, armN: [168, 172], armF: [192, 188], legN: { ik: [280, ANKLE_Y], bend: 'fwd', foot: 0 }, legF: { ik: [80, ANKLE_Y], bend: 'back', foot: 270 }, root: { by: 'hip', at: [130, 285] } }, hold: 0.4, move: 0.9 },
+      { pose: { torso: 0, armN: [168, 172], armF: [192, 188], legN: { ik: [280, ANKLE_Y], bend: 'fwd', foot: 90 }, legF: { ik: [80, ANKLE_Y], bend: 'back', foot: 270 }, root: { by: 'hip', at: [180, 240] } }, move: 0.9 },
+      { pose: { torso: 0, armN: [168, 172], armF: [192, 188], legN: { ik: [280, ANKLE_Y], bend: 'fwd', foot: 90 }, legF: { ik: [80, ANKLE_Y], bend: 'back', foot: 0 }, root: { by: 'hip', at: [230, 285] } }, hold: 0.4, move: 0.9 },
+      { pose: { torso: 0, armN: [168, 172], armF: [192, 188], legN: { ik: [280, ANKLE_Y], bend: 'fwd', foot: 90 }, legF: { ik: [80, ANKLE_Y], bend: 'back', foot: 270 }, root: { by: 'hip', at: [180, 240] } }, move: 0.9 },
+    ],
+  },
+  thread_needle: {
+    label: 'Thread the Needle',
+    phases: [
+      { pose: quad(78, { armN: [10, 5] }), hold: 0.4, move: 1.5 },
+      { pose: quad(96, { armN: [232, 250] }), hold: 0.6, move: 1.4 },
+    ],
+  },
+  wall_angels: {
+    label: 'Wandengel (Frontansicht)',
+    phases: [
+      { pose: stand({ armN: [118, 12], armF: [242, 348], ...frontLegs, root: { by: 'hip', at: [X, ANKLE_Y - 151] } }), hold: 0.3, move: 1.3 },
+      { pose: stand({ armN: [34, 22], armF: [326, 338], ...frontLegs, root: { by: 'hip', at: [X, ANKLE_Y - 151] } }), hold: 0.3, move: 1.3 },
+    ],
+  },
+  // forearm against the frame, the body steps through so the arm ends up behind the chest
+  doorway_chest: {
+    label: 'Brustdehnung im Türrahmen',
+    props: [{ type: 'block', x: 124, y: 172, w: 10, h: 300 }],
+    phases: [
+      { pose: stand({ armN: hands(134, 30, 'fwd'), armF: [176, 176], legN: feet(212), legF: feet(156), root: { by: 'hip', at: [180, ANKLE_Y - 148] } }), hold: 0.5, move: 1.4 },
+      { pose: stand({ torso: 6, armN: hands(134, 30, 'fwd'), armF: [172, 172], legN: feet(212), legF: feet(156), root: { by: 'hip', at: [192, ANKLE_Y - 146] } }), hold: 0.9, move: 1.4 },
+    ],
+  },
+
+  band_dislocates: {
+    label: 'Schulter-Dislocates mit Band',
+    props: [{ type: 'handle' }],
+    phases: [
+      { pose: stand({ armN: [160, 160], armF: [158, 158] }), hold: 0.2, move: 0.7 },
+      { pose: stand({ armN: [60, 60], armF: [58, 58] }), move: 0.7 },
+      { pose: stand({ armN: [320, 320], armF: [318, 318] }), move: 0.7 },
+      { pose: stand({ armN: [220, 220], armF: [218, 218] }), hold: 0.2, move: 0.7 },
+      { pose: stand({ armN: [320, 320], armF: [318, 318] }), move: 0.7 },
+      { pose: stand({ armN: [60, 60], armF: [58, 58] }), move: 0.7 },
+    ],
+  },
+  knees_chest: {
+    label: 'Knie zur Brust',
+    phases: [
+      { pose: { torso: 272, armN: hands(172, 246), armF: hands(168, 248), legN: [335, 125, 90], legF: [337, 127, 92], root: { by: 'hip', at: [200, ANKLE_Y - 8] } }, hold: 0.4, move: 1.2 },
+      { pose: { torso: 274, armN: hands(152, 256), armF: hands(148, 258), legN: [318, 115, 80], legF: [320, 117, 82], root: { by: 'hip', at: [196, ANKLE_Y - 8] } }, hold: 0.4, move: 1.2 },
+    ],
+  },
+  bird_dog: {
+    label: 'Bird Dog',
+    phases: [
+      { pose: quad(80, { hip: [160, KNEE_Y - LEN.thigh], armN: [178, 180], armF: [176, 178] }), hold: 0.2, move: 1.1 },
+      { pose: quad(80, { hip: [160, KNEE_Y - LEN.thigh], armN: [66, 70], armF: [176, 178], legF: [256, 256, 170] }), hold: 0.7, move: 1.1 },
+      { pose: quad(80, { hip: [160, KNEE_Y - LEN.thigh], armN: [178, 180], armF: [176, 178] }), hold: 0.2, move: 1.1 },
+      { pose: quad(80, { hip: [160, KNEE_Y - LEN.thigh], armN: [178, 180], armF: [66, 70], legN: [256, 256, 170] }), hold: 0.7, move: 1.1 },
+    ],
+  },
+
+  hamstring_stretch: {
+    label: 'Beinbeuger-Dehnung',
+    props: [{ type: 'block', x: 300, y: 262, w: 44, h: 20 }],
+    phases: [
+      { pose: stand({ torso: 6, armN: [140, 130], armF: [138, 128], legN: [121, 121, 10], legF: [180, 180, 90], root: { by: 'hip', at: [174, ANKLE_Y - 152] } }), hold: 0.4, move: 1.5 },
+      { pose: stand({ torso: 52, armN: [118, 114], armF: [116, 112], legN: [121, 121, 10], legF: [180, 180, 90], root: { by: 'hip', at: [170, ANKLE_Y - 152] } }), hold: 1.0, move: 1.4 },
+    ],
+  },
+  quad_stretch: {
+    label: 'Quadrizeps-Dehnung',
+    phases: [
+      { pose: stand({ armN: hands(158, 172, 'back'), armF: [100, 96], legN: [188, 358, 300], legF: [180, 180, 90], root: { by: 'hip', at: [176, ANKLE_Y - 152] } }), hold: 0.6, move: 1.4 },
+      { pose: stand({ torso: 2, armN: hands(150, 168, 'back'), armF: [104, 98], legN: [198, 6, 300], legF: [180, 180, 90], root: { by: 'hip', at: [176, ANKLE_Y - 152] } }), hold: 0.9, move: 1.4 },
+    ],
+  },
+  lat_stretch: {
+    label: 'Latissimus-Dehnung',
+    props: [{ type: 'block', x: 332, y: 190, w: 10, h: 264 }],
+    phases: [
+      { pose: stand({ torso: 80, armN: hands(324, 158, 'back'), armF: hands(322, 160, 'back'), legN: feet(166), legF: feet(160), root: { by: 'hip', at: [148, ANKLE_Y - 150] } }), hold: 0.4, move: 1.4 },
+      { pose: stand({ torso: 94, armN: hands(324, 158, 'back'), armF: hands(322, 160, 'back'), legN: feet(166), legF: feet(160), root: { by: 'hip', at: [128, ANKLE_Y - 140] } }), hold: 0.9, move: 1.4 },
+    ],
+  },
+  calf_wall: {
+    label: 'Waden-Dehnung an der Wand',
+    props: [{ type: 'block', x: 324, y: 190, w: 10, h: 264 }],
+    phases: [
+      { pose: stand({ torso: 22, armN: hands(316, 128, 'back'), armF: hands(314, 132, 'back'), legN: { ik: [112, ANKLE_Y], bend: 'fwd', foot: 90 }, legF: feet(246), root: { by: 'hip', at: [190, ANKLE_Y - 144] } }), hold: 0.5, move: 1.4 },
+      { pose: stand({ torso: 30, armN: hands(316, 128, 'back'), armF: hands(314, 132, 'back'), legN: { ik: [112, ANKLE_Y], bend: 'fwd', foot: 90 }, legF: feet(246), root: { by: 'hip', at: [204, ANKLE_Y - 138] } }), hold: 0.9, move: 1.4 },
+    ],
+  },
+  standing_hip_flexor: {
+    label: 'Stehende Hüftbeuger-Dehnung',
+    phases: [
+      { pose: stand({ armN: hands(186, 170, 'back'), armF: hands(182, 172, 'back'), legN: feet(240), legF: { ik: [108, ANKLE_Y - 6], bend: 'fwd', foot: 140 }, root: { by: 'hip', at: [176, ANKLE_Y - 138] } }), hold: 0.5, move: 1.4 },
+      { pose: stand({ torso: 352, armN: hands(198, 176, 'back'), armF: hands(194, 178, 'back'), legN: feet(240), legF: { ik: [108, ANKLE_Y - 6], bend: 'fwd', foot: 140 }, root: { by: 'hip', at: [190, ANKLE_Y - 132] } }), hold: 0.9, move: 1.4 },
+    ],
+  },
+  forward_fold: {
+    label: 'Vorbeuge hängen lassen',
+    phases: [
+      { pose: stand({ torso: 140, armN: hands(206, FLOOR_Y - 20), armF: hands(202, FLOOR_Y - 18), legN: feet(184), legF: feet(180), root: { by: 'hip', at: [152, ANKLE_Y - 148] } }), hold: 0.5, move: 1.6 },
+      { pose: stand({ torso: 156, armN: hands(198, FLOOR_Y - 6), armF: hands(194, FLOOR_Y - 6), legN: feet(184), legF: feet(180), root: { by: 'hip', at: [148, ANKLE_Y - 144] } }), hold: 0.8, move: 1.6 },
+    ],
+  },
+  chest_opener: {
+    label: 'Brustöffner (Hände hinter dem Rücken)',
+    phases: [
+      { pose: stand({ armN: [200, 190], armF: [198, 188] }), hold: 0.4, move: 1.2 },
+      { pose: stand({ torso: 354, armN: [228, 214], armF: [226, 212] }), hold: 0.9, move: 1.2 },
+    ],
+  },
+  knee_to_wall: {
+    label: 'Knie zur Wand',
+    props: [{ type: 'block', x: 306, y: 190, w: 10, h: 264 }],
+    phases: [
+      { pose: { torso: 6, armN: hands(298, 196, 'back'), armF: hands(296, 200, 'back'), legN: { ik: [262, ANKLE_Y], bend: 'fwd', foot: 90 }, legF: kneel(204), root: { by: 'hip', at: [196, 246] } }, hold: 0.4, move: 1.2 },
+      { pose: { torso: 14, armN: hands(298, 196, 'back'), armF: hands(296, 200, 'back'), legN: { ik: [262, ANKLE_Y], bend: 'fwd', foot: 90 }, legF: kneel(214), root: { by: 'hip', at: [214, 252] } }, hold: 0.6, move: 1.2 },
+    ],
+  },
+  tibialis_raise: {
+    label: 'Tibialis heben (Rücken an der Wand)',
+    props: [{ type: 'block', x: 124, y: 190, w: 10, h: 264 }],
+    phases: [
+      { pose: { torso: 350, armN: [182, 182], armF: [180, 180], legN: { ik: [210, ANKLE_Y], bend: 'fwd', foot: 90 }, legF: { ik: [206, ANKLE_Y], bend: 'fwd', foot: 90 }, root: { by: 'hip', at: [152, 176] } }, hold: 0.3, move: 0.7 },
+      { pose: { torso: 350, armN: [182, 182], armF: [180, 180], legN: { ik: [210, ANKLE_Y], bend: 'fwd', foot: 48 }, legF: { ik: [206, ANKLE_Y], bend: 'fwd', foot: 48 }, root: { by: 'hip', at: [152, 176] } }, hold: 0.4, move: 0.7 },
     ],
   },
 }

@@ -23,7 +23,7 @@ import type {
   WorkoutSession,
 } from './domain/types'
 import type { PlannedMeal } from './domain/meals'
-import { addDays, daysBetween, today, uid } from './domain/util'
+import { addDays, daysBetween, nowMs, sessionEndMs, today, uid } from './domain/util'
 
 export interface State {
   version: number
@@ -255,7 +255,7 @@ export const useStore = create<State & Actions>()(
       finishSession(rating, notes) {
         const s = get()
         if (!s.active) return
-        const done: WorkoutSession = { ...s.active, finishedAt: new Date().toISOString(), rating, notes }
+        const done: WorkoutSession = { ...s.active, finishedAt: new Date(sessionEndMs(s.active.startedAt, nowMs())).toISOString(), rating, notes }
         // drop untouched sets so history only holds what happened
         done.exercises = done.exercises.map((e) => ({ ...e, sets: e.sets.filter((x) => x.done) })).filter((e) => e.sets.length)
         const sessions = [...s.sessions, done]

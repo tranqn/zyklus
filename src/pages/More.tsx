@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { CARDIO, cardioKcal, MOBILITY, routineSeconds, type MobilityRoutine } from '../domain/activities'
+import { MOBILITY_ANIMATION } from '../domain/animations'
+import { ExerciseAnimation } from '../ui/ExerciseAnimation'
 import { allExercises, useStore } from '../store'
 import { useSync } from '../sync/engine'
 import { t as tr, tk as tkr, tx, useT, weekdaysShort } from '../i18n'
@@ -161,6 +163,7 @@ function MobilityPlayer({ routine, onClose }: { routine: MobilityRoutine; onClos
           </span>
           <h2 style={{ fontSize: '1.5rem' }}>{tx(step.name)}</h2>
           {step.side && <span className="badge accent" style={{ alignSelf: 'center' }}>{step.side}</span>}
+          {MOBILITY_ANIMATION[step.name.de] && <ExerciseAnimation key={MOBILITY_ANIMATION[step.name.de]} pattern={MOBILITY_ANIMATION[step.name.de]} label={tx(step.name)} size={220} />}
           <div className="num" style={{ fontSize: '4.5rem', fontWeight: 800, lineHeight: 1 }} aria-live="polite">
             {left}
           </div>

@@ -71,6 +71,40 @@ test('onboarding, workout with test set, finish', async ({ page }) => {
   await expect(page.getByText('Ganzkörper A').first()).toBeVisible()
 })
 
+test('mobility: the player shows the move animation', async ({ page }) => {
+  await onboard(page)
+  await page.goto('/#/mobility')
+  await page.getByRole('button', { name: /^Morgenroutine/ }).click()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog.getByRole('heading', { name: 'Katze-Kuh' })).toBeVisible()
+  await expect(dialog.getByRole('img', { name: /^Animation:/ }).locator('svg')).toBeVisible()
+  await dialog.getByRole('button', { name: 'Weiter' }).click()
+  await expect(dialog.getByRole('heading', { name: 'Kindhaltung mit Seitneigung' })).toBeVisible()
+  await expect(dialog.getByRole('img', { name: /^Animation:/ }).locator('svg')).toBeVisible()
+})
+
+test('today: change the training days in the week strip', async ({ page }) => {
+  await onboard(page)
+  await expect(page.getByText('Woche 1/5 · Einheit 1/3')).toBeVisible()
+  await page.getByRole('button', { name: 'Tage ändern' }).click()
+  // same number of days: only the weekdays move, the plan stays
+  const days = page.getByRole('button', { name: /: Trainingstag$/ })
+  const on = await days.evaluateAll((els) => els.map((e) => e.getAttribute('aria-pressed') === 'true'))
+  await days.nth(on.indexOf(true)).click()
+  await days.nth(on.indexOf(false)).click()
+  await page.getByRole('button', { name: 'Fertig' }).click()
+  await expect(page.getByText('Trainingstage gespeichert')).toBeVisible()
+  await expect(page.getByText('Woche 1/5 · Einheit 1/3')).toBeVisible()
+
+  // one more day rebuilds the plan after a confirmation
+  page.once('dialog', (d) => d.accept())
+  await page.getByRole('button', { name: 'Tage ändern' }).click()
+  const now = await days.evaluateAll((els) => els.map((e) => e.getAttribute('aria-pressed') === 'true'))
+  await days.nth(now.indexOf(false)).click()
+  await page.getByRole('button', { name: 'Fertig' }).click()
+  await expect(page.getByText('Woche 1/5 · Einheit 1/4')).toBeVisible()
+})
+
 test('plan: switch to the Winter Arc program and back', async ({ page }) => {
   await onboard(page)
   await page.getByRole('link', { name: 'Plan' }).click()

@@ -3,7 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import { hasEquipment } from '../domain/exercises'
 import { prsInSession, sessionSets, sessionVolume } from '../domain/stats'
 import type { Exercise, SessionExercise, SetEntry } from '../domain/types'
-import { fmt, nowMs } from '../domain/util'
+import { fmt, formatDate, isStaleSession, nowMs, sessionEndMs } from '../domain/util'
 import { allExercises, exerciseMap, useStore } from '../store'
 import { Icon, Sheet } from '../ui/kit'
 import { confirmAction, toast } from '../ui/notify'
@@ -24,11 +24,20 @@ export default function Workout() {
   // subscribe to the language so the whole screen re-renders on a switch
   useT()
   useWakeLock(!!active)
+  const now = useNow(60_000)
 
   if (!active) return <Navigate to="/" replace />
 
   const totalWork = active.exercises.reduce((a, e) => a + e.sets.filter((x) => x.kind !== 'aufwaermen').length, 0)
   const doneWork = active.exercises.reduce((a, e) => a + e.sets.filter((x) => x.kind !== 'aufwaermen' && x.done).length, 0)
+  // started hours or days ago and never finished: a running clock would only confuse
+  const stale = isStaleSession(active.startedAt, now)
+  const discard = () => {
+    if (confirmAction(tr('workout.discardConfirm'))) {
+      s.discardSession()
+      nav('/')
+    }
+  }
 
   const onSetDone = (se: SessionExercise, idx: number) => {
     const set = se.sets[idx]
@@ -64,7 +73,7 @@ export default function Workout() {
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontWeight: 700 }}>{sessionDayName(active)}</div>
           <div className="tiny muted num">
-            <Elapsed since={active.startedAt} /> · {tr('workout.setsDone', { done: doneWork, total: totalWork })}
+            {stale ? tr('workout.openSince', { date: formatDate(active.date) }) : <>{tr('workout.duration')} <Elapsed since={active.startedAt} /></>} · {tr('workout.setsDone', { done: doneWork, total: totalWork })}
           </div>
         </div>
         <button className="btn primary sm" onClick={() => setFinishOpen(true)}>
@@ -74,6 +83,21 @@ export default function Workout() {
       <div className="bar" aria-hidden="true">
         <div style={{ width: `${totalWork ? (doneWork / totalWork) * 100 : 0}%`, background: 'var(--ok)' }} />
       </div>
+
+      {stale && (
+        <div className="card stack" style={{ background: 'var(--warn-soft)', borderColor: 'transparent' }}>
+          <strong>{tr('workout.staleTitle')}</strong>
+          <p className="small">{tr('workout.staleText', { date: formatDate(active.date, { weekday: 'long', day: 'numeric', month: 'long' }) })}</p>
+          <div className="row">
+            <button className="btn sm" onClick={discard}>
+              {tr('workout.staleDiscard')}
+            </button>
+            <button className="btn primary sm" onClick={() => setFinishOpen(true)}>
+              {tr('workout.staleFinish')}
+            </button>
+          </div>
+        </div>
+      )}
 
       {(active.readiness != null || active.deload) && (
         <div className="row wrap">
@@ -102,15 +126,7 @@ export default function Workout() {
         )
       })}
 
-      <button
-        className="btn ghost danger block"
-        onClick={() => {
-          if (confirmAction(tr('workout.discardConfirm'))) {
-            s.discardSession()
-            nav('/')
-          }
-        }}
-      >
+      <button className="btn ghost danger block" onClick={discard}>
         {tr('workout.discard')}
       </button>
 
@@ -194,21 +210,24 @@ function ExerciseCard({
               decimal
             />
             <NumInput value={set.reps} placeholder={String(set.targetReps)} onChange={(v) => onChange(i, { reps: v })} label={t('workout.repsOf', { label })} />
-            <select
-              className="set-input"
-              style={{ padding: 0, fontSize: 15, color: set.rir == null && !set.done ? 'var(--muted)' : undefined }}
-              aria-label={t('workout.rirOf', { label })}
-              value={set.rir ?? ''}
-              onChange={(e) => onChange(i, { rir: e.target.value === '' ? undefined : Number(e.target.value) })}
-              disabled={set.kind === 'aufwaermen'}
-            >
-              <option value="">{set.kind === 'aufwaermen' ? '–' : set.targetRir}</option>
-              {[0, 1, 2, 3, 4, 5].map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
+            <span className="set-select">
+              <select
+                className="set-input"
+                style={{ color: set.rir == null && !set.done ? 'var(--muted)' : undefined }}
+                aria-label={t('workout.rirOf', { label })}
+                value={set.rir ?? ''}
+                onChange={(e) => onChange(i, { rir: e.target.value === '' ? undefined : Number(e.target.value) })}
+                disabled={set.kind === 'aufwaermen'}
+              >
+                <option value="">{set.kind === 'aufwaermen' ? '–' : set.targetRir}</option>
+                {[0, 1, 2, 3, 4, 5].map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+              </select>
+              {set.kind !== 'aufwaermen' && <Icon name="down" size={12} stroke={2.4} />}
+            </span>
             <button className={`check ${set.done ? 'on' : ''}`} onClick={() => onDone(i)} aria-pressed={set.done} aria-label={set.done ? t('workout.uncheckSet', { label }) : t('workout.checkSet', { label })}>
               <Icon name="check" size={20} stroke={2.6} />
             </button>
@@ -441,10 +460,12 @@ function FinishContent({ onClose }: { onClose: () => void }) {
   const [notes, setNotes] = useState('')
   const active = s.active
   if (!active) return null
-  const preview = { ...active, finishedAt: new Date(now).toISOString(), exercises: active.exercises.map((e) => ({ ...e, sets: e.sets.filter((x) => x.done) })) }
+  const end = sessionEndMs(active.startedAt, now)
+  const preview = { ...active, finishedAt: new Date(end).toISOString(), exercises: active.exercises.map((e) => ({ ...e, sets: e.sets.filter((x) => x.done) })) }
   const open_ = active.exercises.reduce((a, e) => a + e.sets.filter((x) => !x.done && x.kind !== 'aufwaermen').length, 0)
   const prs = prsInSession([...s.sessions, preview], preview)
-  const mins = Math.round((now - new Date(active.startedAt).getTime()) / 60000)
+  // a forgotten session has no real duration
+  const mins = isStaleSession(active.startedAt, now) ? '–' : Math.round((end - new Date(active.startedAt).getTime()) / 60000)
   return (
     <Sheet open onClose={onClose} title={tr('workout.finishTitle')}>
       <div className="stack lg">

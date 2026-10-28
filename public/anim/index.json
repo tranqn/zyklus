@@ -234,5 +234,105 @@
  "dragon_flag_tuck": {
   "duration": 3.25,
   "label": "Dragon Flag mit angewinkelten Beinen"
+ },
+ "cat_cow": {
+  "duration": 3.6,
+  "label": "Katze-Kuh"
+ },
+ "child_pose": {
+  "duration": 4.8,
+  "label": "Kindhaltung"
+ },
+ "worlds_greatest": {
+  "duration": 3.5,
+  "label": "Weltbeste Dehnung"
+ },
+ "down_dog": {
+  "duration": 4.8,
+  "label": "Herabschauender Hund"
+ },
+ "deep_squat_hold": {
+  "duration": 4,
+  "label": "Tiefe Hocke"
+ },
+ "arm_circles": {
+  "duration": 2.4,
+  "label": "Armkreisen"
+ },
+ "hip_flexor_kneel": {
+  "duration": 4.1,
+  "label": "Hüftbeuger-Dehnung kniend"
+ },
+ "pigeon": {
+  "duration": 4.8,
+  "label": "Taube"
+ },
+ "frog": {
+  "duration": 4,
+  "label": "Froschdehnung (Knie weit auseinander)"
+ },
+ "cossack": {
+  "duration": 4.4,
+  "label": "Cossack Squat (Frontansicht)"
+ },
+ "thread_needle": {
+  "duration": 3.9,
+  "label": "Thread the Needle"
+ },
+ "wall_angels": {
+  "duration": 3.2,
+  "label": "Wandengel (Frontansicht)"
+ },
+ "doorway_chest": {
+  "duration": 4.2,
+  "label": "Brustdehnung im Türrahmen"
+ },
+ "band_dislocates": {
+  "duration": 4.6,
+  "label": "Schulter-Dislocates mit Band"
+ },
+ "knees_chest": {
+  "duration": 3.2,
+  "label": "Knie zur Brust"
+ },
+ "bird_dog": {
+  "duration": 6.2,
+  "label": "Bird Dog"
+ },
+ "hamstring_stretch": {
+  "duration": 4.3,
+  "label": "Beinbeuger-Dehnung"
+ },
+ "quad_stretch": {
+  "duration": 4.3,
+  "label": "Quadrizeps-Dehnung"
+ },
+ "lat_stretch": {
+  "duration": 4.1,
+  "label": "Latissimus-Dehnung"
+ },
+ "calf_wall": {
+  "duration": 4.2,
+  "label": "Waden-Dehnung an der Wand"
+ },
+ "standing_hip_flexor": {
+  "duration": 4.2,
+  "label": "Stehende Hüftbeuger-Dehnung"
+ },
+ "forward_fold": {
+  "duration": 4.5,
+  "label": "Vorbeuge hängen lassen"
+ },
+ "chest_opener": {
+  "duration": 3.7,
+  "label": "Brustöffner (Hände hinter dem Rücken)"
+ },
+ "knee_to_wall": {
+  "duration": 3.4,
+  "label": "Knie zur Wand"
+ },
+ "tibialis_raise": {
+  "duration": 2.1,
+  "label": "Tibialis heben (Rücken an der Wand)"
  }
 }
