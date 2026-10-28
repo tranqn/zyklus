@@ -3,6 +3,7 @@ import { EXERCISES, hasEquipment } from '../exercises'
 import { FOODS } from '../foods'
 import { parseMealText, suggestAdjustment, targets } from '../nutrition'
 import { estimateMinutes, generateMesocycle, targetRir, weekSets } from '../planner'
+import { generateWinterArc } from '../presets'
 import { applyTestResult, buildSession, cyclePosition, e1rm, nextTarget, pctFor } from '../progression'
 import { muscleContributions, muscleRecovery, streak, weeklyMuscleSets } from '../stats'
 import type { Profile, SessionExercise, WorkoutSession } from '../types'
@@ -65,6 +66,67 @@ describe('planner', () => {
     expect(targetRir(4, 5, 'fortgeschritten')).toBe(4)
     expect(weekSets(4, 4, 5, true)).toBe(2)
     expect(weekSets(3, 3, 5, true)).toBe(4)
+  })
+})
+
+describe('winter arc preset', () => {
+  const wa: Profile = { ...base, program: 'winter_arc', daysPerWeek: 3, trainingDays: [0, 2, 4] }
+  const TARGET = ['klimmzuege', 'dips-brust', 'rudern-kammgriff', 'pike-liegestuetze', 'decline-defizit-liegestuetze', 'pistol-squat', 'hueftbeuge-fixiert', 'dragon-flag']
+  const ids = (d: { slots: { exerciseId: string }[] }) => d.slots.map((s) => s.exerciseId)
+
+  it('is picked by generateMesocycle when the profile asks for it', () => {
+    const meso = generateMesocycle({ ...wa, level: 'profi' })
+    expect(meso.program).toBe('winter_arc')
+    expect(meso.splitKey).toBe('wa')
+    expect(meso.days.map((d) => d.key)).toEqual(['wa_a', 'wa_b', 'wa_c'])
+  })
+  it('puts all eight exercises into every full-body day as four supersets', () => {
+    const meso = generateMesocycle({ ...wa, level: 'profi' })
+    for (const d of meso.days) {
+      expect(ids(d).sort()).toEqual([...TARGET].sort())
+      expect(new Set(d.slots.map((s) => s.superset))).toEqual(new Set(['A', 'B', 'C', 'D']))
+      for (const s of d.slots) expect(d.slots.filter((o) => o.superset === s.superset)).toHaveLength(2)
+    }
+  })
+  it('starts on easier rungs below the target level', () => {
+    const all = generateMesocycle({ ...wa, level: 'anfaenger' }).days.flatMap(ids)
+    for (const id of ['klimmzug-negativ', 'bankdips', 'liegestuetze-erhoeht', 'pistol-box', 'beinheben-liegend']) expect(all).toContain(id)
+    const adv = generateMesocycle({ ...wa, level: 'fortgeschritten' }).days.flatMap(ids)
+    expect(adv).toContain('dragon-flag-tuck')
+    expect(adv).toContain('pistol-squat')
+  })
+  it('substitutes without pull-up bar and dip bars', () => {
+    const meso = generateMesocycle({ ...wa, location: 'zuhause', equipment: ['koerpergewicht'] })
+    const all = meso.days.flatMap(ids)
+    expect(all).not.toContain('klimmzuege')
+    expect(all).not.toContain('klimmzug-negativ')
+    expect(all).toContain('bankdips')
+    for (const id of all) expect(hasEquipment(['koerpergewicht'], lib.get(id)!)).toBe(true)
+  })
+  it('spreads the exercises over the profile days', () => {
+    for (const [days, times] of [[2, 2], [4, 2], [5, 3], [6, 3]] as const) {
+      const meso = generateMesocycle({ ...wa, level: 'profi', daysPerWeek: days })
+      expect(meso.days).toHaveLength(days)
+      const count = (id: string) => meso.days.flatMap(ids).filter((x) => x === id).length
+      for (const id of TARGET) expect(count(id)).toBe(times)
+    }
+  })
+  it('respects excluded exercises', () => {
+    const all = generateMesocycle({ ...wa, level: 'profi' }, { excluded: ['dragon-flag'] }).days.flatMap(ids)
+    expect(all).not.toContain('dragon-flag')
+    expect(all).toContain('dragon-flag-tuck')
+  })
+  it('keeps hand-swapped exercises but re-picks ladder rungs in the next cycle', () => {
+    const first = generateWinterArc({ ...wa, level: 'anfaenger' })
+    const swapped = { ...first, days: first.days.map((d) => ({ ...d, slots: d.slots.map((s) => (s.exerciseId === 'beinheben-liegend' ? { ...s, exerciseId: 'dead-bug' } : s)) })) }
+    const next = generateWinterArc({ ...wa, level: 'fortgeschritten' }, { mesoNumber: 2, previous: swapped })
+    const all = next.days.flatMap(ids)
+    expect(all).toContain('dead-bug')
+    expect(all).toContain('klimmzuege')
+  })
+  it('adds the volume bonus up to the set cap', () => {
+    const meso = generateWinterArc({ ...wa, level: 'fortgeschritten' }, { volumeBonus: 2 })
+    for (const s of meso.days[0].slots) expect(s.sets).toBe(4)
   })
 })
 

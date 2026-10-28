@@ -48,6 +48,7 @@ export const EXERCISES: Exercise[] = [
   ex('schraegbank-kh', 'Schrägbankdrücken (Kurzhantel)', 'brust_schraeg', 'brust', ['schultern', 'trizeps'], ['kurzhantel', 'bank'], ['Bank auf 30° einstellen', 'Hanteln seitlich der oberen Brust absenken', 'Oben leicht zueinander führen'], { ...C, increment: 2 }),
   ex('schraegbank-maschine', 'Schrägbank-Brustpresse (Maschine)', 'brust_schraeg', 'brust', ['schultern', 'trizeps'], ['maschine'], ['Griffe auf Höhe der oberen Brust', 'Brust raus, Schultern unten', 'Kontrolliert zurück'], C),
   ex('liegestuetze-erhoeht', 'Liegestütze mit erhöhten Füßen', 'brust_schraeg', 'brust', ['schultern', 'trizeps'], ['koerpergewicht'], ['Füße auf Stuhl oder Bank', 'Rumpf fest, kein Hohlkreuz', 'Kopf in Verlängerung der Wirbelsäule'], BWC),
+  ex('decline-defizit-liegestuetze', 'Decline-Defizit-Liegestütze', 'brust_schraeg', 'brust', ['schultern', 'trizeps'], ['koerpergewicht'], ['Füße auf Stuhl oder Bank, Hände auf Büchern oder Griffen', 'Brust tiefer als die Hände absenken, Dehnung spüren', 'Rumpf fest, kein Hohlkreuz'], { ...BWC, minLevel: 'fortgeschritten' }),
 
   ex('kabel-fliegende', 'Fliegende am Kabelzug', 'brust_iso', 'brust', [], ['kabel'], ['Leicht gebeugte, fixierte Ellbogen', 'Hände in einem Bogen vor der Brust zusammenführen', 'Langsam bis zur Dehnung öffnen']),
   ex('butterfly', 'Butterfly (Maschine)', 'brust_iso', 'brust', [], ['maschine'], ['Griffe auf Brusthöhe', 'Ellbogen leicht gebeugt', 'Kurz halten in der Kontraktion']),
@@ -69,6 +70,7 @@ export const EXERCISES: Exercise[] = [
   ex('kh-rudern-schraeg', 'Brustgestütztes Kurzhantelrudern', 'ruecken_horizontal', 'ruecken', ['bizeps', 'schultern'], ['kurzhantel', 'bank'], ['Bauchlage auf Schrägbank', 'Ellbogen nach hinten oben', 'Kurz halten'], { ...C, increment: 2 }),
   ex('band-rudern', 'Rudern mit Band', 'ruecken_horizontal', 'ruecken', ['bizeps'], ['baender'], ['Band auf Brusthöhe befestigen', 'Ellbogen eng nach hinten', 'Schulterblätter zusammendrücken'], C),
   ex('umgekehrtes-rudern', 'Umgekehrtes Rudern (Tisch oder Stange)', 'ruecken_horizontal', 'ruecken', ['bizeps'], ['koerpergewicht'], ['Unter einem stabilen Tisch liegen', 'Brust zur Kante ziehen', 'Körper bleibt gerade'], BWC),
+  ex('rudern-kammgriff', 'Umgekehrtes Rudern im Untergriff', 'ruecken_horizontal', 'ruecken', ['bizeps', 'schultern'], ['koerpergewicht'], ['Hände schulterbreit, Handflächen zeigen zu dir', 'Ellbogen Richtung Hüfte ziehen, Schulterblätter zusammen', 'Körper bleibt gerade, langsam absenken'], BWC),
 
   // Schultern
   ex('schulterdruecken-kh', 'Schulterdrücken (Kurzhantel, sitzend)', 'schulter_press', 'schultern', ['trizeps'], ['kurzhantel', 'bank'], ['Lehne steil einstellen', 'Hanteln bis Kinnhöhe senken', 'Nicht ins Hohlkreuz fallen'], { ...C, increment: 2 }),
@@ -120,12 +122,15 @@ export const EXERCISES: Exercise[] = [
   ex('hip-thrust', 'Hip Thrust (Langhantel)', 'hinge', 'gesaess', ['beinbeuger'], ['langhantel', 'bank'], ['Oberer Rücken auf der Bank', 'Kinn zur Brust', 'Oben Gesäß fest anspannen'], { ...C, increment: 5 }),
   ex('kb-swing', 'Kettlebell Swings', 'hinge', 'gesaess', ['beinbeuger', 'ruecken'], ['kettlebell'], ['Explosive Hüftstreckung', 'Arme sind nur Seile', 'Rücken neutral'], { ...C, increment: 4 }),
   ex('einbeinige-bruecke', 'Einbeinige Glute Bridge', 'hinge', 'gesaess', ['beinbeuger'], ['koerpergewicht'], ['Ein Fuß aufgestellt, anderes Bein gestreckt', 'Hüfte hoch bis zur Linie', 'Oben 1 Sekunde halten'], BWC),
+  ex('hueftbeuge-fixiert', 'Hüftbeuge kniend (Füße fixiert)', 'hinge', 'beinbeuger', ['gesaess', 'ruecken'], ['koerpergewicht'], ['Knie auf weicher Unterlage, Füße unter Sofa oder Bett fixieren', 'Hüfte nach hinten, Oberkörper mit geradem Rücken nach vorn neigen', 'Aus Beinbeugern und Gesäß zurück nach oben, wie beim Kreuzheben'], BWC),
 
   ex('bulgarian-kh', 'Bulgarische Split Squats (Kurzhantel)', 'unilateral_bein', 'quadrizeps', ['gesaess'], ['kurzhantel', 'bank'], ['Hinterer Fuß auf der Bank', 'Senkrecht nach unten sinken', 'Vorderes Knie stabil'], { ...C, increment: 2 }),
   ex('ausfallschritte-kh', 'Ausfallschritte (Kurzhantel)', 'unilateral_bein', 'quadrizeps', ['gesaess'], ['kurzhantel'], ['Großer Schritt nach vorn', 'Hinteres Knie fast zum Boden', 'Oberkörper aufrecht'], { ...C, increment: 2 }),
   ex('step-ups', 'Step-ups (Kurzhantel)', 'unilateral_bein', 'quadrizeps', ['gesaess'], ['kurzhantel', 'bank'], ['Ganzer Fuß auf der Box', 'Über das vordere Bein hochdrücken', 'Langsam absteigen'], { ...C, increment: 2 }),
   ex('bulgarian-kg', 'Bulgarische Split Squats (Körpergewicht)', 'unilateral_bein', 'quadrizeps', ['gesaess'], ['koerpergewicht'], ['Hinterer Fuß auf Stuhl oder Sofa', 'Langsam absenken', 'Druck über die vordere Ferse'], BWC),
   ex('ausfallschritte-kg', 'Ausfallschritte rückwärts', 'unilateral_bein', 'quadrizeps', ['gesaess'], ['koerpergewicht'], ['Schritt nach hinten', 'Hinteres Knie Richtung Boden', 'Über die vordere Ferse zurück'], BWC),
+  ex('pistol-squat', 'Pistol Squats', 'unilateral_bein', 'quadrizeps', ['gesaess', 'bauch'], ['koerpergewicht'], ['Auf einem Bein stehen, das andere gestreckt nach vorn', 'Langsam tief in die Hocke, Ferse bleibt am Boden', 'Arme nach vorn als Gegengewicht, ohne Schwung hochdrücken'], { ...BWC, minLevel: 'fortgeschritten' }),
+  ex('pistol-box', 'Pistol Squats auf Bank oder Stuhl', 'unilateral_bein', 'quadrizeps', ['gesaess'], ['koerpergewicht'], ['Vor Bank oder Stuhl stehen, ein Bein nach vorn', 'Auf einem Bein langsam absetzen', 'Über die Ferse ohne Schwung aufstehen'], BWC),
 
   ex('beinstrecker', 'Beinstrecker (Maschine)', 'quad_iso', 'quadrizeps', [], ['maschine'], ['Knie auf Höhe der Drehachse', 'Oben 1 Sekunde halten', 'Langsam ablassen'], { increment: 2.5 }),
   ex('sissy-squat', 'Sissy Squat (unterstützt)', 'quad_iso', 'quadrizeps', [], ['koerpergewicht'], ['An einer Tür oder Stange festhalten', 'Knie nach vorn, Körper nach hinten lehnen', 'Nur so tief, wie es die Knie zulassen'], { ...BW, minLevel: 'fortgeschritten' }),
@@ -153,6 +158,8 @@ export const EXERCISES: Exercise[] = [
   ex('crunches', 'Crunches', 'bauch', 'bauch', [], ['koerpergewicht'], ['Lendenwirbel am Boden', 'Schultern einrollen', 'Ausatmen beim Hochkommen'], BW),
   ex('dead-bug', 'Dead Bug', 'bauch', 'bauch', [], ['koerpergewicht'], ['Lendenwirbel an den Boden drücken', 'Gegengleich Arm und Bein strecken', 'Langsam und kontrolliert'], BW),
   ex('beinheben-liegend', 'Beinheben liegend', 'bauch', 'bauch', [], ['koerpergewicht'], ['Hände unter das Gesäß', 'Beine gestreckt heben', 'Unten nicht ablegen'], BW),
+  ex('dragon-flag', 'Dragon Flag', 'bauch', 'bauch', ['ruecken'], ['koerpergewicht'], ['Hinter dem Kopf an Bank oder schwerem Möbel festhalten', 'Körper gestreckt wie ein Brett, nur die Schultern liegen auf', 'Langsam absenken, kein Hohlkreuz'], { ...BW, minLevel: 'profi' }),
+  ex('dragon-flag-tuck', 'Dragon Flag mit angewinkelten Beinen', 'bauch', 'bauch', ['ruecken'], ['koerpergewicht'], ['Hinter dem Kopf festhalten, Knie angewinkelt', 'Hüfte gestreckt, nur die Schultern liegen auf', 'Langsam absenken, kein Hohlkreuz'], { ...BW, minLevel: 'fortgeschritten' }),
 
   // Unterarme / Griffkraft
   ex('handgelenkcurls', 'Handgelenkcurls (Kurzhantel)', 'unterarme', 'unterarme', [], ['kurzhantel', 'bank'], ['Unterarme auf der Bank', 'Nur das Handgelenk bewegt sich', 'Volle Bewegung']),

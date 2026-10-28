@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { hasEquipment } from '../domain/exercises'
 import { estimateMinutes, isDeload, targetRir } from '../domain/planner'
 import { cyclePosition } from '../domain/progression'
-import type { Equipment, Exercise, Muscle, PlanDay, PlanSlot, Slot } from '../domain/types'
+import type { Equipment, Exercise, Muscle, PlanDay, PlanSlot, Program, Slot } from '../domain/types'
 import { uid } from '../domain/util'
 import { allExercises, exerciseMap, useStore } from '../store'
 import { Icon, Segmented, Sheet, Stepper } from '../ui/kit'
@@ -22,6 +22,7 @@ export default function Plan() {
   const [edit, setEdit] = useState<{ day: PlanDay; slot: PlanSlot } | null>(null)
   const [addTo, setAddTo] = useState<PlanDay | null>(null)
   const [info, setInfo] = useState<Exercise | null>(null)
+  const [picking, setPicking] = useState(false)
   const { t } = useT()
 
   return (
@@ -101,6 +102,14 @@ export default function Plan() {
       ))}
 
       <div className="card stack">
+        <h3>{t('plan.program.title')}</h3>
+        <p className="small muted">{t('plan.program.active', { name: t(meso.program === 'winter_arc' ? 'plan.program.winterArc' : 'plan.program.auto') })}</p>
+        <button className="btn" onClick={() => setPicking(true)}>
+          {t('plan.program.change')}
+        </button>
+      </div>
+
+      <div className="card stack">
         <h3>{t('plan.regenTitle')}</h3>
         <p className="small muted">{t('plan.regenText')}</p>
         <button
@@ -116,10 +125,71 @@ export default function Plan() {
         </button>
       </div>
 
+      {picking && <ProgramPicker onClose={() => setPicking(false)} />}
       <SlotEditor edit={edit} onClose={() => setEdit(null)} />
       <AddExercise day={addTo} onClose={() => setAddTo(null)} />
       <ExerciseInfo ex={info} onClose={() => setInfo(null)} />
     </div>
+  )
+}
+
+const WINTER_ARC_GEAR: Equipment[] = ['klimmzugstange', 'dipbarren']
+
+function ProgramPicker({ onClose }: { onClose: () => void }) {
+  const s = useStore()
+  const profile = s.profile!
+  const [program, setProgram] = useState<Program>(s.meso?.program ?? 'auto')
+  const [week, setWeek] = useState<'three' | 'own'>('three')
+  const ownDays = profile.trainingDays.length
+  const missing = WINTER_ARC_GEAR.filter((g) => !profile.equipment.includes(g))
+  const apply = () => {
+    if (!confirmAction(tr('plan.program.confirm'))) return
+    const days = program === 'winter_arc' && week === 'three' && ownDays !== 3 ? { daysPerWeek: 3, trainingDays: [0, 2, 4] } : {}
+    s.updateProfile({ program, ...days }, true)
+    toast(tr('plan.program.done'))
+    onClose()
+  }
+  return (
+    <Sheet open onClose={onClose} title={tr('plan.program.title')}>
+      <div className="stack lg">
+        <Segmented
+          value={program}
+          onChange={setProgram}
+          label={tr('plan.program.title')}
+          options={[
+            { value: 'auto', label: tr('plan.program.auto') },
+            { value: 'winter_arc', label: tr('plan.program.winterArc') },
+          ]}
+        />
+        {program === 'auto' ? (
+          <p className="small muted">{tr('plan.program.autoText')}</p>
+        ) : (
+          <>
+            <p className="small">{tr('plan.program.winterArcText')}</p>
+            <p className="small muted">{tr('plan.program.levelHint')}</p>
+            {missing.length > 0 && <p className="small muted">{tr('plan.program.gearHint', { gear: missing.map((g) => tkr(`labels.equipment.${g}`)).join(', ') })}</p>}
+            {ownDays !== 3 && (
+              <div className="stack">
+                <span className="label">{tr('plan.program.week')}</span>
+                <Segmented
+                  value={week}
+                  onChange={setWeek}
+                  label={tr('plan.program.week')}
+                  options={[
+                    { value: 'three', label: tr('plan.program.three') },
+                    { value: 'own', label: tr('plan.program.own', { n: ownDays }) },
+                  ]}
+                />
+                <p className="small muted">{week === 'three' ? tr('plan.program.threeHint') : tr('plan.program.ownHint', { n: ownDays })}</p>
+              </div>
+            )}
+          </>
+        )}
+        <button className="btn primary block" onClick={apply}>
+          {tr('plan.program.apply')}
+        </button>
+      </div>
+    </Sheet>
   )
 }
 

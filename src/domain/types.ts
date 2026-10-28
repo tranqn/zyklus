@@ -4,6 +4,8 @@ export type Goal = 'muskelaufbau' | 'fettabbau' | 'rekomposition' | 'kraft'
 export type Level = 'anfaenger' | 'fortgeschritten' | 'profi'
 export type Location = 'studio' | 'zuhause'
 export type Sex = 'm' | 'w'
+/** auto = split from the profile, winter_arc = fixed bodyweight preset (domain/presets.ts) */
+export type Program = 'auto' | 'winter_arc'
 
 export type Equipment =
   | 'langhantel'
@@ -87,6 +89,8 @@ export interface Profile {
   sessionMinutes: number
   /** 0 = Montag ... 6 = Sonntag */
   trainingDays: number[]
+  /** missing = auto */
+  program?: Program
   createdAt: string
 }
 
@@ -120,6 +124,8 @@ export interface Mesocycle {
   /** s2..s6, translated; `split` is the fallback text */
   splitKey?: string
   split: string
+  /** missing = auto */
+  program?: Program
   days: PlanDay[]
   completed: boolean
   pausedSince?: string

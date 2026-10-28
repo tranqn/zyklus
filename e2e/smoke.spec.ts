@@ -71,6 +71,34 @@ test('onboarding, workout with test set, finish', async ({ page }) => {
   await expect(page.getByText('Ganzkörper A').first()).toBeVisible()
 })
 
+test('plan: switch to the Winter Arc program and back', async ({ page }) => {
+  await onboard(page)
+  await page.getByRole('link', { name: 'Plan' }).click()
+  await expect(page.getByText('Aktiv: Automatisch')).toBeVisible()
+  await page.getByRole('button', { name: 'Programm wechseln' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Programm' })
+  await sheet.getByRole('button', { name: 'Winter Arc' }).click()
+  await expect(sheet.getByText(/Kevin Zhang/)).toBeVisible()
+  page.once('dialog', (d) => d.accept())
+  await sheet.getByRole('button', { name: 'Übernehmen' }).click()
+
+  await expect(page.getByText('Programm gewechselt')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Winter Arc', exact: true })).toBeVisible()
+  for (const day of ['Winter Arc A', 'Winter Arc B', 'Winter Arc C']) await expect(page.getByRole('heading', { name: day })).toBeVisible()
+  await expect(page.getByText(/Klimmzüge/).first()).toBeVisible()
+  await expect(page.getByText(/Pistol Squats/).first()).toBeVisible()
+  await page.getByRole('button', { name: /^Infos zu Pistol Squats/ }).first().click()
+  await expect(page.getByRole('img', { name: /^Animation:/ }).locator('svg')).toBeVisible()
+  await page.getByRole('button', { name: 'Schließen' }).click()
+
+  await page.getByRole('button', { name: 'Programm wechseln' }).click()
+  await sheet.getByRole('button', { name: 'Automatisch' }).click()
+  page.once('dialog', (d) => d.accept())
+  await sheet.getByRole('button', { name: 'Übernehmen' }).click()
+  await expect(page.getByText('Aktiv: Automatisch')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Ganzkörper A' })).toBeVisible()
+})
+
 test('nutrition: free text, recipe, supplements', async ({ page }) => {
   await onboard(page)
   await page.getByRole('link', { name: 'Ernährung' }).click()
