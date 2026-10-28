@@ -214,5 +214,25 @@
  "clamshell": {
   "duration": 2.4,
   "label": "Clamshell (Seitlage, Band über den Knien)"
+ },
+ "pistol": {
+  "duration": 3.15,
+  "label": "Pistol Squat"
+ },
+ "pistol_box": {
+  "duration": 3.15,
+  "label": "Pistol Squat auf Bank oder Stuhl"
+ },
+ "hip_hinge_kneeling": {
+  "duration": 2.65,
+  "label": "Hüftbeuge kniend"
+ },
+ "dragon_flag": {
+  "duration": 3.45,
+  "label": "Dragon Flag"
+ },
+ "dragon_flag_tuck": {
+  "duration": 3.25,
+  "label": "Dragon Flag mit angewinkelten Beinen"
  }
 }

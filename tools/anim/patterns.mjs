@@ -1,7 +1,7 @@
 // Movement patterns. Poses use a hip position plus angles or IK targets (see rig.mjs).
 // Angles: 0 = up, 90 = forward (figure faces right), 180 = down, 270 = back.
 
-import { FLOOR_Y } from './rig.mjs'
+import { dir, FLOOR_Y, LEN } from './rig.mjs'
 
 const ANKLE_Y = FLOOR_Y - 6
 const X = 180
@@ -21,6 +21,21 @@ const plank = (hipY, hipX, torso) => ({
 
 /** standing, arms down */
 const stand = (over = {}) => ({ torso: 0, armN: hangArms, armF: hangArms, legN: feet(), legF: feet(), root: { by: 'hip', at: [X - 4, ANKLE_Y - 150] }, ...over })
+
+/** hip position for a body that pivots around a fixed shoulder (dragon flag) */
+const hipFromShoulder = (sx, sy, torso) => {
+  const d = dir(torso)
+  return [sx - d[0] * LEN.torso, sy - d[1] * LEN.torso]
+}
+/** lying on the upper back, hands gripping behind the head, body straight or tucked */
+const flag = (torso, legN, legF) => ({
+  torso,
+  armN: hands(32, FLOOR_Y - 8, 'fwd'),
+  armF: hands(36, FLOOR_Y - 8, 'fwd'),
+  legN,
+  legF,
+  root: { by: 'hip', at: hipFromShoulder(72, FLOOR_Y - 26, torso) },
+})
 
 const seatedLegs = (hipX, footX = hipX + 70) => ({ legN: feet(footX), legF: feet(footX - 6) })
 
@@ -465,6 +480,45 @@ export const PATTERNS = {
     phases: [
       { pose: { torso: 270, armN: [95, 92], armF: [265, 265], legN: [100, 260, 262], legF: [102, 262, 264], root: { by: 'hip', at: [240, 298] } }, hold: 0.2, move: 0.9 },
       { pose: { torso: 270, armN: [95, 92], armF: [265, 265], legN: [52, 236, 250], legF: [102, 262, 264], root: { by: 'hip', at: [240, 298] } }, hold: 0.4, move: 0.9 },
+    ],
+  },
+  // ---- added 2026-10-28: Winter Arc preset ----
+  pistol: {
+    label: 'Pistol Squat',
+    phases: [
+      { pose: stand({ torso: 6, armN: [120, 110], armF: [118, 108], legF: [140, 140, 100] }), hold: 0.3, move: 1.6 },
+      { pose: stand({ torso: 42, armN: [92, 90], armF: [90, 88], legF: [88, 90, 60], root: { by: 'hip', at: [X - 40, ANKLE_Y - 60] } }), hold: 0.15, move: 1.1 },
+    ],
+  },
+  pistol_box: {
+    label: 'Pistol Squat auf Bank oder Stuhl',
+    props: [{ type: 'bench', x: 124, y: 262, w: 70 }],
+    phases: [
+      { pose: stand({ torso: 6, armN: [120, 110], armF: [118, 108], legF: [140, 140, 100] }), hold: 0.3, move: 1.5 },
+      { pose: stand({ torso: 34, armN: [92, 90], armF: [90, 88], legF: [96, 98, 64], root: { by: 'hip', at: [X - 46, ANKLE_Y - 64] } }), hold: 0.25, move: 1.1 },
+    ],
+  },
+  // kneeling, feet anchored; the knee stays on the floor at (180, 312) while the hips travel back
+  hip_hinge_kneeling: {
+    label: 'Hüftbeuge kniend',
+    props: [{ type: 'block', x: 100, y: 304, w: 18, h: 16 }],
+    phases: [
+      { pose: { torso: 0, armN: [178, 178], armF: [176, 176], legN: { ik: [106, 312], bend: 'fwd', foot: 270 }, legF: { ik: [106, 312], bend: 'fwd', foot: 270 }, root: { by: 'hip', at: [180, 234] } }, hold: 0.3, move: 1.3 },
+      { pose: { torso: 74, armN: [150, 160], armF: [148, 158], legN: { ik: [106, 312], bend: 'fwd', foot: 270 }, legF: { ik: [106, 312], bend: 'fwd', foot: 270 }, root: { by: 'hip', at: [160, 237] } }, hold: 0.15, move: 0.9 },
+    ],
+  },
+  dragon_flag: {
+    label: 'Dragon Flag',
+    phases: [
+      { pose: flag(236, [56, 56, 56], [58, 58, 58]), hold: 0.3, move: 2.0 },
+      { pose: flag(264, [84, 84, 84], [86, 86, 86]), hold: 0.15, move: 1.0 },
+    ],
+  },
+  dragon_flag_tuck: {
+    label: 'Dragon Flag mit angewinkelten Beinen',
+    phases: [
+      { pose: flag(232, [52, 142, 142], [54, 144, 144]), hold: 0.3, move: 1.8 },
+      { pose: flag(254, [74, 150, 150], [76, 152, 152]), hold: 0.15, move: 1.0 },
     ],
   },
 }

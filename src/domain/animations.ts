@@ -101,4 +101,12 @@ export const ANIMATION: Record<string, string> = {
   abduktoren: 'hip_abduction_seated',
   'band-abduktion': 'clamshell',
   handgelenkcurls: 'wrist_curl',
+  // Winter Arc preset
+  'rudern-kammgriff': 'inverted_row',
+  'decline-defizit-liegestuetze': 'push_up',
+  'pistol-squat': 'pistol',
+  'pistol-box': 'pistol_box',
+  'hueftbeuge-fixiert': 'hip_hinge_kneeling',
+  'dragon-flag': 'dragon_flag',
+  'dragon-flag-tuck': 'dragon_flag_tuck',
 }

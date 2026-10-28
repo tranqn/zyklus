@@ -1,4 +1,5 @@
 import { EXERCISES, hasEquipment, levelAllows } from './exercises'
+import { generateWinterArc } from './presets'
 import type { Exercise, Goal, Level, Mesocycle, PlanDay, PlanSlot, Profile, Slot } from './types'
 import { uid } from './util'
 
@@ -188,6 +189,7 @@ export interface GenerateOptions {
 }
 
 export function generateMesocycle(profile: Profile, opts: GenerateOptions = {}): Mesocycle {
+  if (profile.program === 'winter_arc') return generateWinterArc(profile, opts)
   const mesoNumber = opts.mesoNumber ?? 1
   const library = opts.library ?? EXERCISES
   const excluded = opts.excluded ?? []
