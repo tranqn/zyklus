@@ -86,7 +86,12 @@ test('mobility: the player shows the move animation', async ({ page }) => {
 test('today: change the training days in the week strip', async ({ page }) => {
   await onboard(page)
   await expect(page.getByText('Woche 1/5 · Einheit 1/3')).toBeVisible()
+  // the card keeps its height when editing starts, nothing below jumps
+  const card = page.locator('.card').filter({ has: page.getByRole('heading', { name: 'Diese Woche' }) })
+  const before = (await card.boundingBox())!.height
   await page.getByRole('button', { name: 'Trainingstage ändern' }).click()
+  await expect(page.getByRole('button', { name: 'Fertig' })).toBeVisible()
+  expect((await card.boundingBox())!.height).toBe(before)
   // same number of days: only the weekdays move, the plan stays
   const days = page.getByRole('button', { name: /: Trainingstag$/ })
   const on = await days.evaluateAll((els) => els.map((e) => e.getAttribute('aria-pressed') === 'true'))

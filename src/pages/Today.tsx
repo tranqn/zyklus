@@ -220,7 +220,8 @@ function WeekCard() {
 
   return (
     <div className="card stack">
-      <div className="row between">
+      {/* same height in both modes (Fertig button is 36px), so the card does not jump when editing starts */}
+      <div className="row between" style={{ minHeight: 36 }}>
         <h3>{t('today.thisWeek')}</h3>
         {draft ? (
           <button className="btn primary sm" onClick={save}>
@@ -231,8 +232,8 @@ function WeekCard() {
             <Link to="/fortschritt" className="small">
               {t('today.calendar')}
             </Link>
-            {/* negative margin keeps the head as tall as the plain text row */}
-            <button className="icon-btn plain" style={{ margin: '-10px -10px -10px 0' }} aria-label={t('today.editDays')} title={t('today.editDays')} onClick={() => setDraft(profile.trainingDays)}>
+            {/* negative margin fits the 44px tap target into the 36px head */}
+            <button className="icon-btn plain" style={{ margin: '-4px -10px -4px 0' }} aria-label={t('today.editDays')} title={t('today.editDays')} onClick={() => setDraft(profile.trainingDays)}>
               <Icon name="settings" size={20} />
             </button>
           </div>
@@ -261,7 +262,10 @@ function WeekCard() {
           )
         })}
       </div>
-      {draft && <p className="small muted">{t('today.editHint')}</p>}
+      {/* always rendered so its line is reserved; only visible while editing */}
+      <p className="small muted" aria-hidden={!draft} style={{ visibility: draft ? 'visible' : 'hidden' }}>
+        {t('today.editHint')}
+      </p>
     </div>
   )
 }
