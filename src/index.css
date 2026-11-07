@@ -19,18 +19,18 @@
   }
 }
 
-/* ---------- tokens: Dämmerung (sand, rosé, lilac) in liquid glass ---------- */
+/* ---------- tokens: Aurora (mint, sky blue, violet) in liquid glass ---------- */
 :root {
-  --bg: #f8efed;
-  --grad-1: #ffd0b2;
-  --grad-2: #f6a9c5;
-  --grad-3: #c9a8f1;
-  --grad-4: #ffe5c0;
-  --text: #25182a;
-  --muted: #67596b;
-  --accent: #bf3577;
+  --bg: #edf6f5;
+  --grad-1: #9fe9d1;
+  --grad-2: #92d5f2;
+  --grad-3: #c5aaff;
+  --grad-4: #ffd2ec;
+  --text: #141a2b;
+  --muted: #535d70;
+  --accent: #6544f0;
   --accent-ink: #ffffff;
-  --accent-grad: linear-gradient(135deg, #f0628f 0%, #bf3577 50%, #8a4dcf 100%);
+  --accent-grad: linear-gradient(135deg, #9a62f7 0%, #6544f0 50%, #3577ee 100%);
   --ok: #18804a;
   --warn: #9a5c06;
   --bad: #c42b2b;
@@ -73,23 +73,23 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --bg: #110a14;
-    --grad-1: #5c2a3a;
-    --grad-2: #4b1a4c;
-    --grad-3: #2f1b60;
-    --grad-4: #6b3a28;
-    --text: #f8ecf4;
-    --muted: #b7a3b3;
-    --accent: #ff7cab;
-    --accent-ink: #25051b;
-    --accent-grad: linear-gradient(135deg, #ffa08a 0%, #ff7cab 45%, #b38eff 100%);
+    --bg: #070b15;
+    --grad-1: #0e5a49;
+    --grad-2: #123f72;
+    --grad-3: #3c1f7c;
+    --grad-4: #571a5c;
+    --text: #eef1ff;
+    --muted: #9ba4be;
+    --accent: #a68dff;
+    --accent-ink: #12082c;
+    --accent-grad: linear-gradient(135deg, #c99bff 0%, #a68dff 50%, #6aaefc 100%);
     --ok: #4cc983;
     --warn: #f0b04a;
     --bad: #ff6b6b;
     --protein: #6a9cff;
     --carbs: #f0b429;
     --fat: #e07ac8;
-    --glass-tint: #23152b;
+    --glass-tint: #141a2f;
     --glass-a: 24%;
     --surface-2: color-mix(in srgb, var(--text) 9%, transparent);
     --line: color-mix(in srgb, var(--text) 12%, transparent);
@@ -107,23 +107,23 @@
   }
 }
 :root[data-theme='dark'] {
-  --bg: #110a14;
-  --grad-1: #5c2a3a;
-  --grad-2: #4b1a4c;
-  --grad-3: #2f1b60;
-  --grad-4: #6b3a28;
-  --text: #f8ecf4;
-  --muted: #b7a3b3;
-  --accent: #ff7cab;
-  --accent-ink: #25051b;
-  --accent-grad: linear-gradient(135deg, #ffa08a 0%, #ff7cab 45%, #b38eff 100%);
+  --bg: #070b15;
+  --grad-1: #0e5a49;
+  --grad-2: #123f72;
+  --grad-3: #3c1f7c;
+  --grad-4: #571a5c;
+  --text: #eef1ff;
+  --muted: #9ba4be;
+  --accent: #a68dff;
+  --accent-ink: #12082c;
+  --accent-grad: linear-gradient(135deg, #c99bff 0%, #a68dff 50%, #6aaefc 100%);
   --ok: #4cc983;
   --warn: #f0b04a;
   --bad: #ff6b6b;
   --protein: #6a9cff;
   --carbs: #f0b429;
   --fat: #e07ac8;
-  --glass-tint: #23152b;
+  --glass-tint: #141a2f;
   --glass-a: 24%;
   --surface-2: color-mix(in srgb, var(--text) 9%, transparent);
   --line: color-mix(in srgb, var(--text) 12%, transparent);
@@ -581,10 +581,6 @@ body::before {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
-.flame-chip.lit {
-  background: var(--accent-soft);
-  color: var(--accent);
-}
 .flame-card {
   color: var(--muted);
 }
@@ -691,10 +687,22 @@ body::before {
 /* glass for the widgets */
 .flame-chip {
   @apply glass-lens;
+  /* a denser glass than other controls so the number stands out from the colour fields behind it */
+  --lens-a: 38%;
+  color: var(--text);
+  font-weight: 800;
+}
+.flame-chip svg {
+  stroke-width: 2.4;
 }
 .flame-chip.lit {
-  color: var(--accent-ink);
-  --glass-fill: var(--accent-grad);
+  /* lit: same glass, icon and number glow in the accent colour */
+  color: var(--accent);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--accent) 55%, transparent);
+  --glass-glow: 0 0 14px -2px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.flame-chip.lit svg {
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--accent) 70%, transparent));
 }
 .medal.on,
 .timer-progress > div,
