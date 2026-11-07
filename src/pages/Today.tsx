@@ -108,15 +108,11 @@ export default function Today() {
       )}
 
       {s.active ? (
-        <Link to="/training" className="glass-card rounded-[var(--radius)] p-4 text-card-foreground [--glass-fill:var(--accent-grad)] text-primary-foreground [&_.text-muted-foreground]:text-primary-foreground/80 flex flex-col gap-2" style={{ textDecoration: 'none' }}>
-          <div className="eyebrow" style={{ color: 'inherit', opacity: 0.8 }}>
-            {t('today.running')}
-          </div>
+        <Link to="/training" className="glass-card flex flex-col gap-2 rounded-[var(--radius)] p-4 text-card-foreground" style={{ textDecoration: 'none' }}>
+          <div className="eyebrow">{t('today.running')}</div>
           <h2>{sessionDayName(s.active)}</h2>
-          {isStaleSession(s.active.startedAt, now) && <p className="text-[0.85rem]">{t('today.staleRunning', { date: formatDate(s.active.date, { weekday: 'long', day: 'numeric', month: 'long' }) })}</p>}
-          <span className={buttonVariants({ variant: 'secondary' })} style={{ background: 'var(--accent-ink)', color: 'var(--accent)', border: 0, alignSelf: 'flex-start' }}>
-            {t('today.resume')}
-          </span>
+          {isStaleSession(s.active.startedAt, now) && <p className="text-[0.85rem] text-muted-foreground">{t('today.staleRunning', { date: formatDate(s.active.date, { weekday: 'long', day: 'numeric', month: 'long' }) })}</p>}
+          <span className={buttonVariants({ className: 'self-start' })}>{t('today.resume')}</span>
         </Link>
       ) : meso.completed ? (
         <Card className="[--glass-fill:var(--accent-grad)] text-primary-foreground [&_.text-muted-foreground]:text-primary-foreground/80 flex flex-col gap-2">
