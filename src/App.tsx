@@ -1,11 +1,15 @@
 import { lazy, Suspense, useEffect, type ComponentType } from 'react'
-import { HashRouter, NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { HashRouter, NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { useStore } from './store'
 import { Icon, ToastHost } from './ui/kit'
 import Today from './pages/Today'
 import { AuthScreen } from './pages/Auth'
 import { checkSession, startSync, useSync } from './sync/engine'
 import { useLang, useT } from './i18n'
+import { FlameCelebration } from './ui/Flames'
+import { rememberInvite, takeInvite } from './sync/social'
+import { GlassFilters } from './components/GlassFilters'
+import { cn } from './lib/utils'
 
 // The first screens (Heute, sign-in) ship in the entry chunk; every other page loads on demand and is
 // prefetched once the app is idle, so navigation stays instant and the pages are cached for offline use.
@@ -31,6 +35,10 @@ const VerifyPage = page(() => import('./pages/Auth'), 'VerifyPage')
 const ResetPage = page(() => import('./pages/Auth'), 'ResetPage')
 const Impressum = page(() => import('./pages/Legal'), 'Impressum')
 const Datenschutz = page(() => import('./pages/Legal'), 'Datenschutz')
+const Achievements = page(() => import('./pages/Achievements'), 'default')
+const Friends = page(() => import('./pages/Friends'), 'default')
+const InvitePage = page(() => import('./pages/Friends'), 'InvitePage')
+const JoinChallengePage = page(() => import('./pages/Friends'), 'JoinChallengePage')
 
 function prefetchPages() {
   const run = () => loaders.forEach((load) => load().catch(() => {}))
@@ -50,10 +58,16 @@ const TABS = [
 
 function Shell() {
   const loc = useLocation()
+  const nav = useNavigate()
+  // an invite link opened before signing in or onboarding opens now
+  useEffect(() => {
+    const p = takeInvite()
+    if (p && p !== loc.pathname) nav(p)
+  }, [loc.pathname, nav])
   const hideNav = loc.pathname === '/training'
   const { t } = useT()
   return (
-    <div className="app">
+    <div className="mx-auto min-h-dvh max-w-[560px]">
       <main>
         <Suspense fallback={pending}>
         <Routes>
@@ -70,15 +84,31 @@ function Shell() {
           <Route path="/modus" element={<ModePage />} />
           <Route path="/wissen" element={<Knowledge />} />
           <Route path="/konto" element={<AccountPage />} />
+          <Route path="/erfolge" element={<Achievements />} />
+          <Route path="/freunde" element={<Friends />} />
+          <Route path="/einladung/:code" element={<InvitePage />} />
+          <Route path="/challenge/:code" element={<JoinChallengePage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         </Suspense>
       </main>
+      <FlameCelebration />
       {!hideNav && (
-        <nav className="nav" aria-label={t('shell.nav.main')}>
-          <div className="nav-inner">
+        <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-20 px-3.5 pb-[max(12px,var(--safe-b))]" aria-label={t('shell.nav.main')}>
+          {/* floating liquid-glass capsule; the active tab is a glass drop inside it */}
+          <div className="glass-lens glass-refract pointer-events-auto mx-auto grid h-16 max-w-[500px] grid-cols-5 gap-0.5 rounded-full p-1.5 [--glass-glow:0_18px_40px_-16px_rgb(0_0_0/0.3)] [--lens-a:34%] [--lens-blur:10px] [--lens-w:18px]">
             {TABS.map((tab) => (
-              <NavLink key={tab.to} to={tab.to} end={tab.to === '/'} className={({ isActive }) => (isActive ? 'active' : '')}>
+              <NavLink
+                key={tab.to}
+                to={tab.to}
+                end={tab.to === '/'}
+                className={({ isActive }) =>
+                  cn(
+                    'glass-press flex flex-col items-center justify-center gap-[3px] rounded-full text-[0.66rem] font-semibold text-muted-foreground no-underline',
+                    isActive && 'bg-[color-mix(in_srgb,var(--glass-tint)_30%,transparent)] text-primary shadow-[var(--rim)]',
+                  )
+                }
+              >
                 <Icon name={tab.icon} size={22} />
                 {t(tab.label)}
               </NavLink>
@@ -95,6 +125,7 @@ const PUBLIC = ['/konto/bestaetigen', '/konto/passwort', '/impressum', '/datensc
 
 function Gate() {
   const loc = useLocation()
+  rememberInvite(loc.pathname)
   const ready = useStore((s) => !!s.profile && !!s.meso)
   const { user, checked } = useSync()
   if (PUBLIC.includes(loc.pathname)) {
@@ -111,7 +142,7 @@ function Gate() {
   }
   if (!user) {
     // a cached user opens instantly; otherwise wait for the session check
-    if (!checked) return <div className="app" aria-busy="true" />
+    if (!checked) return <div className="mx-auto min-h-dvh max-w-[560px]" aria-busy="true" />
     return <AuthScreen />
   }
   return ready ? (
@@ -143,6 +174,7 @@ export default function App() {
     <HashRouter>
       <Gate />
       <ToastHost />
+      <GlassFilters />
     </HashRouter>
   )
 }

@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { weightTrend } from '../domain/nutrition'
 import { workSets } from '../domain/progression'
-import { muscleContributions, muscleRecovery, personalRecords, sessionMinutes, sessionSets, sessionVolume, streak, weeklyMuscleSets, type MuscleRecovery } from '../domain/stats'
+import { muscleContributions, muscleRecovery, personalRecords, sessionMinutes, sessionSets, sessionVolume, weeklyMuscleSets, type MuscleRecovery } from '../domain/stats'
+import { flamesOf } from '../domain/motivation'
 import type { MeasureSite, Muscle, WorkoutSession } from '../domain/types'
 import { addDays, fmt, formatDate, parseDay, startOfWeek, today } from '../domain/util'
 import { e1rmHistory, exerciseMap, useStore } from '../store'
@@ -13,6 +14,10 @@ import { t as tr, tk as tkr, useT, weekdaysShort } from '../i18n'
 import { exerciseName } from '../i18n/content/exercises'
 import { sessionDayName } from '../i18n/display'
 import { WeightSheet } from './Today'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Input, NativeSelect } from '@/components/ui/input'
 
 type Tab = 'uebersicht' | 'kraft' | 'koerper' | 'verlauf'
 
@@ -54,23 +59,23 @@ function Overview() {
   const totalVolume = done.reduce((a, x) => a + sessionVolume(x), 0)
   return (
     <>
-      <div className="grid2">
-        <div className="card stat">
-          <span className="v">{done.length}</span>
-          <span className="l">{tr('progress.totalWorkouts')}</span>
-        </div>
-        <div className="card stat">
-          <span className="v">{streak(s)}</span>
-          <span className="l">{tr('progress.streakDays')}</span>
-        </div>
-        <div className="card stat">
-          <span className="v">{thisWeek.length}</span>
-          <span className="l">{tr('progress.weekWorkouts')}</span>
-        </div>
-        <div className="card stat">
-          <span className="v">{fmt(totalVolume / 1000, 1)} t</span>
-          <span className="l">{tr('progress.movedWeight')}</span>
-        </div>
+      <div className="grid grid-cols-2 gap-3">
+        <Card className="flex flex-col gap-0.5">
+          <span className="text-[1.4rem] font-extrabold tabular-nums">{done.length}</span>
+          <span className="text-[0.78rem] font-semibold text-muted-foreground">{tr('progress.totalWorkouts')}</span>
+        </Card>
+        <Card className="flex flex-col gap-0.5">
+          <span className="text-[1.4rem] font-extrabold tabular-nums">{flamesOf(s).daily.count}</span>
+          <span className="text-[0.78rem] font-semibold text-muted-foreground">{tr('progress.streakDays')}</span>
+        </Card>
+        <Card className="flex flex-col gap-0.5">
+          <span className="text-[1.4rem] font-extrabold tabular-nums">{thisWeek.length}</span>
+          <span className="text-[0.78rem] font-semibold text-muted-foreground">{tr('progress.weekWorkouts')}</span>
+        </Card>
+        <Card className="flex flex-col gap-0.5">
+          <span className="text-[1.4rem] font-extrabold tabular-nums">{fmt(totalVolume / 1000, 1)} t</span>
+          <span className="text-[0.78rem] font-semibold text-muted-foreground">{tr('progress.movedWeight')}</span>
+        </Card>
       </div>
 
       <Calendar />
@@ -88,7 +93,7 @@ const volumeFill = (v: number) => (v <= 0 ? 'var(--line)' : `color-mix(in srgb, 
 
 type RecoveryState = 'fresh' | 'recovering' | 'ready' | 'none'
 const recoveryState = (r?: MuscleRecovery): RecoveryState => (!r ? 'none' : r.ready >= 1 ? 'ready' : r.ready < 0.5 ? 'fresh' : 'recovering')
-const BADGE: Record<RecoveryState, string> = { fresh: 'bad', recovering: 'warn', ready: 'ok', none: '' }
+const BADGE: Record<RecoveryState, 'destructive' | 'warn' | 'ok' | 'default'> = { fresh: 'destructive', recovering: 'warn', ready: 'ok', none: 'default' }
 const RECOVERY_COLOR: Record<RecoveryState, string> = { fresh: 'var(--bad)', recovering: 'var(--warn)', ready: 'var(--ok)', none: 'var(--line)' }
 
 function MuscleCard() {
@@ -108,20 +113,20 @@ function MuscleCard() {
       ? tr('progress.body.setsLabel', { muscle: name(m), sets: fmt(sets[m] ?? 0, 1) })
       : tr('progress.body.recoveryLabel', { muscle: name(m), state: tkr(`progress.body.state.${recoveryState(recovery[m])}`) })
   return (
-    <div className="card stack">
-      <div className="row between">
+    <Card className="flex flex-col gap-2">
+      <div className="flex items-center justify-between gap-2">
         <div>
           <h3>{tr('progress.muscleMap')}</h3>
-          <p className="tiny muted">{volume ? tr('progress.muscleMapHint') : tr('progress.body.recoveryHint')}</p>
+          <p className="text-xs text-muted-foreground">{volume ? tr('progress.muscleMapHint') : tr('progress.body.recoveryHint')}</p>
         </div>
         {volume && (
-          <div className="row" style={{ gap: 4 }}>
-            <button className="icon-btn" aria-label={tr('progress.prevWeek')} onClick={() => setWeekOffset(weekOffset - 1)}>
+          <div className="flex items-center gap-2" style={{ gap: 4 }}>
+            <Button variant="secondary" size="icon" aria-label={tr('progress.prevWeek')} onClick={() => setWeekOffset(weekOffset - 1)}>
               <Icon name="back" size={18} />
-            </button>
-            <button className="icon-btn" aria-label={tr('progress.nextWeek')} disabled={weekOffset >= 0} onClick={() => setWeekOffset(weekOffset + 1)}>
+            </Button>
+            <Button variant="secondary" size="icon" aria-label={tr('progress.nextWeek')} disabled={weekOffset >= 0} onClick={() => setWeekOffset(weekOffset + 1)}>
               <Icon name="chevron" size={18} />
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -134,38 +139,38 @@ function MuscleCard() {
           { value: 'erholung', label: tr('progress.body.recovery') },
         ]}
       />
-      {volume && <span className="tiny muted">{tr('progress.weekFrom', { date: formatDate(weekStart) })}</span>}
+      {volume && <span className="text-xs text-muted-foreground">{tr('progress.weekFrom', { date: formatDate(weekStart) })}</span>}
       <BodyMap title={tr('progress.body.figure')} front={tr('progress.body.front')} back={tr('progress.body.back')} fill={fill} label={label} selected={picked} onSelect={setPicked} />
       {volume ? (
-        <div className="row tiny muted" style={{ gap: 8 }} aria-hidden="true">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground" style={{ gap: 8 }} aria-hidden="true">
           <span>{tr('progress.body.none')}</span>
-          <span className="grow" style={{ height: 8, borderRadius: 4, background: 'linear-gradient(to right, var(--line), var(--accent))' }} />
-          <span className="num">20+</span>
+          <span className="min-w-0 flex-1" style={{ height: 8, borderRadius: 4, background: 'linear-gradient(to right, var(--line), var(--accent))' }} />
+          <span className="tabular-nums">20+</span>
         </div>
       ) : (
-        <div className="row wrap tiny muted" style={{ gap: 12 }}>
+        <div className="flex items-center flex-wrap gap-2 text-xs text-muted-foreground" style={{ gap: 12 }}>
           {(['fresh', 'recovering', 'ready'] as const).map((k) => (
-            <span key={k} className="row" style={{ gap: 6 }}>
+            <span key={k} className="flex items-center gap-2" style={{ gap: 6 }}>
               <span style={{ width: 10, height: 10, borderRadius: 3, background: RECOVERY_COLOR[k] }} />
               {tr(`progress.body.state.${k}`)}
             </span>
           ))}
         </div>
       )}
-      <p className="tiny muted">{tr('progress.body.tapHint')}</p>
-      <div className="list">
+      <p className="text-xs text-muted-foreground">{tr('progress.body.tapHint')}</p>
+      <div className="flex flex-col divide-y divide-border">
         {MUSCLE_ORDER.map((m) => {
           const v = sets[m] ?? 0
           const r = recovery[m]
           return (
-            <button key={m} className="list-item" style={{ minHeight: 40, padding: '6px 0' }} onClick={() => setPicked(m)} aria-label={label(m)}>
-              <span className="small" style={{ width: 92, fontWeight: 600, overflowWrap: 'anywhere' }}>
+            <button key={m} className="list-row" style={{ minHeight: 40, padding: '6px 0' }} onClick={() => setPicked(m)} aria-label={label(m)}>
+              <span className="text-[0.85rem]" style={{ width: 92, fontWeight: 600, overflowWrap: 'anywhere' }}>
                 {name(m)}
               </span>
-              <div className="grow">
+              <div className="min-w-0 flex-1">
                 {volume ? <Bar value={v} max={20} color={v >= 10 ? 'var(--ok)' : v >= 5 ? 'var(--warn)' : 'var(--muted)'} /> : <Bar value={r?.ready ?? 0} max={1} color={RECOVERY_COLOR[recoveryState(r)]} />}
               </div>
-              <span className="small num" style={{ width: 40, textAlign: 'right' }}>
+              <span className="text-[0.85rem] tabular-nums" style={{ width: 40, textAlign: 'right' }}>
                 {volume ? fmt(v, 1) : r ? tr('progress.body.percent', { n: Math.round(r.ready * 100) }) : '–'}
               </span>
             </button>
@@ -173,7 +178,7 @@ function MuscleCard() {
         })}
       </div>
       <MuscleSheet muscle={picked} weekStart={weekStart} sets={picked ? sets[picked] ?? 0 : 0} recovery={picked ? recovery[picked] : undefined} onClose={() => setPicked(undefined)} />
-    </div>
+    </Card>
   )
 }
 
@@ -185,41 +190,41 @@ function MuscleSheet({ muscle, weekStart, sets, recovery, onClose }: { muscle?: 
   const state = recoveryState(recovery)
   return (
     <Sheet open={!!muscle} onClose={onClose} title={muscle ? tkr(`labels.muscle.${muscle}`) : ''}>
-      <div className="stack">
-        <span className="tiny muted">{tr('progress.weekFrom', { date: formatDate(weekStart) })}</span>
-        <div className="row" style={{ gap: 8, alignItems: 'baseline' }}>
-          <span className="num" style={{ fontSize: '2rem', fontWeight: 750 }}>
+      <div className="flex flex-col gap-2">
+        <span className="text-xs text-muted-foreground">{tr('progress.weekFrom', { date: formatDate(weekStart) })}</span>
+        <div className="flex items-center gap-2" style={{ gap: 8, alignItems: 'baseline' }}>
+          <span className="tabular-nums" style={{ fontSize: '2rem', fontWeight: 750 }}>
             {fmt(sets, 1)}
           </span>
-          <span className="muted">{tr('progress.body.sets', { n: sets })}</span>
+          <span className="text-muted-foreground">{tr('progress.body.sets', { n: sets })}</span>
         </div>
-        <p className="small">{tkr(`progress.body.level.${level}`)}</p>
-        <div className="card stack" style={{ background: 'var(--surface-2)', boxShadow: 'none' }}>
-          <div className="row between">
+        <p className="text-[0.85rem]">{tkr(`progress.body.level.${level}`)}</p>
+        <Card className="flex flex-col gap-2" style={{ background: 'var(--surface-2)', boxShadow: 'none' }}>
+          <div className="flex items-center justify-between gap-2">
             <strong>{tr('progress.body.recovery')}</strong>
-            <span className={`badge ${BADGE[state]}`}>{tkr(`progress.body.state.${state}`)}</span>
+            <Badge variant={BADGE[state]}>{tkr(`progress.body.state.${state}`)}</Badge>
           </div>
           {recovery ? (
             <>
               <Bar value={recovery.ready} max={1} color={RECOVERY_COLOR[state]} />
-              <span className="small">{recovery.ready >= 1 ? tr('progress.body.readyNow') : tr('progress.body.hoursLeft', { h: recovery.hoursLeft })}</span>
-              <span className="tiny muted">{tr('progress.body.lastTrained', { date: formatDate(today(new Date(recovery.last)), { weekday: 'short', day: 'numeric', month: 'short' }) })}</span>
+              <span className="text-[0.85rem]">{recovery.ready >= 1 ? tr('progress.body.readyNow') : tr('progress.body.hoursLeft', { h: recovery.hoursLeft })}</span>
+              <span className="text-xs text-muted-foreground">{tr('progress.body.lastTrained', { date: formatDate(today(new Date(recovery.last)), { weekday: 'short', day: 'numeric', month: 'short' }) })}</span>
             </>
           ) : (
-            <span className="small muted">{tr('progress.body.noRecent')}</span>
+            <span className="text-[0.85rem] text-muted-foreground">{tr('progress.body.noRecent')}</span>
           )}
-        </div>
+        </Card>
         {items.length > 0 && (
           <>
             <h3>{tr('progress.body.exercises')}</h3>
-            <div className="list">
+            <div className="flex flex-col divide-y divide-border">
               {items.map((c) => (
-                <div key={c.exerciseId} className="list-item">
-                  <span className="grow" style={{ fontWeight: 600, overflowWrap: 'anywhere' }}>
+                <div key={c.exerciseId} className="list-row">
+                  <span className="min-w-0 flex-1" style={{ fontWeight: 600, overflowWrap: 'anywhere' }}>
                     {exerciseName(lib.get(c.exerciseId)!)}
                   </span>
-                  {!c.primary && <span className="badge">{tr('progress.body.secondary')}</span>}
-                  <span className="small num muted">{tr('progress.body.setsShort', { sets: fmt(c.sets, 1) })}</span>
+                  {!c.primary && <Badge>{tr('progress.body.secondary')}</Badge>}
+                  <span className="text-[0.85rem] tabular-nums text-muted-foreground">{tr('progress.body.setsShort', { sets: fmt(c.sets, 1) })}</span>
                 </div>
               ))}
             </div>
@@ -244,21 +249,21 @@ function Calendar() {
   const t = today()
   const mm = first.slice(0, 7)
   return (
-    <div className="card stack">
-      <div className="row between">
+    <Card className="flex flex-col gap-2">
+      <div className="flex items-center justify-between gap-2">
         <h3>{month.toLocaleDateString(getLocale(), { month: 'long', year: 'numeric' })}</h3>
-        <div className="row" style={{ gap: 4 }}>
-          <button className="icon-btn" aria-label={tr('progress.prevMonth')} onClick={() => setOffset(offset - 1)}>
+        <div className="flex items-center gap-2" style={{ gap: 4 }}>
+          <Button variant="secondary" size="icon" aria-label={tr('progress.prevMonth')} onClick={() => setOffset(offset - 1)}>
             <Icon name="back" size={18} />
-          </button>
-          <button className="icon-btn" aria-label={tr('progress.nextMonth')} disabled={offset >= 0} onClick={() => setOffset(offset + 1)}>
+          </Button>
+          <Button variant="secondary" size="icon" aria-label={tr('progress.nextMonth')} disabled={offset >= 0} onClick={() => setOffset(offset + 1)}>
             <Icon name="chevron" size={18} />
-          </button>
+          </Button>
         </div>
       </div>
       <div className="cal">
         {weekdaysShort().map((d) => (
-          <span key={d} className="tiny muted" style={{ fontWeight: 700 }}>
+          <span key={d} className="text-xs text-muted-foreground" style={{ fontWeight: 700 }}>
             {d}
           </span>
         ))}
@@ -273,18 +278,18 @@ function Calendar() {
           </div>
         ))}
       </div>
-      <div className="row wrap tiny muted" style={{ gap: 12 }}>
-        <span className="row" style={{ gap: 4 }}>
+      <div className="flex items-center flex-wrap gap-2 text-xs text-muted-foreground" style={{ gap: 12 }}>
+        <span className="flex items-center gap-2" style={{ gap: 4 }}>
           <i style={{ width: 8, height: 8, borderRadius: 9, background: 'var(--accent)' }} /> {tr('progress.legendStrength')}
         </span>
-        <span className="row" style={{ gap: 4 }}>
+        <span className="flex items-center gap-2" style={{ gap: 4 }}>
           <i style={{ width: 8, height: 8, borderRadius: 9, background: 'var(--ok)' }} /> {tr('common.mobility')}
         </span>
-        <span className="row" style={{ gap: 4 }}>
+        <span className="flex items-center gap-2" style={{ gap: 4 }}>
           <i style={{ width: 8, height: 8, borderRadius: 9, background: 'var(--protein)' }} /> {tr('common.cardio')}
         </span>
       </div>
-    </div>
+    </Card>
   )
 }
 
@@ -294,43 +299,43 @@ function Strength() {
   const prs = personalRecords(s.sessions)
   const [sel, setSel] = useState<string>(prs[0]?.exerciseId ?? '')
   const hist = sel ? e1rmHistory(s.sessions, sel) : []
-  if (!prs.length) return <div className="card empty">{tr('progress.emptyStrength')}</div>
+  if (!prs.length) return <Card className="empty-state">{tr('progress.emptyStrength')}</Card>
   return (
     <>
-      <div className="card stack">
-        <select className="input" value={sel} onChange={(e) => setSel(e.target.value)} aria-label={tr('progress.pickExercise')}>
+      <Card className="flex flex-col gap-2">
+        <NativeSelect value={sel} onChange={(e) => setSel(e.target.value)} aria-label={tr('progress.pickExercise')}>
           {prs.map((p) => (
             <option key={p.exerciseId} value={p.exerciseId}>
               {lib.get(p.exerciseId) ? exerciseName(lib.get(p.exerciseId)!) : p.exerciseId}
             </option>
           ))}
-        </select>
+        </NativeSelect>
         <h3>{tr('progress.e1rm')}</h3>
         <LineChart data={hist.map((h) => ({ x: formatDate(h.date), y: Math.round(h.value * 10) / 10 }))} unit="kg" label={tr('progress.e1rmChart')} />
         {hist.length >= 2 && (
-          <p className="small muted">
+          <p className="text-[0.85rem] text-muted-foreground">
             {tr('progress.sinceStart')} <strong style={{ color: 'var(--ok)' }}>{hist[hist.length - 1].value >= hist[0].value ? '+' : ''}{fmt(((hist[hist.length - 1].value - hist[0].value) / hist[0].value) * 100, 1)} %</strong>
           </p>
         )}
-      </div>
-      <div className="card stack" style={{ gap: 0 }}>
+      </Card>
+      <Card className="flex flex-col gap-2" style={{ gap: 0 }}>
         <h3 style={{ marginBottom: 8 }}>{tr('progress.records')}</h3>
-        <div className="list">
+        <div className="flex flex-col divide-y divide-border">
           {prs.map((p) => (
-            <button key={p.exerciseId} className="list-item" onClick={() => setSel(p.exerciseId)}>
-              <span className="grow">
+            <button key={p.exerciseId} className="list-row" onClick={() => setSel(p.exerciseId)}>
+              <span className="min-w-0 flex-1">
                 <span style={{ fontWeight: 600 }}>{lib.get(p.exerciseId) ? exerciseName(lib.get(p.exerciseId)!) : p.exerciseId}</span>
-                <span className="small muted" style={{ display: 'block' }}>
+                <span className="text-[0.85rem] text-muted-foreground" style={{ display: 'block' }}>
                   {fmt(p.weight, 2)} kg × {p.reps} · {formatDate(p.date)}
                 </span>
               </span>
-              <span className="num" style={{ fontWeight: 700 }}>
+              <span className="tabular-nums" style={{ fontWeight: 700 }}>
                 {fmt(p.e1rm, 1)} kg
               </span>
             </button>
           ))}
         </div>
-      </div>
+      </Card>
     </>
   )
 }
@@ -343,49 +348,49 @@ function Body() {
   const first = trend[0]
   return (
     <>
-      <div className="card stack">
-        <div className="row between">
+      <Card className="flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-2">
           <div>
             <h3>{tr('progress.bodyWeight')}</h3>
-            <p className="tiny muted">{tr('progress.bodyLegend')}</p>
+            <p className="text-xs text-muted-foreground">{tr('progress.bodyLegend')}</p>
           </div>
-          <button className="btn primary sm" onClick={() => setOpen(true)}>
+          <Button size="sm" onClick={() => setOpen(true)}>
             <Icon name="plus" size={16} /> {tr('progress.log')}
-          </button>
+          </Button>
         </div>
         <LineChart data={trend.slice(-60).map((t) => ({ x: formatDate(t.date), y: t.kg, y2: Math.round(t.trend * 10) / 10 }))} unit="kg" label={tr('progress.weightChart')} />
         {last && first && trend.length > 1 && (
-          <div className="grid3">
-            <div className="stat">
-              <span className="v">{fmt(last.trend, 1)}</span>
-              <span className="l">{tr('progress.trendKg')}</span>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[1.4rem] font-extrabold tabular-nums">{fmt(last.trend, 1)}</span>
+              <span className="text-[0.78rem] font-semibold text-muted-foreground">{tr('progress.trendKg')}</span>
             </div>
-            <div className="stat">
-              <span className="v">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[1.4rem] font-extrabold tabular-nums">
                 {last.trend - first.trend >= 0 ? '+' : ''}
                 {fmt(last.trend - first.trend, 1)}
               </span>
-              <span className="l">{tr('progress.sinceStartShort')}</span>
+              <span className="text-[0.78rem] font-semibold text-muted-foreground">{tr('progress.sinceStartShort')}</span>
             </div>
-            <div className="stat">
-              <span className="v">{trend.length}</span>
-              <span className="l">{tr('progress.entries')}</span>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[1.4rem] font-extrabold tabular-nums">{trend.length}</span>
+              <span className="text-[0.78rem] font-semibold text-muted-foreground">{tr('progress.entries')}</span>
             </div>
           </div>
         )}
-      </div>
+      </Card>
       <Measurements />
-      <div className="card list" style={{ padding: '0 16px' }}>
+      <Card className="flex flex-col divide-y divide-border" style={{ padding: '0 16px' }}>
         {[...s.weights].reverse().slice(0, 30).map((w) => (
-          <div key={w.date} className="list-item">
-            <span className="grow">{formatDate(w.date, { weekday: 'short', day: 'numeric', month: 'short' })}</span>
-            <strong className="num">{fmt(w.kg, 1)} kg</strong>
-            <button className="icon-btn plain" aria-label={tr('progress.deleteEntry')} onClick={() => confirmAction(tr('progress.deleteEntryConfirm')) && s.removeWeight(w.date)}>
+          <div key={w.date} className="list-row">
+            <span className="min-w-0 flex-1">{formatDate(w.date, { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+            <strong className="tabular-nums">{fmt(w.kg, 1)} kg</strong>
+            <Button variant="ghost" size="icon" aria-label={tr('progress.deleteEntry')} onClick={() => confirmAction(tr('progress.deleteEntryConfirm')) && s.removeWeight(w.date)}>
               <Icon name="trash" size={18} />
-            </button>
+            </Button>
           </div>
         ))}
-      </div>
+      </Card>
       <WeightSheet open={open} onClose={() => setOpen(false)} />
     </>
   )
@@ -411,32 +416,32 @@ function Measurements() {
   const last = (k: MeasureSite) => [...s.measurements].reverse().find((m) => m.values[k] != null)?.values[k]
   const meta = SITES.find((x) => x.k === site)!
   return (
-    <div className="card stack">
-      <div className="row between">
+    <Card className="flex flex-col gap-2">
+      <div className="flex items-center justify-between gap-2">
         <div>
           <h3>{tr('progress.measures')}</h3>
-          <p className="tiny muted">{tr('progress.measuresHint')}</p>
+          <p className="text-xs text-muted-foreground">{tr('progress.measuresHint')}</p>
         </div>
-        <button className="btn primary sm" onClick={() => setOpen(true)}>
+        <Button size="sm" onClick={() => setOpen(true)}>
           <Icon name="plus" size={16} /> {tr('progress.measure')}
-        </button>
+        </Button>
       </div>
       {s.measurements.length === 0 ? (
-        <p className="small muted">{tr('progress.noMeasures')}</p>
+        <p className="text-[0.85rem] text-muted-foreground">{tr('progress.noMeasures')}</p>
       ) : (
         <>
-          <div className="grid3">
+          <div className="grid grid-cols-3 gap-2">
             {SITES.filter((x) => last(x.k) != null).map((x) => {
               const d = last(x.k)! - first(x.k)!
               return (
-                <button key={x.k} className={`card tight stat ${site === x.k ? 'on' : ''}`} style={{ textAlign: 'left', borderColor: site === x.k ? 'var(--accent)' : undefined }} onClick={() => setSite(x.k)} aria-pressed={site === x.k}>
-                  <span className="l">{siteName(x.k)}</span>
-                  <span className="v" style={{ fontSize: '1.1rem' }}>
+                <button key={x.k} className="glass-card flex flex-col gap-0.5 rounded-[var(--radius)] p-3 text-left text-card-foreground aria-pressed:shadow-[var(--rim),inset_0_0_0_1.5px_var(--accent)]" onClick={() => setSite(x.k)} aria-pressed={site === x.k}>
+                  <span className="text-[0.78rem] font-semibold text-muted-foreground">{siteName(x.k)}</span>
+                  <span className="text-[1.4rem] font-extrabold tabular-nums" style={{ fontSize: '1.1rem' }}>
                     {fmt(last(x.k)!, 1)}
-                    <span className="tiny muted"> {x.unit}</span>
+                    <span className="text-xs text-muted-foreground"> {x.unit}</span>
                   </span>
                   {d !== 0 && (
-                    <span className="tiny num" style={{ color: 'var(--muted)' }}>
+                    <span className="text-xs tabular-nums" style={{ color: 'var(--muted)' }}>
                       {d > 0 ? '+' : ''}
                       {fmt(d, 1)}
                     </span>
@@ -449,7 +454,7 @@ function Measurements() {
         </>
       )}
       {open && <MeasureSheet onClose={() => setOpen(false)} />}
-    </div>
+    </Card>
   )
 }
 
@@ -461,17 +466,17 @@ function MeasureSheet({ onClose }: { onClose: () => void }) {
   const filled = Object.entries(vals).filter(([, v]) => Number.isFinite(num(v)))
   return (
     <Sheet open onClose={onClose} title={tr('progress.measureTitle')}>
-      <div className="stack lg">
-        <p className="small muted">{tr('progress.measureHint')}</p>
-        <div className="grid2">
+      <div className="flex flex-col gap-4">
+        <p className="text-[0.85rem] text-muted-foreground">{tr('progress.measureHint')}</p>
+        <div className="grid grid-cols-2 gap-3">
           {SITES.map((x) => (
-            <div key={x.k} className="field">
+            <div key={x.k} className="flex flex-col gap-1.5">
               <label htmlFor={`m-${x.k}`}>
                 {siteName(x.k)} ({x.unit})
               </label>
-              <input
+              <Input
                 id={`m-${x.k}`}
-                className="input"
+               
                 inputMode="decimal"
                 placeholder={prev[x.k] != null ? fmt(prev[x.k]!, 1) : ''}
                 value={vals[x.k] ?? ''}
@@ -480,8 +485,8 @@ function MeasureSheet({ onClose }: { onClose: () => void }) {
             </div>
           ))}
         </div>
-        <button
-          className="btn primary block"
+        <Button
+          className="w-full whitespace-normal text-center leading-tight py-2.5"
           disabled={!filled.length}
           onClick={() => {
             s.logMeasurement({ date: today(), values: Object.fromEntries(filled.map(([k, v]) => [k, num(v)])) })
@@ -490,7 +495,7 @@ function MeasureSheet({ onClose }: { onClose: () => void }) {
           }}
         >
           {tr('common.save')}
-        </button>
+        </Button>
       </div>
     </Sheet>
   )
@@ -500,22 +505,22 @@ function History() {
   const s = useStore()
   const [detail, setDetail] = useState<WorkoutSession | null>(null)
   const done = [...s.sessions].filter((x) => x.finishedAt).reverse()
-  if (!done.length) return <div className="card empty">{tr('progress.noWorkouts')}</div>
+  if (!done.length) return <Card className="empty-state">{tr('progress.noWorkouts')}</Card>
   return (
     <>
-      <div className="card list" style={{ padding: '0 16px' }}>
+      <Card className="flex flex-col divide-y divide-border" style={{ padding: '0 16px' }}>
         {done.map((x) => (
-          <button key={x.id} className="list-item" onClick={() => setDetail(x)}>
-            <span className="grow">
+          <button key={x.id} className="list-row" onClick={() => setDetail(x)}>
+            <span className="min-w-0 flex-1">
               <span style={{ fontWeight: 600 }}>{sessionDayName(x)}</span>
-              <span className="small muted" style={{ display: 'block' }}>
+              <span className="text-[0.85rem] text-muted-foreground" style={{ display: 'block' }}>
                 {tr('progress.historyMeta', { date: formatDate(x.date, { weekday: 'short', day: 'numeric', month: 'short' }), sets: sessionSets(x), min: sessionMinutes(x) ?? 0 })} {x.deload ? tr('progress.deloadSuffix') : ''}
               </span>
             </span>
-            <span className="num small">{fmt(sessionVolume(x) / 1000, 1)} t</span>
+            <span className="tabular-nums text-[0.85rem]">{fmt(sessionVolume(x) / 1000, 1)} t</span>
           </button>
         ))}
-      </div>
+      </Card>
       <SessionDetail session={detail} onClose={() => setDetail(null)} />
     </>
   )
@@ -527,25 +532,25 @@ function SessionDetail({ session, onClose }: { session: WorkoutSession | null; o
   if (!session) return null
   return (
     <Sheet open onClose={onClose} title={sessionDayName(session)}>
-      <div className="stack lg">
-        <p className="small muted">
+      <div className="flex flex-col gap-4">
+        <p className="text-[0.85rem] text-muted-foreground">
           {tr('progress.detailMeta', { date: formatDate(session.date, { weekday: 'long', day: 'numeric', month: 'long' }), week: session.week + 1 })}
           {session.readiness != null ? tr('progress.detailReadiness', { n: session.readiness }) : ''}
         </p>
         {session.exercises.map((e) => (
-          <div key={e.key} className="card tight stack" style={{ gap: 4 }}>
+          <Card key={e.key} className="p-3 flex flex-col gap-2" style={{ gap: 4 }}>
             <strong>{lib.get(e.exerciseId) ? exerciseName(lib.get(e.exerciseId)!) : e.exerciseId}</strong>
             {workSets(e).map((x, i) => (
-              <span key={i} className="small num">
+              <span key={i} className="text-[0.85rem] tabular-nums">
                 {x.kind === 'test' ? tr('progress.test') : tr('progress.setN', { n: i + 1 })}: {x.weight ? `${fmt(x.weight, 2)} kg × ` : ''}
                 {tr('progress.setLine', { reps: x.reps ?? 0 })} {x.rir != null ? `@ ${x.rir} RIR` : ''}
               </span>
             ))}
-          </div>
+          </Card>
         ))}
-        {session.notes && <p className="small">{tr('progress.noteLabel', { note: session.notes })}</p>}
-        <button
-          className="btn danger block"
+        {session.notes && <p className="text-[0.85rem]">{tr('progress.noteLabel', { note: session.notes })}</p>}
+        <Button variant="destructive"
+          className="w-full whitespace-normal text-center leading-tight py-2.5"
           onClick={() => {
             if (confirmAction(tr('progress.deleteWorkoutConfirm'))) {
               s.deleteSession(session.id)
@@ -554,7 +559,7 @@ function SessionDetail({ session, onClose }: { session: WorkoutSession | null; o
           }}
         >
           <Icon name="trash" size={18} /> {tr('progress.deleteWorkout')}
-        </button>
+        </Button>
       </div>
     </Sheet>
   )

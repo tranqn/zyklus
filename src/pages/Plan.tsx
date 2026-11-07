@@ -12,6 +12,10 @@ import { t as tr, tk as tkr, useT } from '../i18n'
 import { exerciseName } from '../i18n/content/exercises'
 import { dayName, splitName } from '../i18n/display'
 import { normalize } from '../domain/nutrition'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Input, NativeSelect } from '@/components/ui/input'
 
 export default function Plan() {
   const s = useStore()
@@ -34,9 +38,9 @@ export default function Plan() {
         </div>
       </div>
 
-      <div className="card stack">
+      <Card className="flex flex-col gap-2">
         <h3>{t('plan.weeks')}</h3>
-        <div className="row" style={{ gap: 6 }}>
+        <div className="flex items-center gap-2" style={{ gap: 6 }}>
           {Array.from({ length: meso.weeks }, (_, w) => {
             const dl = isDeload(w, meso.weeks)
             const current = w === pos.week && !meso.completed
@@ -44,7 +48,7 @@ export default function Plan() {
             return (
               <div
                 key={w}
-                className="grow stack"
+                className="min-w-0 flex-1 flex flex-col gap-2"
                 style={{
                   gap: 2,
                   alignItems: 'center',
@@ -54,66 +58,66 @@ export default function Plan() {
                   color: current ? 'var(--accent-ink)' : undefined,
                 }}
               >
-                <span className="tiny" style={{ fontWeight: 700 }}>
+                <span className="text-xs" style={{ fontWeight: 700 }}>
                   W{w + 1}
                 </span>
-                <span className="tiny">{dl ? t('common.deload') : `${targetRir(w, meso.weeks, profile.level)} RIR`}</span>
+                <span className="text-xs">{dl ? t('common.deload') : `${targetRir(w, meso.weeks, profile.level)} RIR`}</span>
               </div>
             )
           })}
         </div>
-        <p className="small muted">{t('plan.rirExplain')}</p>
-      </div>
+        <p className="text-[0.85rem] text-muted-foreground">{t('plan.rirExplain')}</p>
+      </Card>
 
       {meso.days.map((day, di) => (
-        <section key={day.id} className="card stack" style={{ gap: 4 }}>
-          <div className="row between">
+        <Card key={day.id} className="flex flex-col gap-2" style={{ gap: 4 }}>
+          <div className="flex items-center justify-between gap-2">
             <div>
               <div className="eyebrow">
                 {t('plan.unit', { n: di + 1 })} {di === pos.dayIndex && !meso.completed ? t('plan.upNext') : ''}
               </div>
               <h2>{dayName(day)}</h2>
             </div>
-            <span className="badge">{t('plan.approxMin', { n: estimateMinutes(day) })}</span>
+            <Badge>{t('plan.approxMin', { n: estimateMinutes(day) })}</Badge>
           </div>
-          <div className="list">
+          <div className="flex flex-col divide-y divide-border">
             {day.slots.map((sl) => {
               const ex = lib.get(sl.exerciseId)
               return (
-                <div key={sl.key} className="list-item">
-                  <button style={{ background: 'none', border: 0, padding: 0, textAlign: 'left' }} className="grow" onClick={() => setEdit({ day, slot: sl })}>
+                <div key={sl.key} className="list-row">
+                  <button style={{ background: 'none', border: 0, padding: 0, textAlign: 'left' }} className="min-w-0 flex-1" onClick={() => setEdit({ day, slot: sl })}>
                     <div style={{ fontWeight: 600 }}>
                       {sl.superset && <span className="ss-tag">{sl.superset} </span>}
                       {ex ? exerciseName(ex) : t('plan.unknownExercise')}
                     </div>
-                    <div className="small muted">{t('plan.slotMeta', { sets: sl.sets, min: sl.repMin, max: sl.repMax, rest: sl.restSec })}</div>
+                    <div className="text-[0.85rem] text-muted-foreground">{t('plan.slotMeta', { sets: sl.sets, min: sl.repMin, max: sl.repMax, rest: sl.restSec })}</div>
                   </button>
-                  <button className="icon-btn plain" aria-label={t('plan.infoFor', { name: ex ? exerciseName(ex) : '' })} onClick={() => ex && setInfo(ex)}>
+                  <Button variant="ghost" size="icon" aria-label={t('plan.infoFor', { name: ex ? exerciseName(ex) : '' })} onClick={() => ex && setInfo(ex)}>
                     <Icon name="info" size={20} />
-                  </button>
+                  </Button>
                 </div>
               )
             })}
           </div>
-          <button className="btn ghost sm" style={{ alignSelf: 'flex-start' }} onClick={() => setAddTo(day)}>
+          <Button variant="ghost" size="sm" style={{ alignSelf: 'flex-start' }} onClick={() => setAddTo(day)}>
             <Icon name="plus" size={16} /> {t('plan.addExercise')}
-          </button>
-        </section>
+          </Button>
+        </Card>
       ))}
 
-      <div className="card stack">
+      <Card className="flex flex-col gap-2">
         <h3>{t('plan.program.title')}</h3>
-        <p className="small muted">{t('plan.program.active', { name: t(meso.program === 'winter_arc' ? 'plan.program.winterArc' : 'plan.program.auto') })}</p>
-        <button className="btn" onClick={() => setPicking(true)}>
+        <p className="text-[0.85rem] text-muted-foreground">{t('plan.program.active', { name: t(meso.program === 'winter_arc' ? 'plan.program.winterArc' : 'plan.program.auto') })}</p>
+        <Button variant="secondary" onClick={() => setPicking(true)}>
           {t('plan.program.change')}
-        </button>
-      </div>
+        </Button>
+      </Card>
 
-      <div className="card stack">
+      <Card className="flex flex-col gap-2">
         <h3>{t('plan.regenTitle')}</h3>
-        <p className="small muted">{t('plan.regenText')}</p>
-        <button
-          className="btn"
+        <p className="text-[0.85rem] text-muted-foreground">{t('plan.regenText')}</p>
+        <Button variant="secondary"
+         
           onClick={() => {
             if (confirmAction(t('plan.regenConfirm'))) {
               s.regeneratePlan()
@@ -122,8 +126,8 @@ export default function Plan() {
           }}
         >
           {t('plan.regenButton')}
-        </button>
-      </div>
+        </Button>
+      </Card>
 
       {picking && <ProgramPicker onClose={() => setPicking(false)} />}
       <SlotEditor edit={edit} onClose={() => setEdit(null)} />
@@ -151,7 +155,7 @@ function ProgramPicker({ onClose }: { onClose: () => void }) {
   }
   return (
     <Sheet open onClose={onClose} title={tr('plan.program.title')}>
-      <div className="stack lg">
+      <div className="flex flex-col gap-4">
         <Segmented
           value={program}
           onChange={setProgram}
@@ -162,15 +166,15 @@ function ProgramPicker({ onClose }: { onClose: () => void }) {
           ]}
         />
         {program === 'auto' ? (
-          <p className="small muted">{tr('plan.program.autoText')}</p>
+          <p className="text-[0.85rem] text-muted-foreground">{tr('plan.program.autoText')}</p>
         ) : (
           <>
-            <p className="small">{tr('plan.program.winterArcText')}</p>
-            <p className="small muted">{tr('plan.program.levelHint')}</p>
-            {missing.length > 0 && <p className="small muted">{tr('plan.program.gearHint', { gear: missing.map((g) => tkr(`labels.equipment.${g}`)).join(', ') })}</p>}
+            <p className="text-[0.85rem]">{tr('plan.program.winterArcText')}</p>
+            <p className="text-[0.85rem] text-muted-foreground">{tr('plan.program.levelHint')}</p>
+            {missing.length > 0 && <p className="text-[0.85rem] text-muted-foreground">{tr('plan.program.gearHint', { gear: missing.map((g) => tkr(`labels.equipment.${g}`)).join(', ') })}</p>}
             {ownDays !== 3 && (
-              <div className="stack">
-                <span className="label">{tr('plan.program.week')}</span>
+              <div className="flex flex-col gap-2">
+                <span className="text-[0.85rem] font-semibold text-muted-foreground">{tr('plan.program.week')}</span>
                 <Segmented
                   value={week}
                   onChange={setWeek}
@@ -180,14 +184,14 @@ function ProgramPicker({ onClose }: { onClose: () => void }) {
                     { value: 'own', label: tr('plan.program.own', { n: ownDays }) },
                   ]}
                 />
-                <p className="small muted">{week === 'three' ? tr('plan.program.threeHint') : tr('plan.program.ownHint', { n: ownDays })}</p>
+                <p className="text-[0.85rem] text-muted-foreground">{week === 'three' ? tr('plan.program.threeHint') : tr('plan.program.ownHint', { n: ownDays })}</p>
               </div>
             )}
           </>
         )}
-        <button className="btn primary block" onClick={apply}>
+        <Button className="w-full whitespace-normal text-center leading-tight py-2.5" onClick={apply}>
           {tr('plan.program.apply')}
-        </button>
+        </Button>
       </div>
     </Sheet>
   )
@@ -203,33 +207,33 @@ function SlotEditor({ edit, onClose }: { edit: { day: PlanDay; slot: PlanSlot } 
   const alternatives = allExercises(s).filter((e) => e.slot === live.slot && e.id !== live.exerciseId && hasEquipment(s.profile!.equipment, e))
   return (
     <Sheet open onClose={onClose} title={ex ? exerciseName(ex) : undefined}>
-      <div className="stack lg">
-        <div className="card stack lg">
-          <div className="stack">
-            <span className="label">{tr('plan.setsPerSession')}</span>
+      <div className="flex flex-col gap-4">
+        <Card className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <span className="text-[0.85rem] font-semibold text-muted-foreground">{tr('plan.setsPerSession')}</span>
             <Stepper label={tr('common.sets')} value={live.sets} onChange={(v) => patch({ sets: v })} min={1} max={8} />
           </div>
-          <div className="grid2">
-            <div className="stack">
-              <span className="label">{tr('plan.repsMin')}</span>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-2">
+              <span className="text-[0.85rem] font-semibold text-muted-foreground">{tr('plan.repsMin')}</span>
               <Stepper label={tr('plan.repsMinLabel')} value={live.repMin} onChange={(v) => patch({ repMin: v, repMax: Math.max(v, live.repMax) })} min={1} max={30} />
             </div>
-            <div className="stack">
-              <span className="label">{tr('plan.repsMax')}</span>
+            <div className="flex flex-col gap-2">
+              <span className="text-[0.85rem] font-semibold text-muted-foreground">{tr('plan.repsMax')}</span>
               <Stepper label={tr('plan.repsMaxLabel')} value={live.repMax} onChange={(v) => patch({ repMax: v, repMin: Math.min(v, live.repMin) })} min={1} max={40} />
             </div>
           </div>
-          <div className="stack">
-            <span className="label">{tr('plan.rest')}</span>
+          <div className="flex flex-col gap-2">
+            <span className="text-[0.85rem] font-semibold text-muted-foreground">{tr('plan.rest')}</span>
             <Stepper label={tr('plan.rest')} value={live.restSec} onChange={(v) => patch({ restSec: v })} step={15} min={30} max={420} suffix="s" />
           </div>
-        </div>
+        </Card>
         {alternatives.length > 0 && (
-          <div className="field">
+          <div className="flex flex-col gap-1.5">
             <label htmlFor="alt">{tr('plan.replace')}</label>
-            <select
+            <NativeSelect
               id="alt"
-              className="input"
+             
               value=""
               onChange={(e) => {
                 if (e.target.value) {
@@ -244,35 +248,35 @@ function SlotEditor({ edit, onClose }: { edit: { day: PlanDay; slot: PlanSlot } 
                   {exerciseName(a)}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
         )}
-        <div className="row">
-          <button className="btn grow" onClick={() => s.movePlanSlot(edit.day.id, live.key, -1)}>
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" className="min-w-0 flex-1" onClick={() => s.movePlanSlot(edit.day.id, live.key, -1)}>
             <Icon name="up" size={18} /> {tr('plan.moveUp')}
-          </button>
-          <button className="btn grow" onClick={() => s.movePlanSlot(edit.day.id, live.key, 1)}>
+          </Button>
+          <Button variant="secondary" className="min-w-0 flex-1" onClick={() => s.movePlanSlot(edit.day.id, live.key, 1)}>
             <Icon name="down" size={18} /> {tr('plan.moveDown')}
-          </button>
+          </Button>
         </div>
-        <button
-          className="btn danger block"
+        <Button variant="destructive"
+          className="w-full whitespace-normal text-center leading-tight py-2.5"
           onClick={() => {
             s.removePlanSlot(edit.day.id, live.key)
             onClose()
           }}
         >
           <Icon name="trash" size={18} /> {tr('plan.removeFromDay')}
-        </button>
-        <button
-          className="btn ghost block"
+        </Button>
+        <Button variant="ghost"
+          className="w-full whitespace-normal text-center leading-tight py-2.5"
           onClick={() => {
             s.updateSettings({ excludedExercises: [...s.settings.excludedExercises, live.exerciseId] })
             toast(tr('plan.excluded'))
           }}
         >
           {tr('plan.exclude')}
-        </button>
+        </Button>
       </div>
     </Sheet>
   )
@@ -305,26 +309,26 @@ function AddExercise({ day, onClose }: { day: PlanDay | null; onClose: () => voi
           }}
         />
       ) : (
-        <div className="stack lg">
-          <div className="row">
-            <input className="input" placeholder={tr('plan.searchPlaceholder')} value={q} onChange={(e) => setQ(e.target.value)} aria-label={tr('plan.searchLabel')} />
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-2">
+            <Input placeholder={tr('plan.searchPlaceholder')} value={q} onChange={(e) => setQ(e.target.value)} aria-label={tr('plan.searchLabel')} />
           </div>
-          <button className="btn block" onClick={() => setCreating(true)}>
+          <Button variant="secondary" className="w-full whitespace-normal text-center leading-tight py-2.5" onClick={() => setCreating(true)}>
             <Icon name="plus" size={18} /> {tr('plan.createCustom')}
-          </button>
-          <div className="card list" style={{ padding: '0 16px' }}>
+          </Button>
+          <Card className="flex flex-col divide-y divide-border" style={{ padding: '0 16px' }}>
             {list.slice(0, 60).map((e) => (
-              <button key={e.id} className="list-item" onClick={() => add(e)}>
-                <span className="grow">
+              <button key={e.id} className="list-row" onClick={() => add(e)}>
+                <span className="min-w-0 flex-1">
                   <strong>{exerciseName(e)}</strong>
-                  <span className="small muted" style={{ display: 'block' }}>
+                  <span className="text-[0.85rem] text-muted-foreground" style={{ display: 'block' }}>
                     {tkr(`labels.slot.${e.slot}`)} · {e.equipment.map((x) => tkr(`labels.equipment.${x}`)).join(', ')}
                   </span>
                 </span>
                 <Icon name="plus" size={18} />
               </button>
             ))}
-          </div>
+          </Card>
         </div>
       )}
     </Sheet>
@@ -363,30 +367,30 @@ function CustomExerciseForm({ onDone }: { onDone: (e?: Exercise) => void }) {
   const [loadType, setLoadType] = useState<'gewicht' | 'koerpergewicht'>('gewicht')
   const compoundSlots: Slot[] = ['brust_compound', 'brust_schraeg', 'ruecken_vertikal', 'ruecken_horizontal', 'schulter_press', 'kniebeuge', 'hinge', 'unilateral_bein']
   return (
-    <div className="stack lg">
-      <div className="field">
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1.5">
         <label htmlFor="cx-name">{tr('plan.custom.name')}</label>
-        <input id="cx-name" className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder={tr('plan.custom.namePlaceholder')} />
+        <Input id="cx-name" value={name} onChange={(e) => setName(e.target.value)} placeholder={tr('plan.custom.namePlaceholder')} />
       </div>
-      <div className="field">
+      <div className="flex flex-col gap-1.5">
         <label htmlFor="cx-slot">{tr('plan.custom.pattern')}</label>
-        <select id="cx-slot" className="input" value={slot} onChange={(e) => setSlot(e.target.value as Slot)}>
+        <NativeSelect id="cx-slot" value={slot} onChange={(e) => setSlot(e.target.value as Slot)}>
           {(Object.keys(SLOT_PRIMARY) as Slot[]).map((k) => (
             <option key={k} value={k}>
               {tkr(`labels.slot.${k}`)} ({tkr(`labels.muscle.${SLOT_PRIMARY[k]}`)})
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </div>
-      <div className="field">
+      <div className="flex flex-col gap-1.5">
         <label htmlFor="cx-eq">{tr('plan.custom.equipment')}</label>
-        <select id="cx-eq" className="input" value={eq} onChange={(e) => setEq(e.target.value as Equipment)}>
+        <NativeSelect id="cx-eq" value={eq} onChange={(e) => setEq(e.target.value as Equipment)}>
           {EQUIPMENT_KEYS.map((k) => (
             <option key={k} value={k}>
               {tkr(`labels.equipment.${k}`)}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </div>
       <Segmented
         value={loadType}
@@ -397,12 +401,12 @@ function CustomExerciseForm({ onDone }: { onDone: (e?: Exercise) => void }) {
           { value: 'koerpergewicht', label: tr('plan.custom.bodyweight') },
         ]}
       />
-      <div className="row">
-        <button className="btn grow" onClick={() => onDone()}>
+      <div className="flex items-center gap-2">
+        <Button variant="secondary" className="min-w-0 flex-1" onClick={() => onDone()}>
           {tr('common.cancel')}
-        </button>
-        <button
-          className="btn primary grow"
+        </Button>
+        <Button
+          className="min-w-0 flex-1"
           disabled={!name.trim()}
           onClick={() => {
             const compound = compoundSlots.includes(slot)
@@ -425,7 +429,7 @@ function CustomExerciseForm({ onDone }: { onDone: (e?: Exercise) => void }) {
           }}
         >
           {tr('plan.custom.create')}
-        </button>
+        </Button>
       </div>
     </div>
   )

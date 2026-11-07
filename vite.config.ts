@@ -1,4 +1,6 @@
 /// <reference types="vitest/config" />
+import { fileURLToPath } from 'node:url'
+import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig, type ProxyOptions } from 'vite'
 
@@ -17,7 +19,9 @@ const api: Record<string, ProxyOptions> = { '/api': { target: 'http://localhost:
 
 export default defineConfig({
   base: './',
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
+  // shadcn convention: @/components/ui/… resolves to src/components/ui/…
+  resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
   build: {
     rolldownOptions: {
       output: {

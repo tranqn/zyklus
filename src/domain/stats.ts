@@ -2,44 +2,6 @@ import { bestE1rm, workSets } from './progression'
 import type { Exercise, Muscle, WorkoutSession } from './types'
 import { addDays, startOfWeek, today } from './util'
 
-export interface ActivitySources {
-  sessions: WorkoutSession[]
-  mobility: { date: string }[]
-  cardio: { date: string }[]
-  foods: { date: string }[]
-  weights: { date: string }[]
-  frozenDays: string[]
-  measurements?: { date: string }[]
-  supplementLog?: Record<string, string[]>
-}
-
-export function activityDays(s: ActivitySources): Set<string> {
-  const days = new Set<string>()
-  s.sessions.forEach((x) => x.finishedAt && days.add(x.date))
-  s.mobility.forEach((x) => days.add(x.date))
-  s.cardio.forEach((x) => days.add(x.date))
-  s.foods.forEach((x) => days.add(x.date))
-  s.weights.forEach((x) => days.add(x.date))
-  s.measurements?.forEach((x) => days.add(x.date))
-  Object.entries(s.supplementLog ?? {}).forEach(([d, ids]) => ids.length && days.add(d))
-  return days
-}
-
-/** Consecutive active days up to today; today may still be open. Frozen days (vacation, sick) neither break nor count. */
-export function streak(s: ActivitySources): number {
-  const active = activityDays(s)
-  const frozen = new Set(s.frozenDays)
-  let d = today()
-  if (!active.has(d)) d = addDays(d, -1)
-  let n = 0
-  for (let guard = 0; guard < 3650; guard++) {
-    if (active.has(d)) n++
-    else if (!frozen.has(d)) break
-    d = addDays(d, -1)
-  }
-  return n
-}
-
 /** Weighted hard sets an exercise gives each muscle: primary counts 1, secondary 0.5. */
 function muscleShare(ex: Exercise, sets: number): [Muscle, number][] {
   return [[ex.primary, sets], ...ex.secondary.map((m): [Muscle, number] => [m, sets * 0.5])]

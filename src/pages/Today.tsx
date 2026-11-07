@@ -1,11 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { burnedToday, targets, totals } from '../domain/nutrition'
 import { estimateMinutes, isDeload, targetRir } from '../domain/planner'
 import { buildSession, cyclePosition } from '../domain/progression'
-import { streak } from '../domain/stats'
 import type { CheckIn, Muscle } from '../domain/types'
-import { addDays, currentHour, fmt, formatDate, isStaleSession, nowMs, startOfWeek, today, weekdayIndex } from '../domain/util'
+import { addDays, currentHour, daysBetween, fmt, formatDate, isStaleSession, nowMs, startOfWeek, today, weekdayIndex } from '../domain/util'
 import { exerciseMap, useStore } from '../store'
 import { Bar, Icon, Ring, Sheet, Stepper } from '../ui/kit'
 import { confirmAction, toast } from '../ui/notify'
@@ -15,6 +14,12 @@ import { useSync } from '../sync/engine'
 import { useT, weekdaysShort } from '../i18n'
 import { exerciseName } from '../i18n/content/exercises'
 import { dayFocus, dayName, sessionDayName } from '../i18n/display'
+import { FlameStatus } from '../ui/Flames'
+import { useFlames } from '../ui/useFlames'
+import { refreshSocialIfStale, useSocialCache } from '../sync/social'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 
 export default function Today() {
   const s = useStore()
@@ -36,7 +41,10 @@ export default function Today() {
   const goal = targets(profile, s.settings.kcalOverride, s.kcalAdjustment)
   const eaten = totals(s.foods.filter((f) => f.date === d))
   const burned = burnedToday(s.cardio, d)
-  const streakN = streak(s)
+  const flames = useFlames()
+  const { challenges } = useSocialCache()
+  useEffect(refreshSocialIfStale, [])
+  const challenge = challenges.find((c) => c.status === 'running' && c.end >= d)
   const isTrainingDay = profile.trainingDays.includes(weekdayIndex(d))
   const [now] = useState(() => nowMs())
   const lastWeight = s.weights[s.weights.length - 1]
@@ -72,111 +80,134 @@ export default function Today() {
             {profile.name ? `, ${profile.name}` : ''}
           </h1>
         </div>
-        <div className="badge accent" style={{ fontSize: '0.9rem', padding: '6px 12px', gap: 4 }} title={t('today.streakTitle')}>
-          <Icon name="flame" size={16} /> {streakN}
-        </div>
+        <Link to="/erfolge" className="flex items-center gap-2" style={{ gap: 6, textDecoration: 'none' }}>
+          <span className={`flame-chip ${flames.daily.activeToday ? 'lit' : ''}`} aria-label={t('motivation.dailyChip', { n: flames.daily.count })}>
+            <Icon name="flame" size={16} /> {flames.daily.count}
+          </span>
+          <span className={`flame-chip ${flames.weekly.thisWeek.done ? 'lit' : ''}`} aria-label={t('motivation.weeklyChip', { n: flames.weekly.count })}>
+            <Icon name="calendar" size={15} /> {flames.weekly.count}
+          </span>
+        </Link>
       </div>
+      {!flames.daily.activeToday && !flames.daily.pausedToday && <FlameStatus f={flames} />}
 
       {user && !user.verified && <VerifyBanner />}
 
       {s.settings.mode !== 'normal' && (
-        <div className="card" style={{ background: 'var(--warn-soft)', borderColor: 'transparent' }}>
-          <div className="row between">
+        <Card style={{ background: 'var(--warn-soft)', borderColor: 'transparent' }}>
+          <div className="flex items-center justify-between gap-2">
             <div>
               <strong>{s.settings.mode === 'urlaub' ? t('today.vacationOn') : t('today.sickOn')}</strong>
-              <p className="small muted">{t('today.paused')}</p>
+              <p className="text-[0.85rem] text-muted-foreground">{t('today.paused')}</p>
             </div>
-            <button className="btn sm" onClick={() => s.setMode('normal')}>
+            <Button variant="secondary" size="sm" onClick={() => s.setMode('normal')}>
               {t('today.end')}
-            </button>
+            </Button>
           </div>
-        </div>
+        </Card>
       )}
 
       {s.active ? (
-        <Link to="/training" className="card accent stack" style={{ textDecoration: 'none' }}>
+        <Link to="/training" className="glass-card rounded-[var(--radius)] p-4 text-card-foreground [--glass-fill:var(--accent-grad)] text-primary-foreground [&_.text-muted-foreground]:text-primary-foreground/80 flex flex-col gap-2" style={{ textDecoration: 'none' }}>
           <div className="eyebrow" style={{ color: 'inherit', opacity: 0.8 }}>
             {t('today.running')}
           </div>
           <h2>{sessionDayName(s.active)}</h2>
-          {isStaleSession(s.active.startedAt, now) && <p className="small">{t('today.staleRunning', { date: formatDate(s.active.date, { weekday: 'long', day: 'numeric', month: 'long' }) })}</p>}
-          <span className="btn" style={{ background: 'var(--accent-ink)', color: 'var(--accent)', border: 0, alignSelf: 'flex-start' }}>
+          {isStaleSession(s.active.startedAt, now) && <p className="text-[0.85rem]">{t('today.staleRunning', { date: formatDate(s.active.date, { weekday: 'long', day: 'numeric', month: 'long' }) })}</p>}
+          <span className={buttonVariants({ variant: 'secondary' })} style={{ background: 'var(--accent-ink)', color: 'var(--accent)', border: 0, alignSelf: 'flex-start' }}>
             {t('today.resume')}
           </span>
         </Link>
       ) : meso.completed ? (
-        <div className="card accent stack">
+        <Card className="[--glass-fill:var(--accent-grad)] text-primary-foreground [&_.text-muted-foreground]:text-primary-foreground/80 flex flex-col gap-2">
           <div className="eyebrow" style={{ color: 'inherit', opacity: 0.8 }}>
             {t('today.mesoDone', { n: meso.number })}
           </div>
           <h2>{t('today.reviewTitle')}</h2>
-          <p className="small muted">{t('today.reviewText')}</p>
-          <Link to="/zyklus" className="btn" style={{ background: 'var(--accent-ink)', color: 'var(--accent)', border: 0, alignSelf: 'flex-start' }}>
+          <p className="text-[0.85rem] text-muted-foreground">{t('today.reviewText')}</p>
+          <Link to="/zyklus" className={buttonVariants({ variant: 'secondary' })} style={{ background: 'var(--accent-ink)', color: 'var(--accent)', border: 0, alignSelf: 'flex-start' }}>
             {t('today.toReview')}
           </Link>
-        </div>
+        </Card>
       ) : (
-        <div className="card stack">
-          <div className="row between">
+        <Card className="flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-2">
             <span className="eyebrow">
               {t('today.position', { week: pos.week + 1, weeks: meso.weeks, day: pos.dayIndex + 1, days: meso.days.length })}
             </span>
-            {deload ? <span className="badge warn">{t('common.deload')}</span> : <span className="badge">{rir} RIR</span>}
+            {deload ? <Badge variant="warn">{t('common.deload')}</Badge> : <Badge>{rir} RIR</Badge>}
           </div>
           <h2 style={{ fontSize: '1.5rem' }}>{dayName(day)}</h2>
-          <p className="muted small">{t('today.dayMeta', { n: day.slots.length, min: estimateMinutes(day), focus: dayFocus(day) })}</p>
-          <div className="stack" style={{ gap: 4 }}>
+          <p className="text-muted-foreground text-[0.85rem]">{t('today.dayMeta', { n: day.slots.length, min: estimateMinutes(day), focus: dayFocus(day) })}</p>
+          <div className="flex flex-col gap-2" style={{ gap: 4 }}>
             {day.slots.slice(0, 4).map((sl) => (
-              <div key={sl.key} className="row small">
-                <span className="muted num" style={{ width: 28 }}>
+              <div key={sl.key} className="flex items-center gap-2 text-[0.85rem]">
+                <span className="text-muted-foreground tabular-nums" style={{ width: 28 }}>
                   {sl.sets}×
                 </span>
                 <span>{lib.get(sl.exerciseId) && exerciseName(lib.get(sl.exerciseId)!)}</span>
               </div>
             ))}
-            {day.slots.length > 4 && <span className="muted small">{t('today.more', { n: day.slots.length - 4 })}</span>}
+            {day.slots.length > 4 && <span className="text-muted-foreground text-[0.85rem]">{t('today.more', { n: day.slots.length - 4 })}</span>}
           </div>
-          {!isTrainingDay && <p className="small muted">{t('today.restDay')}</p>}
-          <button className="btn primary block" onClick={() => setCheckIn(true)} disabled={s.settings.mode !== 'normal'}>
+          {!isTrainingDay && <p className="text-[0.85rem] text-muted-foreground">{t('today.restDay')}</p>}
+          <Button className="w-full whitespace-normal text-center leading-tight py-2.5" onClick={() => setCheckIn(true)} disabled={s.settings.mode !== 'normal'}>
             <Icon name="play" size={18} /> {t('today.start')}
-          </button>
-        </div>
+          </Button>
+        </Card>
       )}
 
       <WeekCard />
 
-      <Link to="/ernaehrung" className="card row" style={{ gap: 16, textDecoration: 'none', color: 'inherit' }}>
+      {challenge && (
+        <Link to="/freunde" state={{ tab: 'challenges' }} className="glass-card rounded-[var(--radius)] p-4 text-card-foreground flex flex-col gap-2" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="flex items-center justify-between gap-2">
+            <span className="eyebrow">{challenge.kind === 'goal' ? t('social.ch.goal') : t('social.ch.streak')}</span>
+            <Badge>{t('social.ch.left', { n: daysBetween(d, challenge.end) + 1 })}</Badge>
+          </div>
+          <h3>{challenge.title || (challenge.kind === 'goal' ? t('social.ch.defaultGoal', { target: fmt(challenge.target ?? 0), unit: challenge.metric === 'minutes' ? t('social.ch.unitMinutes') : t('social.ch.unitDays') }) : t('social.ch.defaultStreak', { n: challenge.days }))}</h3>
+          {challenge.kind === 'goal' ? (
+            <Bar value={Math.min(challenge.total, challenge.target ?? 0)} max={challenge.target ?? 1} color="var(--accent)" />
+          ) : (
+            <span className="text-[0.85rem] text-muted-foreground">
+              {t('social.ch.members')}: {challenge.members.filter((m) => m.status !== 'out').length}/{challenge.members.length}
+            </span>
+          )}
+        </Link>
+      )}
+
+      <Link to="/ernaehrung" className="glass-card rounded-[var(--radius)] p-4 text-card-foreground flex items-center gap-2" style={{ gap: 16, textDecoration: 'none', color: 'inherit' }}>
         <Ring value={eaten.kcal} max={goal.kcal + burned} size={104} stroke={10}>
           <div>
-            <div style={{ fontWeight: 800, fontSize: '1.15rem' }} className="num">
+            <div style={{ fontWeight: 800, fontSize: '1.15rem' }} className="tabular-nums">
               {fmt(Math.max(0, Math.round(goal.kcal + burned - eaten.kcal)))}
             </div>
-            <div className="tiny muted">{t('common.kcalLeft')}</div>
+            <div className="text-xs text-muted-foreground">{t('common.kcalLeft')}</div>
           </div>
         </Ring>
-        <div className="stack grow" style={{ gap: 10 }}>
+        <div className="flex flex-col gap-2 min-w-0 flex-1" style={{ gap: 10 }}>
           <Macro label={t('common.protein')} v={eaten.protein} max={goal.protein} color="var(--protein)" />
           <Macro label={t('common.carbs')} v={eaten.carbs} max={goal.carbs} color="var(--carbs)" />
           <Macro label={t('common.fat')} v={eaten.fat} max={goal.fat} color="var(--fat)" />
         </div>
       </Link>
 
-      <div className="grid3">
-        <button className="card tight stack" style={{ alignItems: 'center', gap: 6 }} onClick={() => setWeightOpen(true)}>
+      <div className="grid grid-cols-3 gap-2">
+        <button className="glass-card rounded-[var(--radius)] p-4 text-card-foreground p-3 flex flex-col gap-2" style={{ alignItems: 'center', gap: 6 }} onClick={() => setWeightOpen(true)}>
           <Icon name="scale" />
-          <span className="small" style={{ fontWeight: 600 }}>
+          <span className="text-[0.85rem]" style={{ fontWeight: 600 }}>
             {lastWeight ? `${fmt(lastWeight.kg, 1)} kg` : t('common.weight')}
           </span>
         </button>
-        <Link to="/mobility" className="card tight stack" style={{ alignItems: 'center', gap: 6, textDecoration: 'none', color: 'inherit' }}>
+        <Link to="/mobility" className="glass-card rounded-[var(--radius)] p-4 text-card-foreground p-3 flex flex-col gap-2" style={{ alignItems: 'center', gap: 6, textDecoration: 'none', color: 'inherit' }}>
           <Icon name="stretch" />
-          <span className="small" style={{ fontWeight: 600 }}>
+          <span className="text-[0.85rem]" style={{ fontWeight: 600 }}>
             {t('common.mobility')}
           </span>
         </Link>
-        <Link to="/cardio" className="card tight stack" style={{ alignItems: 'center', gap: 6, textDecoration: 'none', color: 'inherit' }}>
+        <Link to="/cardio" className="glass-card rounded-[var(--radius)] p-4 text-card-foreground p-3 flex flex-col gap-2" style={{ alignItems: 'center', gap: 6, textDecoration: 'none', color: 'inherit' }}>
           <Icon name="run" />
-          <span className="small" style={{ fontWeight: 600 }}>
+          <span className="text-[0.85rem]" style={{ fontWeight: 600 }}>
             {t('common.cardio')}
           </span>
         </Link>
@@ -219,23 +250,23 @@ function WeekCard() {
   }
 
   return (
-    <div className="card stack">
+    <Card className="flex flex-col gap-2">
       {/* same height in both modes (Fertig button is 36px), so the card does not jump when editing starts */}
-      <div className="row between" style={{ minHeight: 36 }}>
+      <div className="flex items-center justify-between gap-2" style={{ minHeight: 36 }}>
         <h3>{t('today.thisWeek')}</h3>
         {draft ? (
-          <button className="btn primary sm" onClick={save}>
+          <Button size="sm" onClick={save}>
             {t('today.editDone')}
-          </button>
+          </Button>
         ) : (
-          <div className="row" style={{ gap: 4 }}>
-            <Link to="/fortschritt" className="small">
+          <div className="flex items-center gap-2" style={{ gap: 4 }}>
+            <Link to="/fortschritt" className="text-[0.85rem]">
               {t('today.calendar')}
             </Link>
             {/* negative margin fits the 44px tap target into the 36px head */}
-            <button className="icon-btn plain" style={{ margin: '-4px -10px -4px 0' }} aria-label={t('today.editDays')} title={t('today.editDays')} onClick={() => setDraft(profile.trainingDays)}>
+            <Button variant="ghost" size="icon" style={{ margin: '-4px -10px -4px 0' }} aria-label={t('today.editDays')} title={t('today.editDays')} onClick={() => setDraft(profile.trainingDays)}>
               <Icon name="settings" size={20} />
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -263,19 +294,19 @@ function WeekCard() {
         })}
       </div>
       {/* always rendered so its line is reserved; only visible while editing */}
-      <p className="small muted" aria-hidden={!draft} style={{ visibility: draft ? 'visible' : 'hidden' }}>
+      <p className="text-[0.85rem] text-muted-foreground" aria-hidden={!draft} style={{ visibility: draft ? 'visible' : 'hidden' }}>
         {t('today.editHint')}
       </p>
-    </div>
+    </Card>
   )
 }
 
 function Macro({ label, v, max, color }: { label: string; v: number; max: number; color: string }) {
   return (
-    <div className="stack" style={{ gap: 4 }}>
-      <div className="row between tiny">
+    <div className="flex flex-col gap-2" style={{ gap: 4 }}>
+      <div className="flex items-center justify-between gap-2 text-xs">
         <span style={{ fontWeight: 600 }}>{label}</span>
-        <span className="muted num">
+        <span className="text-muted-foreground tabular-nums">
           {Math.round(v)} / {max} g
         </span>
       </div>
@@ -292,11 +323,11 @@ export function WeightSheet({ open, onClose }: { open: boolean; onClose: () => v
   const { t } = useT()
   return (
     <Sheet open={open} onClose={onClose} title={t('today.weightSheet.title')}>
-      <div className="stack lg">
-        <p className="muted small">{t('today.weightSheet.hint')}</p>
+      <div className="flex flex-col gap-4">
+        <p className="text-muted-foreground text-[0.85rem]">{t('today.weightSheet.hint')}</p>
         <Stepper label={t('common.weight')} value={kg} onChange={setKg} step={0.1} min={30} max={300} suffix="kg" />
-        <button
-          className="btn primary block"
+        <Button
+          className="w-full whitespace-normal text-center leading-tight py-2.5"
           onClick={() => {
             logWeight(kg)
             toast(t('today.weightSheet.saved'))
@@ -304,7 +335,7 @@ export function WeightSheet({ open, onClose }: { open: boolean; onClose: () => v
           }}
         >
           {t('common.save')}
-        </button>
+        </Button>
       </div>
     </Sheet>
   )
