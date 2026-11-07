@@ -5,7 +5,7 @@ async function signUpVi(page: Page) {
   await page.goto('/')
   // browser language vi-VN: the app starts in Vietnamese
   await expect(page.getByRole('heading', { name: 'Chào mừng bạn trở lại' })).toBeVisible()
-  await page.getByRole('button', { name: 'Đăng ký' }).click()
+  await page.getByRole('radio', { name: 'Đăng ký' }).click()
   await page.getByLabel('Email').fill(`vi-${Date.now()}-${n++}-${Math.random().toString(36).slice(2, 8)}@example.test`)
   await page.getByLabel('Mật khẩu').fill('mot-mat-khau-dai-123')
   await page.getByRole('checkbox').check()
@@ -33,7 +33,7 @@ test('Vietnamese: free-text food logging with Vietnamese dishes', async ({ page 
   await signUpVi(page)
   await page.getByRole('link', { name: 'Dinh dưỡng' }).click()
   await page.getByRole('button', { name: 'Thêm vào Bữa sáng' }).click()
-  await page.getByRole('button', { name: 'Chữ', exact: true }).click()
+  await page.getByRole('radio', { name: 'Chữ', exact: true }).click()
   await page.getByLabel('Bữa ăn dạng chữ').fill('1 tô phở bò và 2 quả trứng, 1 ly cà phê sữa đá')
   await page.getByRole('button', { name: 'Ghi 3 món' }).click()
   await expect(page.getByText('Phở bò', { exact: true })).toBeVisible()
@@ -48,7 +48,7 @@ test('Vietnamese: every screen without overflow and no untranslated German', asy
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
   await signUpVi(page)
-  for (const hash of ['#/', '#/plan', '#/ernaehrung', '#/fortschritt', '#/mehr', '#/mobility', '#/cardio', '#/einstellungen', '#/modus', '#/wissen', '#/konto', '#/datenschutz']) {
+  for (const hash of ['#/', '#/plan', '#/ernaehrung', '#/fortschritt', '#/mehr', '#/mobility', '#/cardio', '#/einstellungen', '#/modus', '#/wissen', '#/konto', '#/datenschutz', '#/erfolge', '#/freunde']) {
     await page.goto('/' + hash)
     await expect(page.locator('h1')).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), hash).toBe(true)
@@ -62,21 +62,21 @@ test('Vietnamese: every screen without overflow and no untranslated German', asy
 test('switching the language in settings applies everywhere and survives a reload', async ({ page }) => {
   await signUpVi(page)
   await page.goto('/#/einstellungen')
-  await page.getByRole('button', { name: 'Deutsch' }).click()
+  await page.getByRole('radio', { name: 'Deutsch' }).click()
   await expect(page.getByRole('heading', { name: 'Einstellungen' })).toBeVisible()
   await page.reload()
   await expect(page.getByRole('heading', { name: 'Einstellungen' })).toBeVisible()
   await page.getByRole('link', { name: 'Heute' }).click()
   await expect(page.getByRole('heading', { name: 'Ganzkörper A' })).toBeVisible()
   await page.goto('/#/einstellungen')
-  await page.getByRole('button', { name: 'English' }).click()
+  await page.getByRole('radio', { name: 'English' }).click()
   await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible()
 })
 
 test('Vietnamese meal planner without overflow', async ({ page }) => {
   await signUpVi(page)
   await page.goto('/#/ernaehrung')
-  await page.getByRole('button', { name: 'Thực đơn' }).click()
+  await page.getByRole('radio', { name: 'Thực đơn' }).click()
   await page.getByRole('button', { name: 'Tạo thực đơn' }).click()
   await expect(page.getByText('Đã tạo thực đơn')).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Hôm nay ăn thêm gì?' })).toBeVisible()

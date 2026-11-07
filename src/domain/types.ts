@@ -263,6 +263,8 @@ export interface Settings {
   language?: 'de' | 'en' | 'vi'
   /** meal planner preferences (see domain/meals.ts) */
   mealPrefs?: MealPrefs
+  /** weekly flame goal in active days, with history (see domain/motivation.ts); missing = days per week of the plan */
+  weeklyGoals?: { from: string; days: number }[]
 }
 
 export interface RecipeItem {

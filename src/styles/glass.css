@@ -1,0 +1,116 @@
+/* Liquid glass as Tailwind utilities.
+   Built so Safari looks right without SVG backdrops (WebKit ignores backdrop-filter: url()):
+   - glass-rim     thick glass edge from layered inset shadows (the LiquidButton recipe)
+   - glass-card    clear tinted surface with blur, rim and a sheen that follows the scroll position
+   - glass-lens    controls and bars: a clear centre plus a brighter, stronger-blurred edge ring, which reads as
+                   light bending at the rim; Chromium additionally distorts the centre with #container-glass
+   - glass-press   iOS-26-like squash and spring on tap
+   A backdrop-filter on the element itself would make it the backdrop root for its pseudo layers, so glass-lens
+   keeps the element free of filters and puts both backdrop layers on ::before and ::after. */
+
+/* the sheen angle follows the page scroll: native scroll-driven animation, no script (static where unsupported) */
+@property --spec {
+  syntax: '<angle>';
+  inherits: true;
+  initial-value: 165deg;
+}
+@keyframes glass-spec {
+  0% {
+    --spec: 150deg;
+  }
+  25% {
+    --spec: 195deg;
+  }
+  50% {
+    --spec: 140deg;
+  }
+  75% {
+    --spec: 200deg;
+  }
+  100% {
+    --spec: 160deg;
+  }
+}
+@supports (animation-timeline: scroll()) {
+  :root {
+    animation: glass-spec linear both;
+    animation-timeline: scroll(root block);
+  }
+}
+
+/* variants tint the glass through custom properties, so they never fight over background or box-shadow:
+   --glass-fill (what sits under the sheen) and --glass-glow (an extra outer shadow) */
+@utility glass-rim {
+  box-shadow: var(--rim), var(--glass-shadow);
+}
+
+@utility glass-card {
+  background: var(--sheen), var(--glass-fill, var(--surface));
+  box-shadow: var(--rim), var(--glass-glow, var(--glass-shadow));
+  border-color: transparent;
+  backdrop-filter: blur(var(--blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(180%);
+}
+
+@utility glass-lens {
+  position: relative;
+  isolation: isolate;
+  background: var(--glass-fill, transparent);
+  border-color: transparent;
+  box-shadow: var(--rim), var(--glass-glow, 0 0 #0000);
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+  /* clear centre: light tint, sheen, a little blur */
+  &::before {
+    background: var(--sheen), color-mix(in srgb, var(--glass-tint) var(--lens-a, 10%), transparent);
+    backdrop-filter: blur(var(--lens-blur, 3px)) saturate(190%);
+    -webkit-backdrop-filter: blur(var(--lens-blur, 3px)) saturate(190%);
+  }
+  /* thick edge: stronger blur, more light, fading out towards the middle */
+  &::after {
+    backdrop-filter: blur(10px) saturate(240%) brightness(var(--lens-light, 1.16));
+    -webkit-backdrop-filter: blur(10px) saturate(240%) brightness(var(--lens-light, 1.16));
+    -webkit-mask-image:
+      linear-gradient(to right, #000, transparent var(--lens-w, 14px), transparent calc(100% - var(--lens-w, 14px)), #000),
+      linear-gradient(to bottom, #000, transparent var(--lens-w, 14px), transparent calc(100% - var(--lens-w, 14px)), #000);
+    mask-image:
+      linear-gradient(to right, #000, transparent var(--lens-w, 14px), transparent calc(100% - var(--lens-w, 14px)), #000),
+      linear-gradient(to bottom, #000, transparent var(--lens-w, 14px), transparent calc(100% - var(--lens-w, 14px)), #000);
+  }
+}
+
+@utility glass-press {
+  transition: transform 0.42s cubic-bezier(0.3, 1.7, 0.45, 1);
+  &:active {
+    transform: scale(1.045, 0.94);
+    transition-duration: 0.12s;
+  }
+}
+
+/* Chromium only (set in main.tsx): the noise refraction of the LiquidButton. Only on glass that floats over
+   moving page content (the tab bar), like Apple uses it; on small controls it only washes out their labels. */
+@utility glass-refract {
+  :root[data-refract='on'] &::before {
+    backdrop-filter: url(#container-glass) saturate(190%);
+  }
+}
+
+/* Inside a card or sheet the backdrop is only that surface's own tint (it is the backdrop root), so nested
+   controls skip their two backdrop layers and paint the lens edge as a light ring: same look, a fraction of
+   the GPU work on phones (the check-in sheet alone holds about 40 chips). */
+:where(.glass-card, [data-slot='sheet-content']) .glass-lens::before {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+:where(.glass-card, [data-slot='sheet-content']) .glass-lens::after {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(--lens-ring);
+}

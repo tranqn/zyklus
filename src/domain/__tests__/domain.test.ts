@@ -5,7 +5,7 @@ import { parseMealText, suggestAdjustment, targets } from '../nutrition'
 import { estimateMinutes, generateMesocycle, targetRir, weekSets } from '../planner'
 import { generateWinterArc } from '../presets'
 import { applyTestResult, buildSession, cyclePosition, e1rm, nextTarget, pctFor } from '../progression'
-import { muscleContributions, muscleRecovery, streak, weeklyMuscleSets } from '../stats'
+import { muscleContributions, muscleRecovery, weeklyMuscleSets } from '../stats'
 import type { Profile, SessionExercise, WorkoutSession } from '../types'
 import { addDays, today } from '../util'
 
@@ -213,15 +213,6 @@ describe('nutrition', () => {
   it('suggests more calories when gaining too slowly', () => {
     const weights = Array.from({ length: 21 }, (_, i) => ({ date: addDays(today(), i - 20), kg: 78 }))
     expect(suggestAdjustment(base, weights).delta).toBeGreaterThan(0)
-  })
-})
-
-describe('streak', () => {
-  it('counts consecutive days and survives frozen days', () => {
-    const t = today()
-    const src = { sessions: [], mobility: [{ date: t }, { date: addDays(t, -1) }, { date: addDays(t, -3) }], cardio: [], foods: [], weights: [], frozenDays: [addDays(t, -2)] }
-    expect(streak(src)).toBe(3)
-    expect(streak({ ...src, frozenDays: [] })).toBe(2)
   })
 })
 

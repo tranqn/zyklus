@@ -11,6 +11,10 @@ import { MealActions, RecipeTab, SaveRecipeSheet, SupplementsCard } from './Nutr
 import MealPlanner from './MealPlanner'
 import { getLang, t as tr, useT } from '../i18n'
 import { allFoods, foodName, foodPortion } from '../domain/foods'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Input, NativeSelect, Textarea } from '@/components/ui/input'
 
 const MEALS: Meal[] = ['fruehstueck', 'mittag', 'abend', 'snack']
 const mealName = (m: Meal) => tr(`nutrition.meal.${m}` as 'nutrition.meal.mittag')
@@ -81,77 +85,77 @@ function Diary({ switcher }: { switcher: ReactNode }) {
           <div className="eyebrow">{t('nutrition.eyebrow')}</div>
           <h1>{day === today() ? t('nutrition.today') : formatDate(day, { weekday: 'long', day: 'numeric', month: 'short' })}</h1>
         </div>
-        <div className="row" style={{ gap: 4 }}>
-          <button className="icon-btn" aria-label={t('nutrition.prevDay')} onClick={() => setDay(addDays(day, -1))}>
+        <div className="flex items-center gap-2" style={{ gap: 4 }}>
+          <Button variant="secondary" size="icon" aria-label={t('nutrition.prevDay')} onClick={() => setDay(addDays(day, -1))}>
             <Icon name="back" size={20} />
-          </button>
-          <button className="icon-btn" aria-label={t('nutrition.nextDay')} onClick={() => setDay(addDays(day, 1))} disabled={day >= today()}>
+          </Button>
+          <Button variant="secondary" size="icon" aria-label={t('nutrition.nextDay')} onClick={() => setDay(addDays(day, 1))} disabled={day >= today()}>
             <Icon name="chevron" size={20} />
-          </button>
+          </Button>
         </div>
       </div>
       {switcher}
 
-      <div className="card row" style={{ gap: 16 }}>
+      <Card className="flex items-center gap-2" style={{ gap: 16 }}>
         <Ring value={tot.kcal} max={budget} size={116} stroke={11}>
           <div>
-            <div style={{ fontWeight: 800, fontSize: '1.3rem' }} className="num">
+            <div style={{ fontWeight: 800, fontSize: '1.3rem' }} className="tabular-nums">
               {fmt(Math.round(budget - tot.kcal))}
             </div>
-            <div className="tiny muted">{budget - tot.kcal >= 0 ? t('common.kcalLeft') : t('common.kcalOver')}</div>
+            <div className="text-xs text-muted-foreground">{budget - tot.kcal >= 0 ? t('common.kcalLeft') : t('common.kcalOver')}</div>
           </div>
         </Ring>
-        <div className="stack grow" style={{ gap: 8 }}>
-          <div className="row between small">
-            <span className="muted">{t('nutrition.eaten')}</span>
-            <strong className="num">{fmt(Math.round(tot.kcal))} kcal</strong>
+        <div className="flex flex-col gap-2 min-w-0 flex-1" style={{ gap: 8 }}>
+          <div className="flex items-center justify-between gap-2 text-[0.85rem]">
+            <span className="text-muted-foreground">{t('nutrition.eaten')}</span>
+            <strong className="tabular-nums">{fmt(Math.round(tot.kcal))} kcal</strong>
           </div>
-          <div className="row between small">
-            <span className="muted">{t('nutrition.goal')}</span>
-            <strong className="num">{fmt(goal.kcal)} kcal</strong>
+          <div className="flex items-center justify-between gap-2 text-[0.85rem]">
+            <span className="text-muted-foreground">{t('nutrition.goal')}</span>
+            <strong className="tabular-nums">{fmt(goal.kcal)} kcal</strong>
           </div>
           {burned > 0 && (
-            <div className="row between small">
-              <span className="muted">{t('nutrition.plusCardio')}</span>
-              <strong className="num">{burned} kcal</strong>
+            <div className="flex items-center justify-between gap-2 text-[0.85rem]">
+              <span className="text-muted-foreground">{t('nutrition.plusCardio')}</span>
+              <strong className="tabular-nums">{burned} kcal</strong>
             </div>
           )}
         </div>
-      </div>
+      </Card>
 
-      <div className="card grid3">
+      <Card className="grid grid-cols-3 gap-2">
         <MacroCol label={t('common.protein')} v={tot.protein} max={goal.protein} color="var(--protein)" />
         <MacroCol label={t('common.carbsShort')} v={tot.carbs} max={goal.carbs} color="var(--carbs)" />
         <MacroCol label={t('common.fat')} v={tot.fat} max={goal.fat} color="var(--fat)" />
-      </div>
+      </Card>
 
       {MEALS.map((m) => {
         const items = entries.filter((e) => e.meal === m)
         const kcal = totals(items).kcal
         return (
-          <section key={m} className="card stack" style={{ gap: 0 }}>
-            <div className="row between">
+          <Card key={m} className="flex flex-col gap-2" style={{ gap: 0 }}>
+            <div className="flex items-center justify-between gap-2">
               <div>
                 <h3>{mealName(m)}</h3>
-                <span className="small muted num">{Math.round(kcal)} kcal</span>
+                <span className="text-[0.85rem] text-muted-foreground tabular-nums">{Math.round(kcal)} kcal</span>
               </div>
-              <button className="icon-btn" aria-label={t('nutrition.addTo', { meal: mealName(m) })} onClick={() => setAddMeal(m)}>
+              <Button variant="secondary" size="icon" aria-label={t('nutrition.addTo', { meal: mealName(m) })} onClick={() => setAddMeal(m)}>
                 <Icon name="plus" />
-              </button>
+              </Button>
             </div>
             {items.length > 0 && (
-              <div className="list" style={{ marginTop: 8 }}>
+              <div className="flex flex-col divide-y divide-border" style={{ marginTop: 8 }}>
                 {items.map((e) => {
                   const mm = macrosOf(e)
                   return (
-                    <button key={e.id} className="list-item" onClick={() => setEditEntry(e)}>
-                      <span className="grow">
+                    <button key={e.id} className="list-row" onClick={() => setEditEntry(e)}>
+                      <span className="min-w-0 flex-1">
                         <span style={{ fontWeight: 600 }}>{e.name}</span>
-                        <span className="small muted" style={{ display: 'block' }}>
+                        <span className="text-[0.85rem] text-muted-foreground" style={{ display: 'block' }}>
                           {t('nutrition.entryMeta', { g: fmt(e.grams), p: Math.round(mm.protein), c: Math.round(mm.carbs), f: Math.round(mm.fat) })}
                         </span>
                       </span>
-                      <span className="num" style={{ fontWeight: 650 }}>
+                      <span className="tabular-nums" style={{ fontWeight: 650 }}>
                         {Math.round(mm.kcal)}
                       </span>
                     </button>
@@ -160,31 +164,31 @@ function Diary({ switcher }: { switcher: ReactNode }) {
               </div>
             )}
             <MealActions day={day} meal={m} items={items} onSaveRecipe={setRecipeItems} />
-          </section>
+          </Card>
         )
       })}
 
       <SupplementsCard day={day} />
 
-      <div className="card stack">
-        <div className="row between">
+      <Card className="flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-2">
           <h3>{t('nutrition.smart')}</h3>
-          {s.kcalAdjustment !== 0 && <span className="badge accent">{t('nutrition.smartActive', { delta: signed(s.kcalAdjustment) })}</span>}
+          {s.kcalAdjustment !== 0 && <Badge variant="accent">{t('nutrition.smartActive', { delta: signed(s.kcalAdjustment) })}</Badge>}
         </div>
-        <p className="small muted">{t(`nutrition.adjust.${adj.kind}`, { delta: signed(adj.delta) })}</p>
-        {adj.rate != null && <p className="small num">{t('nutrition.trend', { rate: signed(adj.rate, 2), goal: signed(adj.goal, 2) })}</p>}
+        <p className="text-[0.85rem] text-muted-foreground">{t(`nutrition.adjust.${adj.kind}`, { delta: signed(adj.delta) })}</p>
+        {adj.rate != null && <p className="text-[0.85rem] tabular-nums">{t('nutrition.trend', { rate: signed(adj.rate, 2), goal: signed(adj.goal, 2) })}</p>}
         {adj.delta !== 0 && (
-          <button
-            className="btn primary"
+          <Button
+           
             onClick={() => {
               s.setKcalAdjustment(s.kcalAdjustment + adj.delta)
               toast(t('nutrition.adjusted'))
             }}
           >
             {t('nutrition.apply', { delta: signed(adj.delta) })}
-          </button>
+          </Button>
         )}
-      </div>
+      </Card>
 
       <AddFoodSheet key={addMeal ?? 'zu'} meal={addMeal} day={day} onClose={() => setAddMeal(null)} />
       <SaveRecipeSheet key={recipeItems ? 'offen' : 'zu'} items={recipeItems} onClose={() => setRecipeItems(null)} />
@@ -195,13 +199,13 @@ function Diary({ switcher }: { switcher: ReactNode }) {
 
 function MacroCol({ label, v, max, color }: { label: string; v: number; max: number; color: string }) {
   return (
-    <div className="stack" style={{ gap: 6 }}>
-      <span className="tiny" style={{ fontWeight: 700 }}>
+    <div className="flex flex-col gap-2" style={{ gap: 6 }}>
+      <span className="text-xs" style={{ fontWeight: 700 }}>
         {label}
       </span>
-      <span className="num" style={{ fontWeight: 750 }}>
+      <span className="tabular-nums" style={{ fontWeight: 750 }}>
         {Math.round(v)}
-        <span className="muted small" style={{ fontWeight: 500 }}>
+        <span className="text-muted-foreground text-[0.85rem]" style={{ fontWeight: 500 }}>
           /{max} g
         </span>
       </span>
@@ -226,14 +230,14 @@ function AddFoodSheet({ meal, day, onClose }: { meal: Meal | null; day: string; 
   }
   return (
     <Sheet open onClose={onClose} title={tr('nutrition.addTitle')}>
-      <div className="stack lg">
-        <select className="input" value={mealSel} onChange={(e) => setMealSel(e.target.value as Meal)} aria-label={tr('nutrition.mealLabel')}>
+      <div className="flex flex-col gap-4">
+        <NativeSelect value={mealSel} onChange={(e) => setMealSel(e.target.value as Meal)} aria-label={tr('nutrition.mealLabel')}>
           {MEALS.map((m) => (
             <option key={m} value={m}>
               {mealName(m)}
             </option>
           ))}
-        </select>
+        </NativeSelect>
         {picked ? (
           <AmountPicker
             food={picked}
@@ -317,46 +321,46 @@ function SearchTab({ onPick }: { onPick: (f: Food) => void }) {
     }
   }
   return (
-    <div className="stack">
+    <div className="flex flex-col gap-2">
       <form
-        className="row"
+        className="flex items-center gap-2"
         onSubmit={(e) => {
           e.preventDefault()
           if (q.trim()) goOnline()
         }}
       >
-        <input className="input" value={q} onChange={(e) => (setQ(e.target.value), setOnline(null))} placeholder={tr('nutrition.searchPlaceholder')} aria-label={tr('nutrition.searchLabel')} autoFocus />
+        <Input value={q} onChange={(e) => (setQ(e.target.value), setOnline(null))} placeholder={tr('nutrition.searchPlaceholder')} aria-label={tr('nutrition.searchLabel')} autoFocus />
       </form>
       {q.trim().length < 2 && recents.length > 0 && (
         <>
-          <span className="label">{tr('nutrition.recent')}</span>
-          <div className="card list" style={{ padding: '0 16px' }}>
+          <span className="text-[0.85rem] font-semibold text-muted-foreground">{tr('nutrition.recent')}</span>
+          <Card className="flex flex-col divide-y divide-border" style={{ padding: '0 16px' }}>
             {recents.map((r) => (
               <FoodRow key={r.id} food={{ id: r.foodId ?? r.id, name: r.name, per100: r.per100, portion: r.grams, portionLabel: tr('nutrition.lastAmount') }} onPick={onPick} />
             ))}
-          </div>
+          </Card>
         </>
       )}
       {local.length > 0 && (
-        <div className="card list" style={{ padding: '0 16px' }}>
+        <Card className="flex flex-col divide-y divide-border" style={{ padding: '0 16px' }}>
           {local.map((f) => (
             <FoodRow key={f.id} food={f} onPick={onPick} />
           ))}
-        </div>
+        </Card>
       )}
       {q.trim().length >= 2 && (
-        <button className="btn block" onClick={goOnline} disabled={loading}>
+        <Button variant="secondary" className="w-full whitespace-normal text-center leading-tight py-2.5" onClick={goOnline} disabled={loading}>
           <Icon name="search" size={18} /> {loading ? tr('nutrition.searching') : tr('nutrition.searchOff')}
-        </button>
+        </Button>
       )}
-      {error && <p className="small" style={{ color: 'var(--bad)' }}>{error}</p>}
+      {error && <p className="text-[0.85rem]" style={{ color: 'var(--bad)' }}>{error}</p>}
       {online && (
-        <div className="card list" style={{ padding: '0 16px' }}>
-          {online.length === 0 && <p className="empty">{tr('nutrition.nothing')}</p>}
+        <Card className="flex flex-col divide-y divide-border" style={{ padding: '0 16px' }}>
+          {online.length === 0 && <p className="empty-state">{tr('nutrition.nothing')}</p>}
           {online.map((f) => (
             <FoodRow key={f.id} food={f} onPick={onPick} />
           ))}
-        </div>
+        </Card>
       )}
     </div>
   )
@@ -364,10 +368,10 @@ function SearchTab({ onPick }: { onPick: (f: Food) => void }) {
 
 function FoodRow({ food, onPick }: { food: Food; onPick: (f: Food) => void }) {
   return (
-    <button className="list-item" onClick={() => onPick(food)}>
-      <span className="grow">
+    <button className="list-row" onClick={() => onPick(food)}>
+      <span className="min-w-0 flex-1">
         <span style={{ fontWeight: 600 }}>{foodName(food, getLang())}</span>
-        <span className="small muted" style={{ display: 'block' }}>
+        <span className="text-[0.85rem] text-muted-foreground" style={{ display: 'block' }}>
           {food.brand ? `${food.brand} · ` : ''}
           {tr('nutrition.per100', { kcal: Math.round(food.per100.kcal), p: fmt(food.per100.protein, 1) })}
         </span>
@@ -383,40 +387,40 @@ function AmountPicker({ food, onAdd, onCancel }: { food: Food; onAdd: (grams: nu
   const [grams, setGrams] = useState(portion.grams ?? 100)
   const m = macrosOf({ grams, per100: food.per100 })
   return (
-    <div className="stack lg">
+    <div className="flex flex-col gap-4">
       <div>
         <h3>{foodName(food, lang)}</h3>
-        {food.brand && <p className="small muted">{food.brand}</p>}
+        {food.brand && <p className="text-[0.85rem] text-muted-foreground">{food.brand}</p>}
       </div>
-      <div className="row wrap">
+      <div className="flex items-center flex-wrap gap-2">
         {portion.grams && (
-          <button className="chip" onClick={() => setGrams(portion.grams!)}>
+          <Button variant="chip" onClick={() => setGrams(portion.grams!)}>
             {portion.label ?? tr('nutrition.portion')} ({fmt(portion.grams)} g)
-          </button>
+          </Button>
         )}
         {[50, 100, 150, 200, 250].map((g) => (
-          <button key={g} className="chip" aria-pressed={grams === g} onClick={() => setGrams(g)}>
+          <Button variant="chip" key={g} aria-pressed={grams === g} onClick={() => setGrams(g)}>
             {g} g
-          </button>
+          </Button>
         ))}
       </div>
-      <div className="field">
+      <div className="flex flex-col gap-1.5">
         <label htmlFor="grams">{tr('nutrition.grams')}</label>
-        <input id="grams" className="input" inputMode="decimal" value={grams || ''} onChange={(e) => setGrams(parseFloat(e.target.value.replace(',', '.')) || 0)} />
+        <Input id="grams" inputMode="decimal" value={grams || ''} onChange={(e) => setGrams(parseFloat(e.target.value.replace(',', '.')) || 0)} />
       </div>
-      <div className="card grid2" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+      <Card className="grid grid-cols-2 gap-3" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
         <MiniStat v={Math.round(m.kcal)} l="kcal" />
         <MiniStat v={fmt(m.protein, 1)} l={tr('common.protein')} />
         <MiniStat v={fmt(m.carbs, 1)} l={tr('common.carbsShort')} />
         <MiniStat v={fmt(m.fat, 1)} l={tr('common.fat')} />
-      </div>
-      <div className="row">
-        <button className="btn grow" onClick={onCancel}>
+      </Card>
+      <div className="flex items-center gap-2">
+        <Button variant="secondary" className="min-w-0 flex-1" onClick={onCancel}>
           {tr('common.back')}
-        </button>
-        <button className="btn primary grow" disabled={!grams} onClick={() => onAdd(grams)}>
+        </Button>
+        <Button className="min-w-0 flex-1" disabled={!grams} onClick={() => onAdd(grams)}>
           {tr('nutrition.log')}
-        </button>
+        </Button>
       </div>
     </div>
   )
@@ -424,11 +428,11 @@ function AmountPicker({ food, onAdd, onCancel }: { food: Food; onAdd: (grams: nu
 
 function MiniStat({ v, l }: { v: string | number; l: string }) {
   return (
-    <div className="stat" style={{ alignItems: 'center' }}>
-      <span className="num" style={{ fontWeight: 750 }}>
+    <div className="flex flex-col gap-0.5" style={{ alignItems: 'center' }}>
+      <span className="tabular-nums" style={{ fontWeight: 750 }}>
         {v}
       </span>
-      <span className="tiny muted">{l}</span>
+      <span className="text-xs text-muted-foreground">{l}</span>
     </div>
   )
 }
@@ -441,26 +445,26 @@ function TextTab({ onAdd }: { onAdd: (items: ParsedItem[]) => void }) {
   const items = useMemo(() => parseMealText(text, foods, lang), [text, foods, lang])
   const found = items.filter((i) => i.food)
   return (
-    <div className="stack">
-      <textarea className="input" value={text} onChange={(e) => setText(e.target.value)} placeholder={tr('nutrition.textPlaceholder')} aria-label={tr('nutrition.textLabel')} />
+    <div className="flex flex-col gap-2">
+      <Textarea value={text} onChange={(e) => setText(e.target.value)} placeholder={tr('nutrition.textPlaceholder')} aria-label={tr('nutrition.textLabel')} />
       {items.length > 0 && (
-        <div className="card list" style={{ padding: '0 16px' }}>
+        <Card className="flex flex-col divide-y divide-border" style={{ padding: '0 16px' }}>
           {items.map((it, i) => (
-            <div key={i} className="list-item">
-              <span className="grow">
+            <div key={i} className="list-row">
+              <span className="min-w-0 flex-1">
                 <span style={{ fontWeight: 600 }}>{it.food ? foodName(it.food, lang) : it.text}</span>
-                <span className="small muted" style={{ display: 'block' }}>
+                <span className="text-[0.85rem] text-muted-foreground" style={{ display: 'block' }}>
                   {it.food ? `${fmt(it.grams)} g · ${Math.round(macrosOf({ grams: it.grams, per100: it.food.per100 }).kcal)} kcal` : tr('nutrition.notRecognized')}
                 </span>
               </span>
-              {it.food ? <span className="badge ok">ok</span> : <span className="badge warn">?</span>}
+              {it.food ? <Badge variant="ok">ok</Badge> : <Badge variant="warn">?</Badge>}
             </div>
           ))}
-        </div>
+        </Card>
       )}
-      <button className="btn primary block" disabled={!found.length} onClick={() => onAdd(found)}>
+      <Button className="w-full whitespace-normal text-center leading-tight py-2.5" disabled={!found.length} onClick={() => onAdd(found)}>
         {found.length ? tr('nutrition.logN', { n: found.length }) : tr('nutrition.log')}
-      </button>
+      </Button>
     </div>
   )
 }
@@ -527,35 +531,35 @@ function ScanTab({ onFound }: { onFound: (f: Food) => void }) {
   }, [scanning])
 
   return (
-    <div className="stack">
+    <div className="flex flex-col gap-2">
       {scanning ? (
         <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', background: '#000', aspectRatio: '4/3' }}>
           <video ref={video} playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           <div style={{ position: 'absolute', inset: '30% 10%', border: '3px solid var(--accent)', borderRadius: 12 }} />
         </div>
       ) : (
-        <button className="btn primary block" onClick={() => setScanning(true)}>
+        <Button className="w-full whitespace-normal text-center leading-tight py-2.5" onClick={() => setScanning(true)}>
           <Icon name="scan" size={18} /> {tr('nutrition.scanStart')}
-        </button>
+        </Button>
       )}
       {scanning && (
-        <button className="btn block" onClick={() => setScanning(false)}>
+        <Button variant="secondary" className="w-full whitespace-normal text-center leading-tight py-2.5" onClick={() => setScanning(false)}>
           {tr('common.cancel')}
-        </button>
+        </Button>
       )}
       <form
-        className="row"
+        className="flex items-center gap-2"
         onSubmit={(e) => {
           e.preventDefault()
           if (code.trim()) lookup(code.trim())
         }}
       >
-        <input className="input" inputMode="numeric" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} placeholder={tr('nutrition.eanPlaceholder')} aria-label="Barcode" />
-        <button className="btn" type="submit">
+        <Input inputMode="numeric" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} placeholder={tr('nutrition.eanPlaceholder')} aria-label="Barcode" />
+        <Button variant="secondary" type="submit">
           {tr('nutrition.search')}
-        </button>
+        </Button>
       </form>
-      {status && <p className="small muted">{status}</p>}
+      {status && <p className="text-[0.85rem] text-muted-foreground">{status}</p>}
     </div>
   )
 }
@@ -569,18 +573,18 @@ function CustomFoodForm({ onSave }: { onSave: (f: Food) => void }) {
   const [portion, setPortion] = useState('')
   const n = (v: string) => parseFloat(v.replace(',', '.')) || 0
   return (
-    <div className="stack">
-      <p className="small muted">{tr('nutrition.customHint')}</p>
-      <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder={tr('nutrition.customName')} aria-label={tr('nutrition.recipe.name')} />
-      <div className="grid2">
-        <input className="input" inputMode="decimal" value={kcal} onChange={(e) => setKcal(e.target.value)} placeholder="kcal" aria-label={tr('nutrition.customKcal')} />
-        <input className="input" inputMode="decimal" value={p} onChange={(e) => setP(e.target.value)} placeholder={tr('nutrition.customProtein')} aria-label={tr('nutrition.customProteinLabel')} />
-        <input className="input" inputMode="decimal" value={c} onChange={(e) => setC(e.target.value)} placeholder={tr('nutrition.customCarbs')} aria-label={tr('nutrition.customCarbsLabel')} />
-        <input className="input" inputMode="decimal" value={f} onChange={(e) => setF(e.target.value)} placeholder={tr('nutrition.customFat')} aria-label={tr('nutrition.customFatLabel')} />
+    <div className="flex flex-col gap-2">
+      <p className="text-[0.85rem] text-muted-foreground">{tr('nutrition.customHint')}</p>
+      <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={tr('nutrition.customName')} aria-label={tr('nutrition.recipe.name')} />
+      <div className="grid grid-cols-2 gap-3">
+        <Input inputMode="decimal" value={kcal} onChange={(e) => setKcal(e.target.value)} placeholder="kcal" aria-label={tr('nutrition.customKcal')} />
+        <Input inputMode="decimal" value={p} onChange={(e) => setP(e.target.value)} placeholder={tr('nutrition.customProtein')} aria-label={tr('nutrition.customProteinLabel')} />
+        <Input inputMode="decimal" value={c} onChange={(e) => setC(e.target.value)} placeholder={tr('nutrition.customCarbs')} aria-label={tr('nutrition.customCarbsLabel')} />
+        <Input inputMode="decimal" value={f} onChange={(e) => setF(e.target.value)} placeholder={tr('nutrition.customFat')} aria-label={tr('nutrition.customFatLabel')} />
       </div>
-      <input className="input" inputMode="decimal" value={portion} onChange={(e) => setPortion(e.target.value)} placeholder={tr('nutrition.customPortion')} aria-label={tr('nutrition.customPortionLabel')} />
-      <button
-        className="btn primary block"
+      <Input inputMode="decimal" value={portion} onChange={(e) => setPortion(e.target.value)} placeholder={tr('nutrition.customPortion')} aria-label={tr('nutrition.customPortionLabel')} />
+      <Button
+        className="w-full whitespace-normal text-center leading-tight py-2.5"
         disabled={!name.trim() || !n(kcal)}
         onClick={() =>
           onSave({
@@ -594,7 +598,7 @@ function CustomFoodForm({ onSave }: { onSave: (f: Food) => void }) {
         }
       >
         {tr('nutrition.saveAndLog')}
-      </button>
+      </Button>
     </div>
   )
 }
@@ -606,36 +610,36 @@ function EditEntrySheet({ entry, onClose }: { entry: FoodEntry | null; onClose: 
   const m = macrosOf({ grams, per100: entry.per100 })
   return (
     <Sheet open onClose={onClose} title={entry.name}>
-      <div className="stack lg">
-        <div className="field">
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1.5">
           <label htmlFor="edit-grams">{tr('nutrition.grams')}</label>
-          <input id="edit-grams" className="input" inputMode="decimal" value={grams || ''} onChange={(e) => setGrams(parseFloat(e.target.value.replace(',', '.')) || 0)} />
+          <Input id="edit-grams" inputMode="decimal" value={grams || ''} onChange={(e) => setGrams(parseFloat(e.target.value.replace(',', '.')) || 0)} />
         </div>
-        <p className="small muted num">
+        <p className="text-[0.85rem] text-muted-foreground tabular-nums">
           {Math.round(m.kcal)} kcal · {fmt(m.protein, 1)} g Protein · {fmt(m.carbs, 1)} g Kohlenhydrate · {fmt(m.fat, 1)} g Fett
         </p>
-        <div className="row">
-          <button
-            className="btn danger grow"
+        <div className="flex items-center gap-2">
+          <Button variant="destructive"
+            className="min-w-0 flex-1"
             onClick={() => {
               s.removeFood(entry.id)
               onClose()
             }}
           >
             <Icon name="trash" size={18} /> {tr('common.delete')}
-          </button>
-          <button
-            className="btn primary grow"
+          </Button>
+          <Button
+            className="min-w-0 flex-1"
             onClick={() => {
               s.updateFood(entry.id, { grams })
               onClose()
             }}
           >
             {tr('common.save')}
-          </button>
+          </Button>
         </div>
-        <button
-          className="btn ghost block"
+        <Button variant="ghost"
+          className="w-full whitespace-normal text-center leading-tight py-2.5"
           onClick={() => {
             s.addFood({ ...entry, date: today(), grams })
             toast(tr('nutrition.loggedAgain'))
@@ -643,7 +647,7 @@ function EditEntrySheet({ entry, onClose }: { entry: FoodEntry | null; onClose: 
           }}
         >
           {tr('nutrition.eatAgain')}
-        </button>
+        </Button>
       </div>
     </Sheet>
   )

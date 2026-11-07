@@ -9,6 +9,9 @@ import { Bar, Icon, Segmented, Sheet } from '../ui/kit'
 import { confirmAction, toast } from '../ui/notify'
 import { t as tr, tk as tkr, useT, weekdaysShort } from '../i18n'
 import { dishName, dishSteps, extraName } from '../i18n/content/dishes'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 
 const FOOD_MAP = new Map(FOODS.map((f) => [f.id, f]))
 /** foods bought by the piece: the shopping list shows a count next to the grams */
@@ -77,55 +80,55 @@ export default function MealPlanner() {
 
   return (
     <>
-      <div className="card stack">
-        <div className="row between">
+      <Card className="flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-2">
           <div>
             <h3>{t('planner.title')}</h3>
-            <span className="tiny muted">{weekOffset === 0 ? t('planner.thisWeek') : t('planner.nextWeek')} · {t('planner.weekOf', { date: formatDate(weekStart) })}</span>
+            <span className="text-xs text-muted-foreground">{weekOffset === 0 ? t('planner.thisWeek') : t('planner.nextWeek')} · {t('planner.weekOf', { date: formatDate(weekStart) })}</span>
           </div>
-          <div className="row" style={{ gap: 4 }}>
-            <button className="icon-btn" aria-label={t('planner.thisWeek')} disabled={weekOffset === 0} onClick={() => setWeekOffset(0)}>
+          <div className="flex items-center gap-2" style={{ gap: 4 }}>
+            <Button variant="secondary" size="icon" aria-label={t('planner.thisWeek')} disabled={weekOffset === 0} onClick={() => setWeekOffset(0)}>
               <Icon name="back" size={18} />
-            </button>
-            <button className="icon-btn" aria-label={t('planner.nextWeek')} disabled={weekOffset === 1} onClick={() => setWeekOffset(1)}>
+            </Button>
+            <Button variant="secondary" size="icon" aria-label={t('planner.nextWeek')} disabled={weekOffset === 1} onClick={() => setWeekOffset(1)}>
               <Icon name="chevron" size={18} />
-            </button>
+            </Button>
           </div>
         </div>
-        <button className="row wrap" style={{ gap: 6, background: 'none', border: 0, padding: 0, textAlign: 'left' }} onClick={() => setPrefsOpen(true)} aria-label={t('planner.prefs')}>
+        <button className="flex items-center flex-wrap gap-2" style={{ gap: 6, background: 'none', border: 0, padding: 0, textAlign: 'left' }} onClick={() => setPrefsOpen(true)} aria-label={t('planner.prefs')}>
           {tags.map((x) => (
-            <span key={x} className="badge">
+            <Badge key={x}>
               {x}
-            </span>
+            </Badge>
           ))}
-          <span className="badge accent">
+          <Badge variant="accent">
             <Icon name="settings" size={12} /> {t('planner.prefs')}
-          </span>
+          </Badge>
         </button>
         {week.length === 0 ? (
           <>
-            <p className="small muted">{t('planner.empty', { kcal: fmt(goal.kcal), protein: goal.protein })}</p>
-            <button
-              className="btn primary block"
+            <p className="text-[0.85rem] text-muted-foreground">{t('planner.empty', { kcal: fmt(goal.kcal), protein: goal.protein })}</p>
+            <Button
+              className="w-full whitespace-normal text-center leading-tight py-2.5"
               onClick={() => {
                 generate()
                 toast(tr('planner.created'))
               }}
             >
               <Icon name="sparkle" size={18} /> {t('planner.create')}
-            </button>
+            </Button>
           </>
         ) : (
           <div className="planner-actions">
-            <button className="btn sm" onClick={() => setShopOpen(true)}>
+            <Button variant="secondary" size="sm" onClick={() => setShopOpen(true)}>
               <Icon name="check" size={18} /> {t('planner.shopping')}
-            </button>
-            <button className="btn sm" onClick={() => confirmAction(tr('planner.regenerateConfirm')) && generate()}>
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => confirmAction(tr('planner.regenerateConfirm')) && generate()}>
               <Icon name="swap" size={18} /> {t('planner.regenerate')}
-            </button>
+            </Button>
           </div>
         )}
-      </div>
+      </Card>
 
       {week.length > 0 && (
         <>
@@ -133,23 +136,23 @@ export default function MealPlanner() {
             {dates.map((d, i) => {
               const has = week.some((p) => p.date === d)
               return (
-                <button key={d} className="chip" aria-pressed={d === day} onClick={() => setPicked(d)} style={{ opacity: has || d >= today() ? 1 : 0.5 }}>
+                <Button variant="chip" key={d} aria-pressed={d === day} onClick={() => setPicked(d)} style={{ opacity: has || d >= today() ? 1 : 0.5 }}>
                   <span style={{ display: 'block', fontSize: '0.7rem' }}>{wd[i]}</span>
-                  <span className="num">{Number(d.slice(8))}</span>
-                </button>
+                  <span className="tabular-nums">{Number(d.slice(8))}</span>
+                </Button>
               )
             })}
           </div>
 
-          <div className="card stack" style={{ gap: 8 }}>
-            <div className="row between small">
-              <span className="muted">{t('planner.planned')}</span>
-              <strong className="num">
+          <Card className="flex flex-col gap-2" style={{ gap: 8 }}>
+            <div className="flex items-center justify-between gap-2 text-[0.85rem]">
+              <span className="text-muted-foreground">{t('planner.planned')}</span>
+              <strong className="tabular-nums">
                 {fmt(Math.round(dayTotal.kcal))} / {fmt(goal.kcal)} kcal
               </strong>
             </div>
             <Bar value={dayTotal.kcal} max={goal.kcal} />
-            <div className="row between tiny muted num">
+            <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground tabular-nums">
               <span>
                 {t('common.protein')} {Math.round(dayTotal.protein)}/{goal.protein} g
               </span>
@@ -160,7 +163,7 @@ export default function MealPlanner() {
                 {t('common.fat')} {Math.round(dayTotal.fat)} g
               </span>
             </div>
-          </div>
+          </Card>
 
           {dayMeals.map((p) => {
             const dish = DISH_BY_ID.get(p.dishId)
@@ -168,33 +171,33 @@ export default function MealPlanner() {
             const m = macrosOf(p)
             const name = dishName(p.dishId)
             return (
-              <section key={p.id} className="card stack" style={{ gap: 10 }}>
-                <div className="row between" style={{ alignItems: 'flex-start' }}>
-                  <div className="grow">
+              <Card key={p.id} className="flex flex-col gap-2" style={{ gap: 10 }}>
+                <div className="flex items-center justify-between gap-2" style={{ alignItems: 'flex-start' }}>
+                  <div className="min-w-0 flex-1">
                     <div className="eyebrow">{mealName(p.meal)}</div>
                     <h3 style={{ overflowWrap: 'anywhere' }}>{name}</h3>
-                    <span className="small muted num">
+                    <span className="text-[0.85rem] text-muted-foreground tabular-nums">
                       {fmt(Math.round(m.kcal))} kcal · {Math.round(m.protein)} g {t('common.protein')} · {factorText(p.factor)} · {t('planner.minutes', { n: dish.minutes })}
                     </span>
                   </div>
-                  {p.logged && <span className="badge ok">{t('planner.logged')}</span>}
+                  {p.logged && <Badge variant="ok">{t('planner.logged')}</Badge>}
                 </div>
                 <div className="planner-actions">
-                  <button className="btn sm" onClick={() => setRecipe({ dishId: p.dishId, factor: p.factor })} aria-label={t('planner.recipeFor', { dish: name })}>
+                  <Button variant="secondary" size="sm" onClick={() => setRecipe({ dishId: p.dishId, factor: p.factor })} aria-label={t('planner.recipeFor', { dish: name })}>
                     {t('planner.recipe')}
-                  </button>
+                  </Button>
                   {!p.logged && (
-                    <button className="btn sm" onClick={() => setSwap(p)} aria-label={t('planner.swapFor', { dish: name })}>
+                    <Button variant="secondary" size="sm" onClick={() => setSwap(p)} aria-label={t('planner.swapFor', { dish: name })}>
                       <Icon name="swap" size={16} /> {t('planner.swap')}
-                    </button>
+                    </Button>
                   )}
                   {!p.logged && p.date <= today() && (
-                    <button className="btn sm primary" onClick={() => log(p)} aria-label={t('planner.logFor', { dish: name })}>
+                    <Button size="sm" onClick={() => log(p)} aria-label={t('planner.logFor', { dish: name })}>
                       <Icon name="plus" size={16} /> {t('planner.log')}
-                    </button>
+                    </Button>
                   )}
                 </div>
-              </section>
+              </Card>
             )
           })}
         </>
@@ -202,7 +205,7 @@ export default function MealPlanner() {
 
       {weekOffset === 0 && <SuggestionsCard goal={goal} prefs={prefs} onRecipe={setRecipe} />}
 
-      <p className="tiny muted" style={{ padding: '0 4px' }}>
+      <p className="text-xs text-muted-foreground" style={{ padding: '0 4px' }}>
         {t('planner.proteinRule', { g: Math.round((s.profile!.weightKg * 0.4) / 5) * 5 })} {t('planner.valuesNote')}
       </p>
 
@@ -223,26 +226,26 @@ function SuggestionsCard({ goal, prefs, onRecipe }: { goal: Macros; prefs: MealP
   const list = suggestDishes({ ...remaining, kcal: Math.min(remaining.kcal, goal.kcal / 3), protein: Math.min(remaining.protein, goal.protein / 3) }, prefs, FOOD_MAP)
   const meal = mealNow()
   return (
-    <div className="card stack">
+    <Card className="flex flex-col gap-2">
       <h3>{t('planner.suggestTitle')}</h3>
       {list.length === 0 ? (
-        <p className="small muted">{t('planner.suggestDone')}</p>
+        <p className="text-[0.85rem] text-muted-foreground">{t('planner.suggestDone')}</p>
       ) : (
         <>
-          <p className="small muted num">{t('planner.suggestOpen', { kcal: fmt(Math.round(remaining.kcal)), protein: Math.round(remaining.protein) })}</p>
-          <div className="list">
+          <p className="text-[0.85rem] text-muted-foreground tabular-nums">{t('planner.suggestOpen', { kcal: fmt(Math.round(remaining.kcal)), protein: Math.round(remaining.protein) })}</p>
+          <div className="flex flex-col divide-y divide-border">
             {list.map((x) => {
               const name = dishName(x.dish.id)
               return (
-                <div key={x.dish.id} className="list-item" style={{ alignItems: 'center' }}>
-                  <button className="grow" style={{ background: 'none', border: 0, padding: 0, textAlign: 'left', color: 'inherit' }} onClick={() => onRecipe({ dishId: x.dish.id, factor: x.factor })} aria-label={t('planner.recipeFor', { dish: name })}>
+                <div key={x.dish.id} className="list-row" style={{ alignItems: 'center' }}>
+                  <button className="min-w-0 flex-1" style={{ background: 'none', border: 0, padding: 0, textAlign: 'left', color: 'inherit' }} onClick={() => onRecipe({ dishId: x.dish.id, factor: x.factor })} aria-label={t('planner.recipeFor', { dish: name })}>
                     <span style={{ fontWeight: 600, display: 'block', overflowWrap: 'anywhere' }}>{name}</span>
-                    <span className="small muted num">
+                    <span className="text-[0.85rem] text-muted-foreground tabular-nums">
                       {fmt(Math.round(x.macros.kcal))} kcal · {Math.round(x.macros.protein)} g · {factorText(x.factor)}
                     </span>
                   </button>
-                  <button
-                    className="icon-btn"
+                  <Button variant="secondary" size="icon"
+                   
                     aria-label={t('planner.toDiaryFor', { dish: name })}
                     onClick={() => {
                       s.addFoods(entriesFor(x.dish, x.factor, prefs, today(), meal, lang))
@@ -250,14 +253,14 @@ function SuggestionsCard({ goal, prefs, onRecipe }: { goal: Macros; prefs: MealP
                     }}
                   >
                     <Icon name="plus" />
-                  </button>
+                  </Button>
                 </div>
               )
             })}
           </div>
         </>
       )}
-    </div>
+    </Card>
   )
 }
 
@@ -269,14 +272,14 @@ function RecipeSheet({ recipe, prefs, onClose }: { recipe: { dishId: string; fac
   return (
     <Sheet open={!!dish} onClose={onClose} title={dish ? dishName(dish.id) : ''}>
       {dish && m && (
-        <div className="stack">
-          <div className="row wrap" style={{ gap: 6 }}>
-            <span className="badge">{tkr(`planner.cuisine.${dish.cuisine}`)}</span>
-            <span className="badge">{t('planner.minutes', { n: dish.minutes })}</span>
-            {dish.keeps && dish.keeps > 1 && <span className="badge">{t('planner.keeps', { n: dish.keeps })}</span>}
-            <span className="badge accent">{factorText(recipe!.factor)}</span>
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center flex-wrap gap-2" style={{ gap: 6 }}>
+            <Badge>{tkr(`planner.cuisine.${dish.cuisine}`)}</Badge>
+            <Badge>{t('planner.minutes', { n: dish.minutes })}</Badge>
+            {dish.keeps && dish.keeps > 1 && <Badge>{t('planner.keeps', { n: dish.keeps })}</Badge>}
+            <Badge variant="accent">{factorText(recipe!.factor)}</Badge>
           </div>
-          <div className="grid3 small num" style={{ textAlign: 'center' }}>
+          <div className="grid grid-cols-3 gap-2 text-[0.85rem] tabular-nums" style={{ textAlign: 'center' }}>
             <span>
               <strong style={{ display: 'block', fontSize: '1.2rem' }}>{fmt(Math.round(m.kcal))}</strong>kcal
             </span>
@@ -292,20 +295,20 @@ function RecipeSheet({ recipe, prefs, onClose }: { recipe: { dishId: string; fac
             </span>
           </div>
           <h3>{t('planner.ingredients')}</h3>
-          <div className="list">
+          <div className="flex flex-col divide-y divide-border">
             {dishItems(dish, prefs, recipe!.factor).map(({ foodId, grams }) => (
-              <div key={foodId} className="list-item" style={{ minHeight: 40, padding: '8px 0' }}>
-                <span className="grow" style={{ overflowWrap: 'anywhere' }}>
+              <div key={foodId} className="list-row" style={{ minHeight: 40, padding: '8px 0' }}>
+                <span className="min-w-0 flex-1" style={{ overflowWrap: 'anywhere' }}>
                   {FOOD_MAP.get(foodId) ? foodName(FOOD_MAP.get(foodId)!, lang) : foodId}
                 </span>
-                <span className="num muted">{fmt(grams)} g</span>
+                <span className="tabular-nums text-muted-foreground">{fmt(grams)} g</span>
               </div>
             ))}
           </div>
-          {dish.extras && <p className="small muted">{t('planner.also', { list: dish.extras.map((e) => extraName(e)).join(', ') })}</p>}
-          {usesDairy && <p className="small muted">{t('planner.lactoseNote')}</p>}
+          {dish.extras && <p className="text-[0.85rem] text-muted-foreground">{t('planner.also', { list: dish.extras.map((e) => extraName(e)).join(', ') })}</p>}
+          {usesDairy && <p className="text-[0.85rem] text-muted-foreground">{t('planner.lactoseNote')}</p>}
           <h3>{t('planner.steps')}</h3>
-          <ol className="stack small" style={{ paddingLeft: 20, margin: 0, gap: 6 }}>
+          <ol className="flex flex-col gap-2 text-[0.85rem]" style={{ paddingLeft: 20, margin: 0, gap: 6 }}>
             {dishSteps(dish.id).map((x) => (
               <li key={x}>{x}</li>
             ))}
@@ -333,25 +336,25 @@ function SwapSheet({ planned, prefs, onClose }: { planned: PlannedMeal | null; p
     : []
   return (
     <Sheet open={!!current} onClose={onClose} title={t('planner.swapTitle')}>
-      <p className="small muted">{t('planner.swapHint')}</p>
-      <div className="list">
+      <p className="text-[0.85rem] text-muted-foreground">{t('planner.swapHint')}</p>
+      <div className="flex flex-col divide-y divide-border">
         {options.map(({ d, factor, m }) => (
           <button
             key={d.id}
-            className="list-item"
+            className="list-row"
             onClick={() => {
               s.updatePlannedMeal(planned!.id, { dishId: d.id, factor })
               toast(tr('planner.swapped'))
               onClose()
             }}
           >
-            <span className="grow">
+            <span className="min-w-0 flex-1">
               <span style={{ fontWeight: 600, display: 'block', overflowWrap: 'anywhere' }}>{dishName(d.id)}</span>
-              <span className="small muted num">
+              <span className="text-[0.85rem] text-muted-foreground tabular-nums">
                 {fmt(Math.round(m.kcal))} kcal · {Math.round(m.protein)} g {t('common.protein')} · {t('planner.minutes', { n: d.minutes })}
               </span>
             </span>
-            <span className="small muted">{factorText(factor)}</span>
+            <span className="text-[0.85rem] text-muted-foreground">{factorText(factor)}</span>
           </button>
         ))}
       </div>
@@ -369,18 +372,18 @@ function ShoppingSheet({ open, weekStart, week, prefs, onClose }: { open: boolea
   const row = (k: string, label: string, amount?: string) => {
     const on = checked.has(k)
     return (
-      <label key={k} className="list-item" style={{ minHeight: 44, padding: '6px 0', cursor: 'pointer' }}>
+      <label key={k} className="list-row" style={{ minHeight: 44, padding: '6px 0', cursor: 'pointer' }}>
         <input type="checkbox" checked={on} onChange={() => s.toggleShopping(k)} style={{ width: 22, height: 22, accentColor: 'var(--ok)' }} />
-        <span className="grow" style={{ textDecoration: on ? 'line-through' : undefined, opacity: on ? 0.55 : 1, overflowWrap: 'anywhere' }}>
+        <span className="min-w-0 flex-1" style={{ textDecoration: on ? 'line-through' : undefined, opacity: on ? 0.55 : 1, overflowWrap: 'anywhere' }}>
           {label}
         </span>
-        {amount && <span className="num muted small">{amount}</span>}
+        {amount && <span className="tabular-nums text-muted-foreground text-[0.85rem]">{amount}</span>}
       </label>
     )
   }
   return (
     <Sheet open={open} onClose={onClose} title={t('planner.shopping')}>
-      <div className="stack">
+      <div className="flex flex-col gap-2">
         <Segmented
           value={range}
           onChange={setRange}
@@ -391,7 +394,7 @@ function ShoppingSheet({ open, weekStart, week, prefs, onClose }: { open: boolea
           ]}
         />
         {items.length === 0 ? (
-          <p className="small muted">{t('planner.shoppingEmpty')}</p>
+          <p className="text-[0.85rem] text-muted-foreground">{t('planner.shoppingEmpty')}</p>
         ) : (
           <>
             {SHOP_ORDER.map((cat) => {
@@ -400,7 +403,7 @@ function ShoppingSheet({ open, weekStart, week, prefs, onClose }: { open: boolea
               return (
                 <div key={cat}>
                   <h3 style={{ marginTop: 4 }}>{tkr(`planner.cat.${cat}`)}</h3>
-                  <div className="list">
+                  <div className="flex flex-col divide-y divide-border">
                     {rows.map((i) => {
                       const f = FOOD_MAP.get(i.foodId)
                       const g = i.grams >= 20 ? Math.ceil(i.grams / 10) * 10 : i.grams
@@ -414,12 +417,12 @@ function ShoppingSheet({ open, weekStart, week, prefs, onClose }: { open: boolea
             {extras.length > 0 && (
               <div>
                 <h3 style={{ marginTop: 4 }}>{t('planner.shoppingExtras')}</h3>
-                <div className="list">
+                <div className="flex flex-col divide-y divide-border">
                   {extras.map((e) => row(`${weekStart}:x:${e}`, extraName(e)))}
                 </div>
               </div>
             )}
-            <p className="tiny muted">{t('planner.shoppingHint')}</p>
+            <p className="text-xs text-muted-foreground">{t('planner.shoppingHint')}</p>
           </>
         )}
       </div>
@@ -432,7 +435,7 @@ function PrefsSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useT()
   const [p, setP] = useState<MealPrefs>({ ...DEFAULT_MEAL_PREFS, ...s.settings.mealPrefs })
   const toggle = (k: 'lactoseFree' | 'noNuts' | 'noPork' | 'quick' | 'mealPrep') => (
-    <label key={k} className="row between" style={{ minHeight: 44, gap: 12 }}>
+    <label key={k} className="flex items-center justify-between gap-2" style={{ minHeight: 44, gap: 12 }}>
       <span>{t(`planner.${k}`)}</span>
       <input type="checkbox" role="switch" checked={p[k]} onChange={(e) => setP({ ...p, [k]: e.target.checked })} style={{ width: 22, height: 22, accentColor: 'var(--accent)', flexShrink: 0 }} />
     </label>
@@ -440,23 +443,23 @@ function PrefsSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const diets: Diet[] = ['alles', 'pescetarisch', 'vegetarisch', 'vegan']
   return (
     <Sheet open={open} onClose={onClose} title={t('planner.prefsTitle')}>
-      <div className="stack">
-        <div className="field">
-          <span className="small" style={{ fontWeight: 650 }}>
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[0.85rem]" style={{ fontWeight: 650 }}>
             {t('planner.diet')}
           </span>
-          <div className="row wrap" style={{ gap: 8 }} role="group" aria-label={t('planner.diet')}>
+          <div className="flex items-center flex-wrap gap-2" style={{ gap: 8 }} role="group" aria-label={t('planner.diet')}>
             {diets.map((d) => (
-              <button key={d} type="button" className="chip" aria-pressed={p.diet === d} onClick={() => setP({ ...p, diet: d })}>
+              <Button variant="chip" key={d} type="button" aria-pressed={p.diet === d} onClick={() => setP({ ...p, diet: d })}>
                 {t(`planner.dietOpt.${d}`)}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
         <div>{(['lactoseFree', 'noNuts', 'noPork', 'quick', 'mealPrep'] as const).map(toggle)}</div>
-        <p className="tiny muted">{t('planner.prefsHint')}</p>
-        <button
-          className="btn primary block"
+        <p className="text-xs text-muted-foreground">{t('planner.prefsHint')}</p>
+        <Button
+          className="w-full whitespace-normal text-center leading-tight py-2.5"
           onClick={() => {
             s.updateSettings({ mealPrefs: p })
             toast(tr('planner.saved'))
@@ -464,7 +467,7 @@ function PrefsSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
           }}
         >
           {t('planner.save')}
-        </button>
+        </Button>
       </div>
     </Sheet>
   )

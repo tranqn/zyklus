@@ -6,6 +6,10 @@ import { Icon, Sheet } from '../ui/kit'
 import { toast } from '../ui/notify'
 import { t as tr, useT } from '../i18n'
 import { getLocale } from '../i18n/lang'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
 
 const message = (e: unknown, context?: string) => apiMessage(e, context)
 
@@ -28,12 +32,12 @@ export function AccountPage() {
 
   return (
     <div className="page">
-      <div className="row">
-        <button className="icon-btn" onClick={() => nav(-1)} aria-label={t('common.back')}>
+      <div className="flex items-center gap-2">
+        <Button variant="secondary" size="icon" onClick={() => nav(-1)} aria-label={t('common.back')}>
           <Icon name="back" />
-        </button>
+        </Button>
       </div>
-      <div className="stack">
+      <div className="flex flex-col gap-2">
         <div className="eyebrow">{t('account.page.eyebrow')}</div>
         <h1 style={{ fontSize: user && user.email.length > 22 ? '1.3rem' : undefined }}>{user?.email}</h1>
       </div>
@@ -41,43 +45,43 @@ export function AccountPage() {
       {user && (
         <>
           {!user.verified && <VerifyBanner />}
-          <section className="card stack">
-            <div className="row between">
+          <Card className="flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-2">
               <h3>{t('account.page.sync')}</h3>
-              <span className={`badge ${sync.status === 'ok' ? 'ok' : sync.status === 'error' ? 'warn' : ''}`}>{t(`account.page.status.${sync.status}`)}</span>
+              <Badge variant={sync.status === 'ok' ? 'ok' : sync.status === 'error' ? 'warn' : 'default'}>{t(`account.page.status.${sync.status}`)}</Badge>
             </div>
-            <p className="small muted">{t('account.page.last', { when: since(sync.lastSyncedAt) })}</p>
-            {sync.status === 'error' && sync.error && <p className="small" style={{ color: 'var(--bad)' }}>{sync.error}</p>}
-            <button className="btn" onClick={() => syncNow()}>
+            <p className="text-[0.85rem] text-muted-foreground">{t('account.page.last', { when: since(sync.lastSyncedAt) })}</p>
+            {sync.status === 'error' && sync.error && <p className="text-[0.85rem]" style={{ color: 'var(--bad)' }}>{sync.error}</p>}
+            <Button variant="secondary" onClick={() => syncNow()}>
               {t('account.page.syncNow')}
-            </button>
-          </section>
-          <section className="card list" style={{ padding: '0 16px' }}>
-            <button className="list-item" onClick={() => setPwOpen(true)}>
-              <span className="grow">{t('account.page.changePassword')}</span>
+            </Button>
+          </Card>
+          <Card className="flex flex-col divide-y divide-border" style={{ padding: '0 16px' }}>
+            <button className="list-row" onClick={() => setPwOpen(true)}>
+              <span className="min-w-0 flex-1">{t('account.page.changePassword')}</span>
               <Icon name="chevron" size={18} />
             </button>
-            <a className="list-item" href="/api/account/export" download style={{ textDecoration: 'none', color: 'inherit' }}>
-              <span className="grow">
+            <a className="list-row" href="/api/account/export" download style={{ textDecoration: 'none', color: 'inherit' }}>
+              <span className="min-w-0 flex-1">
                 {t('account.page.export')}
-                <span className="small muted" style={{ display: 'block' }}>
+                <span className="text-[0.85rem] text-muted-foreground" style={{ display: 'block' }}>
                   {t('account.page.exportHint')}
                 </span>
               </span>
               <Icon name="chevron" size={18} />
             </a>
-            <button className="list-item" onClick={() => setLogoutOpen(true)}>
-              <span className="grow">{t('account.page.logout')}</span>
+            <button className="list-row" onClick={() => setLogoutOpen(true)}>
+              <span className="min-w-0 flex-1">{t('account.page.logout')}</span>
               <Icon name="chevron" size={18} />
             </button>
-            <button className="list-item" onClick={() => setDelOpen(true)} style={{ color: 'var(--bad)' }}>
-              <span className="grow">{t('account.page.delete')}</span>
+            <button className="list-row" onClick={() => setDelOpen(true)} style={{ color: 'var(--bad)' }}>
+              <span className="min-w-0 flex-1">{t('account.page.delete')}</span>
               <Icon name="trash" size={18} />
             </button>
-          </section>
+          </Card>
         </>
       )}
-      <p className="tiny" style={{ textAlign: 'center' }}>
+      <p className="text-xs" style={{ textAlign: 'center' }}>
         <Link to="/impressum">{t('common.imprint')}</Link> · <Link to="/datenschutz">{t('common.privacy')}</Link>
       </p>
       {pwOpen && <ChangePassword onClose={() => setPwOpen(false)} />}
@@ -90,12 +94,12 @@ export function AccountPage() {
 export function VerifyBanner() {
   const [sent, setSent] = useState(false)
   return (
-    <div className="card stack" style={{ background: 'var(--warn-soft)', borderColor: 'transparent' }}>
+    <Card className="flex flex-col gap-2" style={{ background: 'var(--warn-soft)', borderColor: 'transparent' }}>
       <strong>{tr('account.page.verifyTitle')}</strong>
-      <p className="small">{tr('account.page.verifyText')}</p>
-      <p className="small">{tr('account.spamHint')}</p>
-      <button
-        className="btn sm"
+      <p className="text-[0.85rem]">{tr('account.page.verifyText')}</p>
+      <p className="text-[0.85rem]">{tr('account.spamHint')}</p>
+      <Button variant="secondary" size="sm"
+       
         style={{ alignSelf: 'flex-start' }}
         disabled={sent}
         onClick={async () => {
@@ -109,8 +113,8 @@ export function VerifyBanner() {
         }}
       >
         {sent ? tr('account.page.sent') : tr('account.page.resend')}
-      </button>
-    </div>
+      </Button>
+    </Card>
   )
 }
 
@@ -121,7 +125,7 @@ function ChangePassword({ onClose }: { onClose: () => void }) {
   return (
     <Sheet open onClose={onClose} title={tr('account.page.changePassword')}>
       <form
-        className="stack lg"
+        className="flex flex-col gap-4"
         onSubmit={async (e) => {
           e.preventDefault()
           try {
@@ -133,18 +137,18 @@ function ChangePassword({ onClose }: { onClose: () => void }) {
           }
         }}
       >
-        <div className="field">
+        <div className="flex flex-col gap-1.5">
           <label htmlFor="cur">{tr('account.page.current')}</label>
-          <input id="cur" className="input" type="password" autoComplete="current-password" required value={current} onChange={(e) => setCurrent(e.target.value)} />
+          <Input id="cur" type="password" autoComplete="current-password" required value={current} onChange={(e) => setCurrent(e.target.value)} />
         </div>
-        <div className="field">
+        <div className="flex flex-col gap-1.5">
           <label htmlFor="nxt">{tr('account.newPasswordLabel')}</label>
-          <input id="nxt" className="input" type="password" autoComplete="new-password" minLength={10} required value={next} onChange={(e) => setNext(e.target.value)} />
+          <Input id="nxt" type="password" autoComplete="new-password" minLength={10} required value={next} onChange={(e) => setNext(e.target.value)} />
         </div>
-        {error && <p className="small" style={{ color: 'var(--bad)' }}>{error}</p>}
-        <button className="btn primary block" type="submit">
+        {error && <p className="text-[0.85rem]" style={{ color: 'var(--bad)' }}>{error}</p>}
+        <Button className="w-full whitespace-normal text-center leading-tight py-2.5" type="submit">
           {tr('common.save')}
-        </button>
+        </Button>
       </form>
     </Sheet>
   )
@@ -159,14 +163,14 @@ function LogoutSheet({ onClose }: { onClose: () => void }) {
   }
   return (
     <Sheet open onClose={onClose} title={tr('account.page.logout')}>
-      <div className="stack lg">
-        <p className="small muted">{tr('account.page.logoutText')}</p>
-        <button className="btn primary block" disabled={busy} onClick={() => out(true)}>
+      <div className="flex flex-col gap-4">
+        <p className="text-[0.85rem] text-muted-foreground">{tr('account.page.logoutText')}</p>
+        <Button className="w-full whitespace-normal text-center leading-tight py-2.5" disabled={busy} onClick={() => out(true)}>
           {tr('account.page.logoutClear')}
-        </button>
-        <button className="btn block" disabled={busy} onClick={() => out(false)}>
+        </Button>
+        <Button variant="secondary" className="w-full whitespace-normal text-center leading-tight py-2.5" disabled={busy} onClick={() => out(false)}>
           {tr('account.page.logoutKeep')}
-        </button>
+        </Button>
       </div>
     </Sheet>
   )
@@ -178,7 +182,7 @@ function DeleteAccount({ onClose }: { onClose: () => void }) {
   return (
     <Sheet open onClose={onClose} title={tr('account.page.delete')}>
       <form
-        className="stack lg"
+        className="flex flex-col gap-4"
         onSubmit={async (e) => {
           e.preventDefault()
           try {
@@ -190,15 +194,15 @@ function DeleteAccount({ onClose }: { onClose: () => void }) {
           }
         }}
       >
-        <p className="small">{tr('account.page.deleteText')}</p>
-        <div className="field">
+        <p className="text-[0.85rem]">{tr('account.page.deleteText')}</p>
+        <div className="flex flex-col gap-1.5">
           <label htmlFor="delpw">{tr('account.page.confirmPassword')}</label>
-          <input id="delpw" className="input" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+          <Input id="delpw" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
         </div>
-        {error && <p className="small" style={{ color: 'var(--bad)' }}>{error}</p>}
-        <button className="btn danger block" type="submit" style={{ borderColor: 'var(--bad)' }}>
+        {error && <p className="text-[0.85rem]" style={{ color: 'var(--bad)' }}>{error}</p>}
+        <Button variant="destructive" className="w-full whitespace-normal text-center leading-tight py-2.5" type="submit" style={{ borderColor: 'var(--bad)' }}>
           {tr('account.page.deleteFinal')}
-        </button>
+        </Button>
       </form>
     </Sheet>
   )

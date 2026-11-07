@@ -1,0 +1,38 @@
+/* Layout utilities used across many pages (named so the pages stay readable). */
+@utility page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: calc(16px + var(--safe-t)) 16px calc(var(--nav-h) + var(--safe-b) + 24px);
+}
+@utility page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 8px;
+}
+@utility eyebrow {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+@utility list-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 12px 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+@utility empty-state {
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--muted);
+}

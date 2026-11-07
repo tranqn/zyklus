@@ -11,5 +11,7 @@ import { progress } from './ns/progress'
 import { more } from './ns/more'
 import { account } from './ns/account'
 import { planner } from './ns/planner'
+import { motivation } from './ns/motivation'
+import { social } from './ns/social'
 
-export const MESSAGES = { common, labels, program, shell, onboarding, today, workout, plan, nutrition, planner, progress, more, account }
+export const MESSAGES = { common, labels, program, shell, onboarding, today, workout, plan, nutrition, planner, progress, more, account, motivation, social }

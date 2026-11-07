@@ -6,6 +6,8 @@ import { Icon, Segmented, Sheet } from '../ui/kit'
 import { toast } from '../ui/notify'
 import { getLang, t as tr, useT } from '../i18n'
 import { LanguagePicker } from '../ui/LanguagePicker'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 const message = (e: unknown, context?: string) => apiMessage(e, context)
 
@@ -37,13 +39,13 @@ export function AuthScreen() {
   }
 
   return (
-    <div className="app">
+    <div className="mx-auto min-h-dvh max-w-[560px]">
       <div className="page" style={{ minHeight: '100dvh', paddingBottom: 'calc(24px + var(--safe-b))' }}>
         <LanguagePicker compact />
-        <div className="stack" style={{ paddingTop: 8 }}>
+        <div className="flex flex-col gap-2" style={{ paddingTop: 8 }}>
           <div className="eyebrow">Zyklus</div>
           <h1 style={{ fontSize: '2.1rem' }}>{mode === 'login' ? t('account.welcomeBack') : t('account.createAccount')}</h1>
-          <p className="muted">{t('account.intro')}</p>
+          <p className="text-muted-foreground">{t('account.intro')}</p>
         </div>
         <Segmented
           value={mode}
@@ -54,16 +56,16 @@ export function AuthScreen() {
             { value: 'register', label: t('account.register') },
           ]}
         />
-        <form className="stack lg" onSubmit={submit}>
-          <div className="field">
+        <form className="flex flex-col gap-4" onSubmit={submit}>
+          <div className="flex flex-col gap-1.5">
             <label htmlFor="email">{t('account.email')}</label>
-            <input id="email" className="input" type="email" autoComplete="email" inputMode="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Input id="email" type="email" autoComplete="email" inputMode="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
-          <div className="field">
+          <div className="flex flex-col gap-1.5">
             <label htmlFor="password">{t('account.password')}</label>
-            <input
+            <Input
               id="password"
-              className="input"
+             
               type="password"
               required
               minLength={mode === 'register' ? 10 : undefined}
@@ -71,32 +73,32 @@ export function AuthScreen() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
-            {mode === 'register' && <span className="tiny muted">{t('account.passwordHint')}</span>}
+            {mode === 'register' && <span className="text-xs text-muted-foreground">{t('account.passwordHint')}</span>}
           </div>
           {mode === 'register' && (
-            <label className="row" style={{ alignItems: 'flex-start', gap: 10 }}>
+            <label className="flex items-center gap-2" style={{ alignItems: 'flex-start', gap: 10 }}>
               <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} style={{ width: 22, height: 22, marginTop: 2, flex: 'none', accentColor: 'var(--accent)' }} required />
-              <span className="small">
+              <span className="text-[0.85rem]">
                 {t('account.consent')} <Link to="/datenschutz">{t('account.consentLink')}</Link>.
               </span>
             </label>
           )}
           {error && (
-            <p className="small" role="alert" style={{ color: 'var(--bad)' }}>
+            <p className="text-[0.85rem]" role="alert" style={{ color: 'var(--bad)' }}>
               {error}
             </p>
           )}
-          <button className="btn primary block" type="submit" disabled={busy || (mode === 'register' && !consent)}>
+          <Button className="w-full whitespace-normal text-center leading-tight py-2.5" type="submit" disabled={busy || (mode === 'register' && !consent)}>
             {busy ? t('common.oneMoment') : mode === 'login' ? t('account.login') : t('account.createAccount')}
-          </button>
+          </Button>
           {mode === 'login' && (
-            <button type="button" className="btn ghost block" onClick={() => setForgot(true)}>
+            <Button variant="ghost" type="button" className="w-full whitespace-normal text-center leading-tight py-2.5" onClick={() => setForgot(true)}>
               {t('account.forgot')}
-            </button>
+            </Button>
           )}
         </form>
-        <div style={{ marginTop: 'auto' }} className="stack">
-          <p className="tiny" style={{ textAlign: 'center' }}>
+        <div style={{ marginTop: 'auto' }} className="flex flex-col gap-2">
+          <p className="text-xs" style={{ textAlign: 'center' }}>
             <Link to="/impressum">{t('common.imprint')}</Link> · <Link to="/datenschutz">{t('common.privacy')}</Link>
           </p>
         </div>
@@ -113,16 +115,16 @@ function ForgotSheet({ initialEmail, onClose }: { initialEmail: string; onClose:
   return (
     <Sheet open onClose={onClose} title={tr('account.resetTitle')}>
       {sent ? (
-        <div className="stack lg">
+        <div className="flex flex-col gap-4">
           <p>{tr('account.resetSent')}</p>
-          <p className="small muted">{tr('account.spamHint')}</p>
-          <button className="btn primary block" onClick={onClose}>
+          <p className="text-[0.85rem] text-muted-foreground">{tr('account.spamHint')}</p>
+          <Button className="w-full whitespace-normal text-center leading-tight py-2.5" onClick={onClose}>
             {tr('common.okay')}
-          </button>
+          </Button>
         </div>
       ) : (
         <form
-          className="stack lg"
+          className="flex flex-col gap-4"
           onSubmit={async (e) => {
             e.preventDefault()
             try {
@@ -133,14 +135,14 @@ function ForgotSheet({ initialEmail, onClose }: { initialEmail: string; onClose:
             }
           }}
         >
-          <div className="field">
+          <div className="flex flex-col gap-1.5">
             <label htmlFor="forgot-email">{tr('account.email')}</label>
-            <input id="forgot-email" className="input" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Input id="forgot-email" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
-          {error && <p className="small" style={{ color: 'var(--bad)' }}>{error}</p>}
-          <button className="btn primary block" type="submit">
+          {error && <p className="text-[0.85rem]" style={{ color: 'var(--bad)' }}>{error}</p>}
+          <Button className="w-full whitespace-normal text-center leading-tight py-2.5" type="submit">
             {tr('account.sendLink')}
-          </button>
+          </Button>
         </form>
       )}
     </Sheet>
@@ -174,28 +176,28 @@ export function VerifyPage() {
   }, [token])
   useT()
   return (
-    <div className="app">
+    <div className="mx-auto min-h-dvh max-w-[560px]">
       <div className="page" style={{ minHeight: '80dvh', justifyContent: 'center' }}>
-        {state === 'pending' && <p className="muted">{tr('account.verifying')}</p>}
+        {state === 'pending' && <p className="text-muted-foreground">{tr('account.verifying')}</p>}
         {state === 'ok' && (
-          <div className="stack lg">
+          <div className="flex flex-col gap-4">
             <div style={{ fontSize: '3rem' }} aria-hidden="true">
               ✅
             </div>
             <h1>{tr('account.verified')}</h1>
-            <p className="muted">{tr('account.verifiedText')}</p>
-            <button className="btn primary block" onClick={() => nav('/', { replace: true })}>
+            <p className="text-muted-foreground">{tr('account.verifiedText')}</p>
+            <Button className="w-full whitespace-normal text-center leading-tight py-2.5" onClick={() => nav('/', { replace: true })}>
               {tr('account.toApp')}
-            </button>
+            </Button>
           </div>
         )}
         {state === 'error' && (
-          <div className="stack lg">
+          <div className="flex flex-col gap-4">
             <h1>{tr('account.failed')}</h1>
-            <p className="muted">{error}</p>
-            <button className="btn primary block" onClick={() => nav('/konto', { replace: true })}>
+            <p className="text-muted-foreground">{error}</p>
+            <Button className="w-full whitespace-normal text-center leading-tight py-2.5" onClick={() => nav('/konto', { replace: true })}>
               {tr('account.toAccount')}
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -211,16 +213,16 @@ export function ResetPage() {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   return (
-    <div className="app">
+    <div className="mx-auto min-h-dvh max-w-[560px]">
       <div className="page">
-        <div className="row">
-          <button className="icon-btn" onClick={() => nav('/', { replace: true })} aria-label={tr('common.cancel')}>
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" size="icon" onClick={() => nav('/', { replace: true })} aria-label={tr('common.cancel')}>
             <Icon name="close" />
-          </button>
+          </Button>
         </div>
         <h1>{tr('account.newPassword')}</h1>
         <form
-          className="stack lg"
+          className="flex flex-col gap-4"
           onSubmit={async (e) => {
             e.preventDefault()
             if (pw !== pw2) return setError(tr('account.mismatch'))
@@ -237,19 +239,19 @@ export function ResetPage() {
             }
           }}
         >
-          <div className="field">
+          <div className="flex flex-col gap-1.5">
             <label htmlFor="pw1">{tr('account.newPasswordLabel')}</label>
-            <input id="pw1" className="input" type="password" autoComplete="new-password" minLength={10} required value={pw} onChange={(e) => setPw(e.target.value)} />
+            <Input id="pw1" type="password" autoComplete="new-password" minLength={10} required value={pw} onChange={(e) => setPw(e.target.value)} />
           </div>
-          <div className="field">
+          <div className="flex flex-col gap-1.5">
             <label htmlFor="pw2">{tr('account.repeat')}</label>
-            <input id="pw2" className="input" type="password" autoComplete="new-password" required value={pw2} onChange={(e) => setPw2(e.target.value)} />
+            <Input id="pw2" type="password" autoComplete="new-password" required value={pw2} onChange={(e) => setPw2(e.target.value)} />
           </div>
-          {error && <p className="small" style={{ color: 'var(--bad)' }}>{error}</p>}
-          <button className="btn primary block" type="submit" disabled={busy || !token}>
+          {error && <p className="text-[0.85rem]" style={{ color: 'var(--bad)' }}>{error}</p>}
+          <Button className="w-full whitespace-normal text-center leading-tight py-2.5" type="submit" disabled={busy || !token}>
             {tr('account.savePassword')}
-          </button>
-          {!token && <p className="small" style={{ color: 'var(--bad)' }}>{tr('account.incompleteLink')}</p>}
+          </Button>
+          {!token && <p className="text-[0.85rem]" style={{ color: 'var(--bad)' }}>{tr('account.incompleteLink')}</p>}
         </form>
       </div>
     </div>

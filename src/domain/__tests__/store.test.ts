@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useStore } from '../../store'
-import { streak } from '../stats'
+import { flamesOf } from '../motivation'
 import { addDays, today } from '../util'
 
 const per100 = { kcal: 100, protein: 10, carbs: 10, fat: 1 }
@@ -28,7 +28,8 @@ describe('store: recipes, supplements, measurements', () => {
     const id = useStore.getState().supplements[0].id
     useStore.getState().toggleSupplement(id)
     expect(useStore.getState().supplementLog[today()]).toEqual([id])
-    expect(streak(useStore.getState())).toBe(1)
+    // logging supplements is no activity: the flame stays out
+    expect(flamesOf(useStore.getState()).daily.count).toBe(0)
     useStore.getState().toggleSupplement(id)
     expect(useStore.getState().supplementLog[today()]).toEqual([])
   })

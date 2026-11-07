@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ANIMATION } from '../domain/animations'
 import { Icon } from './kit'
 import { useT } from '../i18n'
+import { Button } from '@/components/ui/button'
 
 type Player = { play(): void; pause(): void; destroy(): void; goToAndStop(v: number, frame: boolean): void }
 
@@ -41,8 +42,8 @@ export function ExerciseAnimation({ exerciseId, pattern: direct, label, size = 3
   return (
     <figure style={{ margin: '0 auto', position: 'relative', width: '100%', maxWidth: size }}>
       <div ref={box} role="img" aria-label={t('shell.anim.label', { name: label })} style={{ width: '100%', aspectRatio: '1', background: 'var(--surface-2)', borderRadius: 16 }} />
-      <button
-        className="icon-btn"
+      <Button variant="secondary" size="icon"
+       
         style={{ position: 'absolute', right: 8, bottom: 8, background: 'var(--surface)' }}
         aria-label={playing ? t('shell.anim.pause') : t('shell.anim.play')}
         onClick={() => {
@@ -52,7 +53,7 @@ export function ExerciseAnimation({ exerciseId, pattern: direct, label, size = 3
         }}
       >
         <Icon name={playing ? 'pause' : 'play'} size={18} />
-      </button>
+      </Button>
     </figure>
   )
 }

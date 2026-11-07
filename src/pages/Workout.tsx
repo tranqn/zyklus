@@ -11,6 +11,10 @@ import { ExerciseAnimation } from '../ui/ExerciseAnimation'
 import { t as tr, useT } from '../i18n'
 import { exerciseCues, exerciseName } from '../i18n/content/exercises'
 import { noteText, sessionDayName } from '../i18n/display'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Textarea } from '@/components/ui/input'
 
 export default function Workout() {
   const s = useStore()
@@ -66,44 +70,44 @@ export default function Workout() {
 
   return (
     <div className="page" style={{ paddingBottom: 'calc(120px + var(--safe-b))' }}>
-      <div className="row between" style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg)', margin: '-16px -16px 0', padding: 'calc(8px + var(--safe-t)) 16px 8px' }}>
-        <button className="icon-btn" onClick={() => nav('/')} aria-label={tr('workout.backOverview')}>
+      <div className="flex items-center justify-between gap-2 sticky-bar" style={{ position: 'sticky', top: 0, zIndex: 10, margin: '-16px -16px 0', padding: 'calc(8px + var(--safe-t)) 16px 8px' }}>
+        <Button variant="secondary" size="icon" onClick={() => nav('/')} aria-label={tr('workout.backOverview')}>
           <Icon name="back" />
-        </button>
+        </Button>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontWeight: 700 }}>{sessionDayName(active)}</div>
-          <div className="tiny muted num">
+          <div className="text-xs text-muted-foreground tabular-nums">
             {stale ? tr('workout.openSince', { date: formatDate(active.date) }) : <>{tr('workout.duration')} <Elapsed since={active.startedAt} /></>} · {tr('workout.setsDone', { done: doneWork, total: totalWork })}
           </div>
         </div>
-        <button className="btn primary sm" onClick={() => setFinishOpen(true)}>
+        <Button size="sm" onClick={() => setFinishOpen(true)}>
           {tr('workout.finish')}
-        </button>
+        </Button>
       </div>
       <div className="bar" aria-hidden="true">
         <div style={{ width: `${totalWork ? (doneWork / totalWork) * 100 : 0}%`, background: 'var(--ok)' }} />
       </div>
 
       {stale && (
-        <div className="card stack" style={{ background: 'var(--warn-soft)', borderColor: 'transparent' }}>
+        <Card className="flex flex-col gap-2" style={{ background: 'var(--warn-soft)', borderColor: 'transparent' }}>
           <strong>{tr('workout.staleTitle')}</strong>
-          <p className="small">{tr('workout.staleText', { date: formatDate(active.date, { weekday: 'long', day: 'numeric', month: 'long' }) })}</p>
-          <div className="row">
-            <button className="btn sm" onClick={discard}>
+          <p className="text-[0.85rem]">{tr('workout.staleText', { date: formatDate(active.date, { weekday: 'long', day: 'numeric', month: 'long' }) })}</p>
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" size="sm" onClick={discard}>
               {tr('workout.staleDiscard')}
-            </button>
-            <button className="btn primary sm" onClick={() => setFinishOpen(true)}>
+            </Button>
+            <Button size="sm" onClick={() => setFinishOpen(true)}>
               {tr('workout.staleFinish')}
-            </button>
+            </Button>
           </div>
-        </div>
+        </Card>
       )}
 
       {(active.readiness != null || active.deload) && (
-        <div className="row wrap">
-          {active.deload && <span className="badge warn">{tr('workout.deloadWeek')}</span>}
+        <div className="flex items-center flex-wrap gap-2">
+          {active.deload && <Badge variant="warn">{tr('workout.deloadWeek')}</Badge>}
           {active.readiness != null && (
-            <span className={`badge ${active.readiness >= 70 ? 'ok' : active.readiness >= 45 ? '' : 'warn'}`}>{tr('workout.readiness', { n: active.readiness })}</span>
+            <Badge variant={active.readiness >= 70 ? 'ok' : active.readiness >= 45 ? 'default' : 'warn'}>{tr('workout.readiness', { n: active.readiness })}</Badge>
           )}
         </div>
       )}
@@ -126,9 +130,9 @@ export default function Workout() {
         )
       })}
 
-      <button className="btn ghost danger block" onClick={discard}>
+      <Button variant="ghost" className="w-full whitespace-normal text-center leading-tight py-2.5" onClick={discard}>
         {tr('workout.discard')}
-      </button>
+      </Button>
 
       {rest && <RestTimer rest={rest} onChange={setRest} sound={s.settings.restTimerSound} vibrate={s.settings.restTimerVibrate} />}
       <ExerciseInfo ex={info} onClose={() => setInfo(null)} />
@@ -165,19 +169,19 @@ function ExerciseCard({
   const allDone = se.sets.length > 0 && se.sets.every((x) => x.done)
   let n = 0
   return (
-    <section className="card stack" style={{ gap: 10, opacity: allDone ? 0.75 : 1 }} aria-label={name}>
-      <div className="row" style={{ alignItems: 'flex-start' }}>
-        <button className="grow" onClick={onInfo} style={{ background: 'none', border: 0, padding: 0, textAlign: 'left' }}>
+    <Card className="flex flex-col gap-2" style={{ gap: 10, opacity: allDone ? 0.75 : 1 }} aria-label={name}>
+      <div className="flex items-center gap-2" style={{ alignItems: 'flex-start' }}>
+        <button className="min-w-0 flex-1" onClick={onInfo} style={{ background: 'none', border: 0, padding: 0, textAlign: 'left' }}>
           {se.superset && <span className="ss-tag">{t('workout.superset', { tag: se.superset })}</span>}
           <h3 style={{ display: 'inline' }}>{name}</h3>
-          <div className="small muted">{t('workout.target', { sets: work.length, min: se.repMin, max: se.repMax, rir: (work.find((x) => x.kind === 'arbeit') ?? work[0])?.targetRir ?? 2, rest: fmt(se.restSec / 60, 1) })}</div>
+          <div className="text-[0.85rem] text-muted-foreground">{t('workout.target', { sets: work.length, min: se.repMin, max: se.repMax, rir: (work.find((x) => x.kind === 'arbeit') ?? work[0])?.targetRir ?? 2, rest: fmt(se.restSec / 60, 1) })}</div>
         </button>
-        <button className="icon-btn plain" onClick={onSwap} aria-label={t('workout.swapLabel', { name })}>
+        <Button variant="ghost" size="icon" onClick={onSwap} aria-label={t('workout.swapLabel', { name })}>
           <Icon name="swap" size={20} />
-        </button>
+        </Button>
       </div>
       {note && (
-        <p className="small" style={{ background: 'var(--surface-2)', padding: '8px 10px', borderRadius: 10 }}>
+        <p className="text-[0.85rem]" style={{ background: 'var(--surface-2)', padding: '8px 10px', borderRadius: 10 }}>
           {note}
         </p>
       )}
@@ -235,12 +239,12 @@ function ExerciseCard({
         )
       })}
       {se.sets.some((x) => x.kind === 'test' && !x.done) && (
-        <p className="tiny muted">{t('workout.testHint', { reps: se.sets.find((x) => x.kind === 'test')?.targetReps ?? 10 })}</p>
+        <p className="text-xs text-muted-foreground">{t('workout.testHint', { reps: se.sets.find((x) => x.kind === 'test')?.targetReps ?? 10 })}</p>
       )}
-      <button className="btn ghost sm" style={{ alignSelf: 'flex-start' }} onClick={onAdd}>
+      <Button variant="ghost" size="sm" style={{ alignSelf: 'flex-start' }} onClick={onAdd}>
         <Icon name="plus" size={16} /> {t('workout.addSet')}
-      </button>
-    </section>
+      </Button>
+    </Card>
   )
 }
 
@@ -372,25 +376,25 @@ export function ExerciseInfo({ ex, onClose }: { ex: Exercise | null; onClose: ()
   return (
     <Sheet open={!!ex} onClose={onClose} title={name}>
       {ex && (
-        <div className="stack lg">
+        <div className="flex flex-col gap-4">
           <ExerciseAnimation exerciseId={ex.id} label={name!} />
-          <div className="row wrap">
-            <span className="badge accent">{tk(`labels.muscle.${ex.primary}`)}</span>
+          <div className="flex items-center flex-wrap gap-2">
+            <Badge variant="accent">{tk(`labels.muscle.${ex.primary}`)}</Badge>
             {ex.secondary.map((m) => (
-              <span key={m} className="badge">
+              <Badge key={m}>
                 {tk(`labels.muscle.${m}`)}
-              </span>
+              </Badge>
             ))}
           </div>
-          <div className="stack">
+          <div className="flex flex-col gap-2">
             <h3>{t('workout.howTo')}</h3>
-            <ol style={{ margin: 0, paddingLeft: 20 }} className="stack">
+            <ol style={{ margin: 0, paddingLeft: 20 }} className="flex flex-col gap-2">
               {exerciseCues(ex).map((c) => (
                 <li key={c}>{c}</li>
               ))}
             </ol>
           </div>
-          <a className="btn block" href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${name} ${t('workout.videoSuffix')}`)}`} target="_blank" rel="noreferrer">
+          <a className={buttonVariants({ variant: 'secondary', className: 'w-full whitespace-normal text-center leading-tight py-2.5' })} href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${name} ${t('workout.videoSuffix')}`)}`} target="_blank" rel="noreferrer">
             {t('workout.videos')}
           </a>
         </div>
@@ -409,38 +413,38 @@ function SwapSheet({ exKey, onClose }: { exKey: string | null; onClose: () => vo
     : []
   return (
     <Sheet open={!!se} onClose={onClose} title={tr('workout.swapTitle')}>
-      <div className="stack lg">
-        <p className="muted small">{tr('workout.swapIntro')}</p>
-        <label className="row" style={{ gap: 10 }}>
+      <div className="flex flex-col gap-4">
+        <p className="text-muted-foreground text-[0.85rem]">{tr('workout.swapIntro')}</p>
+        <label className="flex items-center gap-2" style={{ gap: 10 }}>
           <input type="checkbox" checked={permanent} onChange={(e) => setPermanent(e.target.checked)} style={{ width: 20, height: 20 }} />
           <span>{tr('workout.swapPermanent')}</span>
         </label>
-        <label className="row" style={{ gap: 10 }}>
+        <label className="flex items-center gap-2" style={{ gap: 10 }}>
           <input type="checkbox" checked={anyEquipment} onChange={(e) => setAnyEquipment(e.target.checked)} style={{ width: 20, height: 20 }} />
           <span>{tr('workout.swapAnyEquipment')}</span>
         </label>
-        <div className="card list" style={{ padding: '0 16px' }}>
-          {options.length === 0 && <p className="empty">{tr('workout.noAlternatives')}</p>}
+        <Card className="flex flex-col divide-y divide-border" style={{ padding: '0 16px' }}>
+          {options.length === 0 && <p className="empty-state">{tr('workout.noAlternatives')}</p>}
           {options.map((o) => (
             <button
               key={o.id}
-              className="list-item"
+              className="list-row"
               onClick={() => {
                 s.swapExercise(exKey!, o.id, permanent)
                 toast(tr('workout.swapped', { name: exerciseName(o) }))
                 onClose()
               }}
             >
-              <span className="grow">
+              <span className="min-w-0 flex-1">
                 <strong>{exerciseName(o)}</strong>
-                <span className="small muted" style={{ display: 'block' }}>
+                <span className="text-[0.85rem] text-muted-foreground" style={{ display: 'block' }}>
                   {exerciseCues(o)[0]}
                 </span>
               </span>
               <Icon name="chevron" size={18} />
             </button>
           ))}
-        </div>
+        </Card>
       </div>
     </Sheet>
   )
@@ -468,44 +472,44 @@ function FinishContent({ onClose }: { onClose: () => void }) {
   const mins = isStaleSession(active.startedAt, now) ? '–' : Math.round((end - new Date(active.startedAt).getTime()) / 60000)
   return (
     <Sheet open onClose={onClose} title={tr('workout.finishTitle')}>
-      <div className="stack lg">
-        <div className="grid3">
-          <div className="card tight stat">
-            <span className="v">{mins}</span>
-            <span className="l">{tr('common.minutes')}</span>
-          </div>
-          <div className="card tight stat">
-            <span className="v">{sessionSets(preview)}</span>
-            <span className="l">{tr('common.sets')}</span>
-          </div>
-          <div className="card tight stat">
-            <span className="v">{fmt(sessionVolume(preview) / 1000, 1)} t</span>
-            <span className="l">{tr('workout.volume')}</span>
-          </div>
+      <div className="flex flex-col gap-4">
+        <div className="grid grid-cols-3 gap-2">
+          <Card className="p-3 flex flex-col gap-0.5">
+            <span className="text-[1.4rem] font-extrabold tabular-nums">{mins}</span>
+            <span className="text-[0.78rem] font-semibold text-muted-foreground">{tr('common.minutes')}</span>
+          </Card>
+          <Card className="p-3 flex flex-col gap-0.5">
+            <span className="text-[1.4rem] font-extrabold tabular-nums">{sessionSets(preview)}</span>
+            <span className="text-[0.78rem] font-semibold text-muted-foreground">{tr('common.sets')}</span>
+          </Card>
+          <Card className="p-3 flex flex-col gap-0.5">
+            <span className="text-[1.4rem] font-extrabold tabular-nums">{fmt(sessionVolume(preview) / 1000, 1)} t</span>
+            <span className="text-[0.78rem] font-semibold text-muted-foreground">{tr('workout.volume')}</span>
+          </Card>
         </div>
         {prs.length > 0 && (
-          <div className="card" style={{ background: 'var(--ok-soft)', borderColor: 'transparent' }}>
+          <Card style={{ background: 'var(--ok-soft)', borderColor: 'transparent' }}>
             <strong>{tr('workout.newPr', { n: prs.length })}</strong>
-            <p className="small">{prs.map((id) => (lib.get(id) ? exerciseName(lib.get(id)!) : id)).join(', ')}</p>
-          </div>
+            <p className="text-[0.85rem]">{prs.map((id) => (lib.get(id) ? exerciseName(lib.get(id)!) : id)).join(', ')}</p>
+          </Card>
         )}
-        {open_ > 0 && <p className="small" style={{ color: 'var(--warn)' }}>{tr('workout.openSets', { n: open_ })}</p>}
-        <div className="stack">
-          <span className="label">{tr('workout.howWasIt')}</span>
-          <div className="grid3" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
+        {open_ > 0 && <p className="text-[0.85rem]" style={{ color: 'var(--warn)' }}>{tr('workout.openSets', { n: open_ })}</p>}
+        <div className="flex flex-col gap-2">
+          <span className="text-[0.85rem] font-semibold text-muted-foreground">{tr('workout.howWasIt')}</span>
+          <div className="grid grid-cols-3 gap-2" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
             {['😫', '😕', '😐', '🙂', '🔥'].map((e, i) => (
-              <button key={e} className="chip" style={{ justifyContent: 'center', fontSize: '1.3rem', minHeight: 52 }} aria-pressed={rating === i + 1} aria-label={tr('workout.ratingOf', { n: i + 1 })} onClick={() => setRating(i + 1)}>
+              <Button variant="chip" key={e} style={{ justifyContent: 'center', fontSize: '1.3rem', minHeight: 52 }} aria-pressed={rating === i + 1} aria-label={tr('workout.ratingOf', { n: i + 1 })} onClick={() => setRating(i + 1)}>
                 {e}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
-        <div className="field">
+        <div className="flex flex-col gap-1.5">
           <label htmlFor="notes">{tr('workout.note')}</label>
-          <textarea id="notes" className="input" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={tr('workout.notePlaceholder')} />
+          <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={tr('workout.notePlaceholder')} />
         </div>
-        <button
-          className="btn primary block"
+        <Button
+          className="w-full whitespace-normal text-center leading-tight py-2.5"
           onClick={() => {
             s.finishSession(rating, notes.trim() || undefined)
             toast(tr('workout.saved'))
@@ -513,7 +517,7 @@ function FinishContent({ onClose }: { onClose: () => void }) {
           }}
         >
           {tr('common.save')}
-        </button>
+        </Button>
       </div>
     </Sheet>
   )

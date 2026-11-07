@@ -112,11 +112,22 @@ Generiert mit `pnpm i18n:review`. Korrekturen direkt in `src/i18n/ns/*.ts` bzw. 
 | `day.legs_a.focus` | Quadrizeps, Beinbeuger, Gesäß | Quads, hamstrings, glutes | Đùi trước, đùi sau, mông |
 | `day.legs_b.name` | Beine B | Legs B | Chân B |
 | `day.legs_b.focus` | Quadrizeps, Beinbeuger, Gesäß | Quads, hamstrings, glutes | Đùi trước, đùi sau, mông |
+| `day.wa_a.name` | Winter Arc A | Winter Arc A | Winter Arc A |
+| `day.wa_a.focus` | Ganzkörper, Zug zuerst | Full body, pulling first | Toàn thân, kéo trước |
+| `day.wa_b.name` | Winter Arc B | Winter Arc B | Winter Arc B |
+| `day.wa_b.focus` | Ganzkörper, Beine zuerst | Full body, legs first | Toàn thân, chân trước |
+| `day.wa_c.name` | Winter Arc C | Winter Arc C | Winter Arc C |
+| `day.wa_c.focus` | Ganzkörper, Schultern zuerst | Full body, shoulders first | Toàn thân, vai trước |
+| `day.wa_1.name` | Winter Arc 1 | Winter Arc 1 | Winter Arc 1 |
+| `day.wa_1.focus` | Klimmzüge, Dips, Liegestütze, Pistols | Pull-ups, dips, push-ups, pistols | Kéo xà, xà kép, hít đất, pistol |
+| `day.wa_2.name` | Winter Arc 2 | Winter Arc 2 | Winter Arc 2 |
+| `day.wa_2.focus` | Rudern, Pike, Hüftbeuge, Dragon Flag | Rows, pike, hip hinge, dragon flag | Kéo ngược, pike, gập hông, dragon flag |
 | `split.s2` | Ganzkörper (2x) | Full body (2x) | Toàn thân (2 buổi) |
 | `split.s3` | Ganzkörper (3x) | Full body (3x) | Toàn thân (3 buổi) |
 | `split.s4` | Oberkörper / Unterkörper | Upper / lower | Thân trên / thân dưới |
 | `split.s5` | OK/UK + Push/Pull/Beine | Upper/lower + push/pull/legs | Trên/dưới + đẩy/kéo/chân |
 | `split.s6` | Push / Pull / Beine (2x) | Push / pull / legs (2x) | Đẩy / kéo / chân (2 vòng) |
+| `split.wa` | Winter Arc | Winter Arc | Winter Arc |
 | `note.start_easy` | Starte locker und taste dich heran. | Start easy and work your way up. | Bắt đầu nhẹ nhàng rồi tăng dần. |
 | `note.deload_bw` | Deload: bewusst leichter. | Deload: deliberately easier. | Tuần giảm tải: tập nhẹ hơn có chủ đích. |
 | `note.one_more_rep_bw` | Eine Wiederholung mehr als letztes Mal. | One more rep than last time. | Thêm một lần so với lần trước. |
@@ -219,12 +230,12 @@ Generiert mit `pnpm i18n:review`. Korrekturen direkt in `src/i18n/ns/*.ts` bzw. 
 | `morning` | Guten Morgen | Good morning | Chào buổi sáng |
 | `hello` | Hallo | Hello | Xin chào |
 | `evening` | Guten Abend | Good evening | Chào buổi tối |
-| `streakTitle` | Tage in Folge mit Aktivität | Days in a row with activity | Số ngày hoạt động liên tiếp |
 | `vacationOn` | Urlaubsmodus aktiv | Vacation mode on | Đang bật chế độ nghỉ phép |
 | `sickOn` | Krankheitsmodus aktiv | Sick mode on | Đang bật chế độ ốm |
 | `paused` | Dein Plan und deine Serie sind pausiert. | Your plan and your streak are paused. | Giáo án và chuỗi ngày của bạn đang tạm dừng. |
 | `end` | Beenden | End | Kết thúc |
 | `running` | Läuft gerade | In progress | Đang tập |
+| `staleRunning` | Begonnen am {date} und nicht beendet. Schließ sie ab oder verwirf sie. | Started on {date} and never finished. Finish or discard it. | Bắt đầu vào {date} nhưng chưa kết thúc. Hãy kết thúc hoặc bỏ buổi này. |
 | `resume` | Training fortsetzen | Resume workout | Tiếp tục buổi tập |
 | `mesoDone` | Mesozyklus {n} geschafft | Mesocycle {n} completed | Đã hoàn thành chu kỳ {n} |
 | `reviewTitle` | Zeit für deine Auswertung | Time for your review | Đến lúc đánh giá |
@@ -237,6 +248,13 @@ Generiert mit `pnpm i18n:review`. Korrekturen direkt in `src/i18n/ns/*.ts` bzw. 
 | `start` | Training starten | Start workout | Bắt đầu tập |
 | `thisWeek` | Diese Woche | This week | Tuần này |
 | `calendar` | Kalender | Calendar | Lịch |
+| `editDays` | Trainingstage ändern | Change training days | Đổi ngày tập |
+| `editDone` | Fertig | Done | Xong |
+| `editHint` | Tippe auf die Tage, an denen du trainieren willst. | Tap the days you want to train on. | Chạm vào những ngày bạn muốn tập. |
+| `daysSaved` | Trainingstage gespeichert | Training days saved | Đã lưu ngày tập |
+| `daysRange` | 2 bis 6 Trainingstage | 2 to 6 training days | Từ 2 đến 6 ngày tập |
+| `daysRegen` | Du trainierst jetzt {n} Tage pro Woche. Dafür wird dein Plan neu erstellt, eigene Änderungen am Plan gehen verloren. Dein Verlauf bleibt erhalten. | You now train {n} days a week. Your plan will be rebuilt for that and your own changes to it will be lost. Your history is kept. | Bây giờ bạn tập {n} ngày mỗi tuần. Kế hoạch sẽ được tạo lại cho số ngày này, các thay đổi riêng của bạn trong kế hoạch sẽ mất. Lịch sử tập vẫn được giữ. |
+| `dayToggle` | {day}: Trainingstag | {day}: training day | {day}: ngày tập |
 | `checkin.title` | Wie fühlst du dich heute? | How do you feel today? | Hôm nay bạn cảm thấy thế nào? |
 | `checkin.intro` | Dein Check-in steuert die heutige Belastung: bei schlechtem Schlaf oder starkem Muskelkater nimmt die App Sätze und Intensität zurück. | Your check-in steers today’s load: after poor sleep or heavy soreness the app reduces sets and intensity. | Phần đánh giá hôm nay điều chỉnh cường độ: khi ngủ kém hoặc đau cơ nhiều, ứng dụng sẽ giảm số hiệp và cường độ. |
 | `checkin.sleep` | Schlaf letzte Nacht | Sleep last night | Giấc ngủ đêm qua |
@@ -260,6 +278,12 @@ Generiert mit `pnpm i18n:review`. Korrekturen direkt in `src/i18n/ns/*.ts` bzw. 
 | `weightFirst` | Bitte zuerst das Gewicht eintragen | Please enter the weight first | Vui lòng nhập mức tạ trước |
 | `backOverview` | Zurück zur Übersicht (Training läuft weiter) | Back to overview (workout keeps running) | Về trang tổng quan (buổi tập vẫn tiếp tục) |
 | `setsDone` | {done}/{total} Sätze | {done}/{total} sets | {done}/{total} hiệp |
+| `duration` | Dauer | Time | Thời gian |
+| `openSince` | offen seit {date} | open since {date} | chưa xong từ {date} |
+| `staleTitle` | Diese Einheit ist noch offen | This workout is still open | Buổi tập này vẫn chưa kết thúc |
+| `staleText` | Du hast sie am {date} begonnen und nicht beendet. Schließ sie ab, dann zählen die erledigten Sätze. Oder verwirf sie und starte neu. | You started it on {date} and never finished it. Finish it to count the sets you did, or discard it and start fresh. | Bạn bắt đầu buổi này vào {date} nhưng chưa kết thúc. Hãy kết thúc để tính các hiệp đã tập, hoặc bỏ buổi này và bắt đầu lại. |
+| `staleDiscard` | Verwerfen | Discard | Bỏ buổi tập |
+| `staleFinish` | Abschließen | Finish | Kết thúc |
 | `finish` | Fertig | Finish | Xong |
 | `deloadWeek` | Deload-Woche: locker bleiben | Deload week: keep it easy | Tuần giảm tải: tập nhẹ nhàng |
 | `readiness` | Tagesform {n}/100 | Readiness {n}/100 | Thể trạng {n}/100 |
@@ -325,6 +349,23 @@ Generiert mit `pnpm i18n:review`. Korrekturen direkt in `src/i18n/ns/*.ts` bzw. 
 | `slotMeta` | {sets} × {min}–{max} · Pause {rest}s | {sets} × {min}–{max} · rest {rest}s | {sets} × {min}–{max} · nghỉ {rest} giây |
 | `infoFor` | Infos zu {name} | Info about {name} | Thông tin về {name} |
 | `addExercise` | Übung hinzufügen | Add exercise | Thêm bài tập |
+| `program.title` | Programm | Program | Chương trình |
+| `program.active` | Aktiv: {name} | Active: {name} | Đang dùng: {name} |
+| `program.change` | Programm wechseln | Change program | Đổi chương trình |
+| `program.auto` | Automatisch | Automatic | Tự động |
+| `program.autoText` | Die App stellt deinen Plan aus Ziel, Level, Ausstattung und Trainingstagen zusammen. | The app builds your plan from your goal, level, equipment and training days. | Ứng dụng lập giáo án theo mục tiêu, trình độ, dụng cụ và số ngày tập của bạn. |
+| `program.winterArc` | Winter Arc | Winter Arc | Winter Arc |
+| `program.winterArcText` | Acht Übungen mit dem eigenen Körpergewicht für breite Schultern und eine schmale Taille: Klimmzüge, Rudern im Untergriff, Pike-Liegestütze, Decline-Defizit-Liegestütze, Dips, Pistol Squats, kniende Hüftbeuge und Dragon Flag. Nach einem Video von Kevin Zhang (Calisthenics Nerd). | Eight bodyweight exercises for wide shoulders and a narrow waist: pull-ups, supinated inverted rows, pike push-ups, decline deficit push-ups, dips, pistol squats, kneeling hip hinges and dragon flags. Based on a video by Kevin Zhang (Calisthenics Nerd). | Tám bài tập với trọng lượng cơ thể cho vai rộng và eo thon: kéo xà, kéo người ngược tay ngửa, hít đất pike, hít đất chân cao biên độ sâu, xà kép, pistol squat, gập hông khi quỳ và dragon flag. Theo video của Kevin Zhang (Calisthenics Nerd). |
+| `program.levelHint` | Passend zu deinem Level startest du auf einer leichteren Stufe, zum Beispiel mit negativen Klimmzügen oder Dragon Flags mit angewinkelten Beinen. | Depending on your level you start on an easier step, for example negative pull-ups or tuck dragon flags. | Tùy trình độ, bạn bắt đầu ở mức dễ hơn, ví dụ kéo xà chậm chiều xuống hoặc dragon flag co gối. |
+| `program.gearHint` | Ohne {gear} setzt die App Ersatzübungen ein. | Without {gear} the app uses substitute exercises. | Nếu không có {gear}, ứng dụng sẽ dùng bài thay thế. |
+| `program.week` | Trainingswoche | Training week | Tuần tập |
+| `program.three` | 3x Ganzkörper | 3x full body | Toàn thân 3 buổi |
+| `program.own` | Deine {n} Tage | Your {n} days | {n} ngày của bạn |
+| `program.threeHint` | Deine Trainingstage werden Mo, Mi und Fr. Du kannst sie in den Einstellungen ändern. | Your training days become Mon, Wed and Fri. You can change them in the settings. | Ngày tập của bạn sẽ là thứ Hai, thứ Tư và thứ Sáu. Bạn có thể đổi trong phần cài đặt. |
+| `program.ownHint` | Die acht Übungen werden auf deine {n} Trainingstage verteilt. | The eight exercises are spread over your {n} training days. | Tám bài tập được chia đều cho {n} ngày tập của bạn. |
+| `program.apply` | Übernehmen | Apply | Áp dụng |
+| `program.confirm` | Programm wechseln? Der Plan wird neu erstellt, eigene Änderungen am Plan gehen verloren. Dein Verlauf bleibt erhalten. | Change program? The plan will be rebuilt and your own changes to it will be lost. Your history is kept. | Đổi chương trình? Giáo án sẽ được tạo lại, những thay đổi bạn tự chỉnh sẽ bị mất. Lịch sử tập luyện được giữ nguyên. |
+| `program.done` | Programm gewechselt | Program changed | Đã đổi chương trình |
 | `regenTitle` | Plan neu erstellen | Rebuild plan | Tạo lại giáo án |
 | `regenText` | Erstellt den aktuellen Zyklus mit deinen Profildaten neu. Dein Verlauf bleibt erhalten. | Rebuilds the current cycle from your profile. Your history is kept. | Tạo lại chu kỳ hiện tại theo hồ sơ của bạn. Lịch sử tập luyện được giữ nguyên. |
 | `regenConfirm` | Plan neu erstellen? Eigene Änderungen am Plan gehen verloren. | Rebuild the plan? Your own changes to the plan will be lost. | Tạo lại giáo án? Những thay đổi bạn tự chỉnh sẽ bị mất. |
@@ -859,6 +900,169 @@ Generiert mit `pnpm i18n:review`. Korrekturen direkt in `src/i18n/ns/*.ts` bzw. 
 | `apiError.too_large` | Deine Daten sind zu groß für die Synchronisierung. | Your data is too large to sync. | Dữ liệu của bạn quá lớn để đồng bộ. |
 | `apiError.conflict` | Synchronisierung kollidiert wiederholt. Versuch es gleich nochmal. | Sync keeps colliding. Please try again in a moment. | Đồng bộ liên tục bị xung đột. Vui lòng thử lại sau giây lát. |
 
+## motivation
+
+| Key | Deutsch | English | Tiếng Việt |
+|---|---|---|---|
+| `title` | Flammen und Erfolge | Flames and achievements | Ngọn lửa và thành tích |
+| `eyebrow` | Dranbleiben | Keep going | Kiên trì |
+| `menuD` | {d} [[d\|Tag\|Tage]] und {w} [[w\|Woche\|Wochen]] in Folge | {d} [[d\|day\|days]] and {w} [[w\|week\|weeks]] in a row | {d} ngày và {w} tuần liên tiếp |
+| `daily` | Tages-Flamme | Daily flame | Lửa ngày |
+| `weekly` | Wochen-Flamme | Weekly flame | Lửa tuần |
+| `dailyChip` | Tages-Flamme: {n} [[n\|Tag\|Tage]] | Daily flame: {n} [[n\|day\|days]] | Lửa ngày: {n} ngày |
+| `weeklyChip` | Wochen-Flamme: {n} [[n\|Woche\|Wochen]] | Weekly flame: {n} [[n\|week\|weeks]] | Lửa tuần: {n} tuần |
+| `days` | [[n\|Tag\|Tage]] in Folge | [[n\|day\|days]] in a row | ngày liên tiếp |
+| `weeks` | [[n\|Woche\|Wochen]] in Folge | [[n\|week\|weeks]] in a row | tuần liên tiếp |
+| `best` | Rekord: {n} | Record: {n} | Kỷ lục: {n} |
+| `atRisk` | Heute noch {min} Minuten aktiv sein, dann hält deine Flamme. | Be active for {min} more minutes today to keep your flame. | Hôm nay vận động thêm {min} phút để giữ ngọn lửa. |
+| `activeToday` | Heute erledigt, deine Flamme brennt. | Done for today, your flame is burning. | Hôm nay đã xong, ngọn lửa đang cháy. |
+| `pausedToday` | Pausiert. Deine Flammen warten auf dich. | Paused. Your flames are waiting for you. | Đang tạm dừng. Ngọn lửa chờ bạn quay lại. |
+| `start` | Zünde deine Flamme: ein Training, Cardio oder 10 Minuten Mobility. | Light your flame: a workout, cardio or 10 minutes of mobility. | Thắp lửa: một buổi tập, cardio hoặc 10 phút giãn cơ. |
+| `shields` | Flammen-Schutz | Flame shield | Khiên lửa |
+| `shieldsA11y` | Flammen-Schutz: {n} von {max} | Flame shields: {n} of {max} | Khiên lửa: {n} trên {max} |
+| `shieldsInfo` | Ein Schutz rettet deine Tages-Flamme an einem verpassten Tag. Für jede geschaffte Wochen-Flamme bekommst du einen, höchstens {max} auf Vorrat. | A shield saves your daily flame on a missed day. You get one for every weekly flame you complete, up to {max} in stock. | Một khiên giữ lửa ngày cho bạn vào một ngày bỏ lỡ. Mỗi tuần đạt mục tiêu bạn nhận một khiên, tối đa {max}. |
+| `thisWeek` | Diese Woche: {n} von {goal} aktiven Tagen | This week: {n} of {goal} active days | Tuần này: {n} trên {goal} ngày vận động |
+| `weekDone` | Wochenziel geschafft | Weekly goal reached | Đã đạt mục tiêu tuần |
+| `goalLabel` | Wochenziel in aktiven Tagen | Weekly goal in active days | Mục tiêu tuần (số ngày vận động) |
+| `goalHint` | Gilt ab dieser Woche. Vergangene Wochen behalten ihr Ziel. | Applies from this week. Past weeks keep their goal. | Áp dụng từ tuần này. Các tuần trước giữ mục tiêu cũ. |
+| `goalSaved` | Wochenziel gespeichert | Weekly goal saved | Đã lưu mục tiêu tuần |
+| `rules` | Was zählt: ein abgeschlossenes Training oder zusammen mindestens 10 Minuten Cardio und Mobility. Urlaub und krank pausieren deine Flammen. | What counts: a finished workout, or at least 10 minutes of cardio and mobility together. Vacation and sick mode pause your flames. | Được tính: một buổi tập hoàn thành, hoặc tổng cộng ít nhất 10 phút cardio và giãn cơ. Chế độ nghỉ phép và ốm tạm dừng ngọn lửa. |
+| `history` | Letzte 8 Wochen | Last 8 weeks | 8 tuần gần nhất |
+| `legend.active` | aktiv | active | vận động |
+| `legend.shield` | geschützt | shielded | có khiên |
+| `legend.paused` | Pause | paused | tạm dừng |
+| `achievements` | Erfolge | Achievements | Thành tích |
+| `level` | Stufe {level} von {max} | Level {level} of {max} | Cấp {level} trên {max} |
+| `locked` | Noch gesperrt | Still locked | Chưa mở khóa |
+| `reachedPlain` | Erreicht | Reached | Đã đạt |
+| `friendsLink` | Mit Freunden motiviert es sich leichter: lade jemanden ein oder startet eine Challenge. | Motivation is easier with friends: invite someone or start a challenge together. | Có bạn bè thì dễ kiên trì hơn: mời ai đó hoặc cùng bắt đầu một thử thách. |
+| `next` | Nächste Stufe: {value} von {next} | Next level: {value} of {next} | Cấp tiếp theo: {value} trên {next} |
+| `maxed` | Höchste Stufe erreicht | Highest level reached | Đã đạt cấp cao nhất |
+| `reached` | Stufe {level}: {date} | Level {level}: {date} | Cấp {level}: {date} |
+| `celebrate.title` | Deine Flamme brennt | Your flame is burning | Ngọn lửa đang cháy |
+| `celebrate.milestone` | Meilenstein! | Milestone! | Cột mốc mới! |
+| `celebrate.text` | Morgen wieder? Jeder aktive Tag macht sie größer. | Again tomorrow? Every active day makes it bigger. | Ngày mai tiếp nhé? Mỗi ngày vận động làm lửa lớn hơn. |
+| `celebrate.week` | Wochenziel geschafft: {n} [[n\|Woche\|Wochen]] in Folge. | Weekly goal reached: {n} [[n\|week\|weeks]] in a row. | Đạt mục tiêu tuần: {n} tuần liên tiếp. |
+| `celebrate.unlocked` | Neuer Erfolg: {name}, Stufe {level} | New achievement: {name}, level {level} | Thành tích mới: {name}, cấp {level} |
+| `celebrate.ok` | Weiter | Continue | Tiếp tục |
+| `a.daily.name` | Feuerfest | Fireproof | Lửa bền |
+| `a.daily.desc` | Tages-Flamme von {n} Tagen | Daily flame of {n} days | Lửa ngày {n} ngày |
+| `a.weekly.name` | Wochenwerk | Week by week | Tuần nối tuần |
+| `a.weekly.desc` | Wochen-Flamme von {n} Wochen | Weekly flame of {n} weeks | Lửa tuần {n} tuần |
+| `a.days.name` | Dauerbrenner | Slow burner | Bền bỉ |
+| `a.days.desc` | {n} aktive Tage insgesamt | {n} active days in total | Tổng cộng {n} ngày vận động |
+| `a.minutes.name` | Minutensammler | Minute collector | Góp từng phút |
+| `a.minutes.desc` | {n} aktive Minuten insgesamt | {n} active minutes in total | Tổng cộng {n} phút vận động |
+| `a.variety.name` | Allrounder | All-rounder | Toàn diện |
+| `a.variety.desc` | [[n\|Eine Woche\|{n} Wochen]] mit Kraft, Cardio und Mobility | [[n\|One week\|{n} weeks]] with strength, cardio and mobility | {n} tuần có sức mạnh, cardio và giãn cơ |
+| `a.comeback.name` | Comeback | Comeback | Trở lại |
+| `a.comeback.desc` | [[n\|Einmal\|{n} Mal]] nach mindestens einer Woche Pause neu gestartet | Restarted [[n\|once\|{n} times]] after at least a week off | Bắt đầu lại {n} lần sau ít nhất một tuần nghỉ |
+| `a.friends.name` | Freundeskreis | Inner circle | Vòng bạn bè |
+| `a.friends.desc` | [[n\|Ein Freund\|{n} Freunde]] | [[n\|One friend\|{n} friends]] | {n} bạn bè |
+| `a.team.name` | Teamplayer | Team player | Đồng đội |
+| `a.team.desc` | [[n\|Ein gemeinsames Ziel\|{n} gemeinsame Ziele]] geschafft | [[n\|One shared goal\|{n} shared goals]] reached | Đạt {n} mục tiêu chung |
+| `a.grit.name` | Eiserner Wille | Iron will | Ý chí thép |
+| `a.grit.desc` | [[n\|Eine Streak-Challenge\|{n} Streak-Challenges]] durchgehalten | [[n\|One streak challenge\|{n} streak challenges]] completed | Hoàn thành {n} thử thách liên tiếp |
+
+## social
+
+| Key | Deutsch | English | Tiếng Việt |
+|---|---|---|---|
+| `title` | Freunde | Friends | Bạn bè |
+| `eyebrow` | Gemeinsam dranbleiben | Keep going together | Cùng nhau kiên trì |
+| `menuD` | Freunde einladen und Challenges starten | Invite friends and start challenges | Mời bạn bè và bắt đầu thử thách |
+| `tabs.friends` | Freunde | Friends | Bạn bè |
+| `tabs.challenges` | Challenges | Challenges | Thử thách |
+| `offline` | Freunde und Challenges brauchen eine Internetverbindung. Du siehst den letzten Stand. | Friends and challenges need an internet connection. You see the last known state. | Bạn bè và thử thách cần kết nối internet. Bạn đang xem dữ liệu gần nhất. |
+| `name.title` | Wie sollen dich Freunde sehen? | How should friends see you? | Bạn bè sẽ thấy bạn với tên gì? |
+| `name.hint` | Freunde sehen deinen Namen, deine Flammen, deinen Wochenfortschritt und deine Erfolge. Training, Essen und Körperdaten bleiben privat. | Friends see your name, your flames, your weekly progress and your achievements. Workouts, food and body data stay private. | Bạn bè thấy tên, ngọn lửa, tiến độ tuần và thành tích của bạn. Buổi tập, ăn uống và số đo cơ thể vẫn riêng tư. |
+| `name.label` | Dein Name | Your name | Tên của bạn |
+| `name.save` | Speichern | Save | Lưu |
+| `invite.title` | Freund einladen | Invite a friend | Mời bạn bè |
+| `invite.text` | Schick deinen Link per Nachricht. Wer ihn annimmt, ist sofort mit dir befreundet. | Send your link in a message. Whoever accepts it is your friend right away. | Gửi đường link qua tin nhắn. Ai chấp nhận sẽ trở thành bạn bè ngay. |
+| `invite.share` | Link teilen | Share link | Chia sẻ link |
+| `invite.copied` | Link kopiert | Link copied | Đã sao chép link |
+| `invite.failed` | Teilen hat nicht geklappt. Gib deinen Code weiter: {code} | Sharing did not work. Pass on your code: {code} | Không chia sẻ được. Hãy gửi mã của bạn: {code} |
+| `invite.code` | Dein Code | Your code | Mã của bạn |
+| `invite.rotate` | Neuen Link erzeugen | Create a new link | Tạo link mới |
+| `invite.rotateConfirm` | Dein alter Link funktioniert dann nicht mehr. Fortfahren? | Your old link will stop working. Continue? | Link cũ sẽ không dùng được nữa. Tiếp tục? |
+| `invite.rotated` | Neuer Link erzeugt | New link created | Đã tạo link mới |
+| `invite.shareText` | Trainier mit mir in Zyklus und lass uns gegenseitig motivieren: | Train with me in Zyklus and let us keep each other going: | Tập cùng mình trên Zyklus để động viên nhau nhé: |
+| `invite.enter` | Code von einem Freund | Code from a friend | Mã từ bạn bè |
+| `invite.enterGo` | Öffnen | Open | Mở |
+| `empty` | Noch keine Freunde. Lade jemanden ein, dann motiviert ihr euch gegenseitig. | No friends yet. Invite someone and keep each other motivated. | Chưa có bạn bè. Mời ai đó để cùng nhau động viên. |
+| `friend.active` | heute aktiv | active today | hôm nay đã vận động |
+| `friend.atRisk` | heute noch offen | still open today | hôm nay chưa vận động |
+| `friend.paused` | pausiert | paused | tạm dừng |
+| `friend.idle` | noch keine Flamme | no flame yet | chưa có ngọn lửa |
+| `friend.week` | Woche {n}/{goal} | Week {n}/{goal} | Tuần {n}/{goal} |
+| `friend.flames` | Tages-Flamme {d}, Wochen-Flamme {w} | Daily flame {d}, weekly flame {w} | Lửa ngày {d}, lửa tuần {w} |
+| `friend.best` | Rekorde: {d} Tage, {w} Wochen | Records: {d} days, {w} weeks | Kỷ lục: {d} ngày, {w} tuần |
+| `friend.since` | Freunde seit {date} | Friends since {date} | Bạn bè từ {date} |
+| `friend.unnamed` | Ohne Namen | No name | Chưa có tên |
+| `friend.remove` | Freund entfernen | Remove friend | Xóa bạn |
+| `friend.removeConfirm` | {name} als Freund entfernen? | Remove {name} as a friend? | Xóa {name} khỏi danh sách bạn bè? |
+| `friend.removed` | Freund entfernt | Friend removed | Đã xóa bạn |
+| `accept.title` | Einladung | Invitation | Lời mời |
+| `accept.text` | {name} lädt dich ein. Als Freunde seht ihr gegenseitig eure Flammen und Erfolge. | {name} invites you. As friends you see each other’s flames and achievements. | {name} mời bạn. Khi là bạn bè, hai bạn thấy ngọn lửa và thành tích của nhau. |
+| `accept.go` | Annehmen | Accept | Chấp nhận |
+| `accept.self` | Das ist deine eigene Einladung. Schick den Link an einen Freund. | This is your own invitation. Send the link to a friend. | Đây là lời mời của chính bạn. Hãy gửi link cho bạn bè. |
+| `accept.already` | Ihr seid schon befreundet. | You are already friends. | Hai bạn đã là bạn bè. |
+| `accept.done` | Ihr seid jetzt Freunde | You are friends now | Hai bạn đã là bạn bè |
+| `accept.toFriends` | Zu deinen Freunden | Go to your friends | Đến danh sách bạn bè |
+| `ch.empty` | Noch keine Challenge. Starte eine und lade Freunde ein. | No challenge yet. Start one and invite friends. | Chưa có thử thách. Hãy bắt đầu một thử thách và mời bạn bè. |
+| `ch.create` | Challenge starten | Start a challenge | Bắt đầu thử thách |
+| `ch.goal` | Gemeinsames Ziel | Shared goal | Mục tiêu chung |
+| `ch.streak` | Streak-Challenge | Streak challenge | Thử thách liên tiếp |
+| `ch.goalD` | Ihr sammelt zusammen aktive Tage oder Minuten. | You collect active days or minutes together. | Cả nhóm cùng góp ngày vận động hoặc số phút. |
+| `ch.streakD` | Alle sind jeden Tag aktiv. Wer einen Tag verpasst, ist raus. Urlaub und krank zählen nicht als verpasst. | Everyone is active every day. Miss a day and you are out. Vacation and sick days do not count as missed. | Mọi người vận động mỗi ngày. Bỏ lỡ một ngày là bị loại. Ngày nghỉ phép và ốm không tính là bỏ lỡ. |
+| `ch.metric` | Was zählt | What counts | Tính theo |
+| `ch.activeDays` | Aktive Tage | Active days | Ngày vận động |
+| `ch.minutes` | Minuten | Minutes | Phút |
+| `ch.target` | Ziel der Gruppe | Group goal | Mục tiêu của nhóm |
+| `ch.duration` | Dauer | Duration | Thời gian |
+| `ch.daysN` | {n} Tage | {n} days | {n} ngày |
+| `ch.titleLabel` | Name (optional) | Name (optional) | Tên (không bắt buộc) |
+| `ch.inviteFriends` | Freunde einladen | Invite friends | Mời bạn bè |
+| `ch.start` | Starten | Start | Bắt đầu |
+| `ch.created` | Challenge gestartet | Challenge started | Đã bắt đầu thử thách |
+| `ch.defaultGoal` | Zusammen {target} {unit} | Together {target} {unit} | Cùng nhau {target} {unit} |
+| `ch.defaultStreak` | {n} Tage am Stück | {n} days in a row | {n} ngày liên tiếp |
+| `ch.unitDays` | aktive Tage | active days | ngày vận động |
+| `ch.unitMinutes` | Minuten | minutes | phút |
+| `ch.memberDays` | {n} [[n\|aktiver Tag\|aktive Tage]] | {n} active [[n\|day\|days]] | {n} ngày vận động |
+| `ch.memberMinutes` | {n} Min. | {n} min | {n} phút |
+| `ch.progress` | {total} von {target} {unit} | {total} of {target} {unit} | {total} trên {target} {unit} |
+| `ch.range` | {start} bis {end} | {start} to {end} | {start} đến {end} |
+| `ch.left` | noch [[n\|1 Tag\|{n} Tage]] | [[n\|1 day\|{n} days]] left | còn {n} ngày |
+| `ch.status.running` | läuft | running | đang diễn ra |
+| `ch.status.done` | geschafft | done | hoàn thành |
+| `ch.status.failed` | nicht geschafft | missed | chưa đạt |
+| `ch.status.over` | vorbei | over | đã kết thúc |
+| `ch.status.out` | raus | out | bị loại |
+| `ch.members` | Dabei | Taking part | Tham gia |
+| `ch.you` | du | you | bạn |
+| `ch.share` | Link zur Challenge teilen | Share challenge link | Chia sẻ link thử thách |
+| `ch.shareText` | Mach mit bei meiner Challenge in Zyklus: | Join my challenge in Zyklus: | Tham gia thử thách của mình trên Zyklus: |
+| `ch.add` | Freunde hinzufügen | Add friends | Thêm bạn bè |
+| `ch.addGo` | Hinzufügen | Add | Thêm |
+| `ch.leave` | Challenge verlassen | Leave challenge | Rời thử thách |
+| `ch.leaveConfirm` | Challenge wirklich verlassen? | Really leave the challenge? | Bạn thật sự muốn rời thử thách? |
+| `ch.leftDone` | Challenge verlassen | Challenge left | Đã rời thử thách |
+| `ch.past` | Vergangen | Past | Đã qua |
+| `ch.join` | Mitmachen | Join | Tham gia |
+| `ch.joined` | Du machst mit | You are in | Bạn đã tham gia |
+| `ch.joinTitle` | Challenge | Challenge | Thử thách |
+| `err.invite_unknown` | Diese Einladung gibt es nicht (mehr). | This invitation does not exist (anymore). | Lời mời này không tồn tại (nữa). |
+| `err.invite_self` | Das ist deine eigene Einladung. | This is your own invitation. | Đây là lời mời của chính bạn. |
+| `err.friend_limit` | Mehr als 50 Freunde gehen nicht. | More than 50 friends are not possible. | Không thể có quá 50 bạn bè. |
+| `err.challenge_unknown` | Diese Challenge gibt es nicht (mehr). | This challenge does not exist (anymore). | Thử thách này không tồn tại (nữa). |
+| `err.challenge_over` | Diese Challenge ist schon vorbei. | This challenge is already over. | Thử thách này đã kết thúc. |
+| `err.challenge_full` | Die Challenge ist voll (10 Leute). | The challenge is full (10 people). | Thử thách đã đủ người (10 người). |
+| `err.challenge_invalid` | Bitte prüfe die Angaben der Challenge. | Please check the challenge details. | Vui lòng kiểm tra thông tin thử thách. |
+| `err.rate` | Zu viele Versuche. Warte ein paar Minuten. | Too many attempts. Wait a few minutes. | Quá nhiều lần thử. Hãy đợi vài phút. |
+| `err.not_found` | Nicht gefunden. | Not found. | Không tìm thấy. |
+
 ## Übungen / Exercises / Bài tập
 
 | ID | Deutsch | English | Tiếng Việt |
@@ -872,6 +1076,7 @@ Generiert mit `pnpm i18n:review`. Korrekturen direkt in `src/i18n/ns/*.ts` bzw. 
 | `schraegbank-kh` | **Schrägbankdrücken (Kurzhantel)**<br>Bank auf 30° einstellen<br>Hanteln seitlich der oberen Brust absenken<br>Oben leicht zueinander führen | **Incline bench press (dumbbells)**<br>Set the bench to 30°<br>Lower the dumbbells beside the upper chest<br>Bring them slightly together at the top | **Đẩy ngực dốc lên với tạ đơn**<br>Chỉnh ghế dốc 30°<br>Hạ tạ hai bên ngực trên<br>Đưa tạ hơi chụm vào ở trên |
 | `schraegbank-maschine` | **Schrägbank-Brustpresse (Maschine)**<br>Griffe auf Höhe der oberen Brust<br>Brust raus, Schultern unten<br>Kontrolliert zurück | **Incline chest press (machine)**<br>Handles at upper chest height<br>Chest up, shoulders down<br>Return under control | **Máy đẩy ngực dốc lên**<br>Tay cầm ngang ngực trên<br>Ưỡn ngực, hạ vai<br>Trở về có kiểm soát |
 | `liegestuetze-erhoeht` | **Liegestütze mit erhöhten Füßen**<br>Füße auf Stuhl oder Bank<br>Rumpf fest, kein Hohlkreuz<br>Kopf in Verlängerung der Wirbelsäule | **Feet-elevated push-ups**<br>Feet on a chair or bench<br>Brace the core, no sagging hips<br>Head in line with the spine | **Hít đất gác chân cao**<br>Đặt chân lên ghế hoặc băng ghế<br>Siết bụng, không võng lưng<br>Đầu thẳng hàng với cột sống |
+| `decline-defizit-liegestuetze` | **Decline-Defizit-Liegestütze**<br>Füße auf Stuhl oder Bank, Hände auf Büchern oder Griffen<br>Brust tiefer als die Hände absenken, Dehnung spüren<br>Rumpf fest, kein Hohlkreuz | **Decline deficit push-ups**<br>Feet on a chair or bench, hands on books or handles<br>Lower the chest below the hands and feel the stretch<br>Brace the core, no sagging hips | **Hít đất chân cao biên độ sâu**<br>Chân đặt lên ghế, tay chống trên sách hoặc tay cầm<br>Hạ ngực thấp hơn hai tay, cảm nhận độ căng<br>Siết bụng, không võng lưng |
 | `kabel-fliegende` | **Fliegende am Kabelzug**<br>Leicht gebeugte, fixierte Ellbogen<br>Hände in einem Bogen vor der Brust zusammenführen<br>Langsam bis zur Dehnung öffnen | **Cable fly**<br>Slightly bent, fixed elbows<br>Bring the hands together in an arc in front of the chest<br>Open slowly into the stretch | **Ép ngực với máy cáp**<br>Khuỷu tay hơi cong và giữ cố định<br>Đưa hai tay theo hình vòng cung trước ngực<br>Mở ra chậm đến khi ngực giãn |
 | `butterfly` | **Butterfly (Maschine)**<br>Griffe auf Brusthöhe<br>Ellbogen leicht gebeugt<br>Kurz halten in der Kontraktion | **Pec deck (machine)**<br>Handles at chest height<br>Elbows slightly bent<br>Squeeze briefly at the end | **Máy ép ngực (Butterfly)**<br>Tay cầm ngang ngực<br>Khuỷu tay hơi cong<br>Giữ một nhịp khi ép hết |
 | `kh-fliegende` | **Fliegende (Kurzhantel)**<br>Arme leicht gebeugt fixieren<br>Nur so tief, wie die Schulter es angenehm zulässt<br>Bewegung aus dem Schultergelenk | **Dumbbell fly**<br>Lock the arms in a slight bend<br>Only go as deep as the shoulder allows comfortably<br>Move from the shoulder joint | **Bay ngực với tạ đơn**<br>Giữ tay hơi cong cố định<br>Chỉ hạ sâu trong giới hạn thoải mái của vai<br>Chuyển động từ khớp vai |
@@ -889,6 +1094,7 @@ Generiert mit `pnpm i18n:review`. Korrekturen direkt in `src/i18n/ns/*.ts` bzw. 
 | `kh-rudern-schraeg` | **Brustgestütztes Kurzhantelrudern**<br>Bauchlage auf Schrägbank<br>Ellbogen nach hinten oben<br>Kurz halten | **Chest-supported dumbbell row**<br>Lie face down on an incline bench<br>Elbows back and up<br>Hold briefly | **Kéo tạ đơn nằm sấp ghế dốc**<br>Nằm sấp trên ghế dốc<br>Kéo khuỷu tay ra sau và lên<br>Giữ một nhịp |
 | `band-rudern` | **Rudern mit Band**<br>Band auf Brusthöhe befestigen<br>Ellbogen eng nach hinten<br>Schulterblätter zusammendrücken | **Band row**<br>Anchor the band at chest height<br>Elbows close and back<br>Squeeze the shoulder blades | **Kéo lưng với dây kháng lực**<br>Cố định dây ngang ngực<br>Kéo khuỷu tay sát thân ra sau<br>Siết hai bả vai |
 | `umgekehrtes-rudern` | **Umgekehrtes Rudern (Tisch oder Stange)**<br>Unter einem stabilen Tisch liegen<br>Brust zur Kante ziehen<br>Körper bleibt gerade | **Inverted row (table or bar)**<br>Lie under a sturdy table<br>Pull the chest to the edge<br>Keep the body straight | **Kéo người ngược (dưới bàn hoặc xà)**<br>Nằm dưới một chiếc bàn chắc chắn<br>Kéo ngực lên mép bàn<br>Giữ thân thẳng |
+| `rudern-kammgriff` | **Umgekehrtes Rudern im Untergriff**<br>Hände schulterbreit, Handflächen zeigen zu dir<br>Ellbogen Richtung Hüfte ziehen, Schulterblätter zusammen<br>Körper bleibt gerade, langsam absenken | **Supinated inverted row**<br>Hands shoulder width, palms facing you<br>Drive the elbows towards the hips, squeeze the shoulder blades<br>Keep the body straight, lower slowly | **Kéo người ngược tay ngửa**<br>Hai tay rộng bằng vai, lòng bàn tay hướng về phía bạn<br>Kéo khuỷu tay về phía hông, siết hai bả vai<br>Giữ thân thẳng, hạ xuống chậm |
 | `schulterdruecken-kh` | **Schulterdrücken (Kurzhantel, sitzend)**<br>Lehne steil einstellen<br>Hanteln bis Kinnhöhe senken<br>Nicht ins Hohlkreuz fallen | **Seated dumbbell shoulder press**<br>Set the backrest upright<br>Lower the dumbbells to chin height<br>Do not arch the lower back | **Đẩy vai ngồi với tạ đơn**<br>Dựng thẳng lưng ghế<br>Hạ tạ đến ngang cằm<br>Không ưỡn lưng dưới |
 | `military-press` | **Schulterdrücken stehend (Langhantel)**<br>Gesäß und Bauch anspannen<br>Stange nah am Gesicht vorbei<br>Oben Kopf durch die Arme | **Standing barbell overhead press**<br>Brace glutes and core<br>Bar travels close past the face<br>Head through the arms at the top | **Đẩy tạ đòn qua đầu đứng (Overhead press)**<br>Siết mông và bụng<br>Thanh tạ đi sát mặt<br>Ở trên, đầu nằm giữa hai tay |
 | `schulterpresse` | **Schulterpresse (Maschine)**<br>Griffe auf Schulterhöhe<br>Rücken an der Lehne<br>Oben nicht durchstrecken | **Shoulder press (machine)**<br>Handles at shoulder height<br>Back against the pad<br>Do not lock out hard at the top | **Máy đẩy vai**<br>Tay cầm ngang vai<br>Lưng áp vào đệm<br>Không khóa khuỷu tay mạnh ở trên |
@@ -930,11 +1136,14 @@ Generiert mit `pnpm i18n:review`. Korrekturen direkt in `src/i18n/ns/*.ts` bzw. 
 | `hip-thrust` | **Hip Thrust (Langhantel)**<br>Oberer Rücken auf der Bank<br>Kinn zur Brust<br>Oben Gesäß fest anspannen | **Hip thrust (barbell)**<br>Upper back on the bench<br>Chin to the chest<br>Squeeze the glutes hard at the top | **Hip thrust với tạ đòn**<br>Lưng trên tựa lên ghế<br>Cằm hướng về ngực<br>Siết mông mạnh ở trên |
 | `kb-swing` | **Kettlebell Swings**<br>Explosive Hüftstreckung<br>Arme sind nur Seile<br>Rücken neutral | **Kettlebell swings**<br>Explosive hip extension<br>Arms are just ropes<br>Neutral back | **Vung tạ ấm (Kettlebell swing)**<br>Duỗi hông bùng nổ<br>Tay chỉ như sợi dây<br>Lưng trung tính |
 | `einbeinige-bruecke` | **Einbeinige Glute Bridge**<br>Ein Fuß aufgestellt, anderes Bein gestreckt<br>Hüfte hoch bis zur Linie<br>Oben 1 Sekunde halten | **Single-leg glute bridge**<br>One foot planted, other leg straight<br>Hips up into a line<br>Hold for 1 second at the top | **Nâng hông một chân (Glute bridge)**<br>Một chân đặt sàn, chân kia duỗi thẳng<br>Nâng hông thành một đường thẳng<br>Giữ 1 giây ở trên |
+| `hueftbeuge-fixiert` | **Hüftbeuge kniend (Füße fixiert)**<br>Knie auf weicher Unterlage, Füße unter Sofa oder Bett fixieren<br>Hüfte nach hinten, Oberkörper mit geradem Rücken nach vorn neigen<br>Aus Beinbeugern und Gesäß zurück nach oben, wie beim Kreuzheben | **Kneeling hip hinge (feet anchored)**<br>Knees on a soft surface, feet anchored under a sofa or bed<br>Push the hips back and tilt the torso forward with a straight back<br>Come back up with hamstrings and glutes, like a deadlift | **Gập hông khi quỳ (cố định chân)**<br>Quỳ trên nền mềm, móc chân dưới sofa hoặc giường<br>Đẩy hông ra sau, nghiêng thân về trước, lưng thẳng<br>Dùng đùi sau và mông kéo người lên, như deadlift |
 | `bulgarian-kh` | **Bulgarische Split Squats (Kurzhantel)**<br>Hinterer Fuß auf der Bank<br>Senkrecht nach unten sinken<br>Vorderes Knie stabil | **Bulgarian split squats (dumbbells)**<br>Rear foot on the bench<br>Sink straight down<br>Keep the front knee stable | **Bulgarian split squat với tạ đơn**<br>Chân sau gác lên ghế<br>Hạ người thẳng xuống<br>Gối trước giữ vững |
 | `ausfallschritte-kh` | **Ausfallschritte (Kurzhantel)**<br>Großer Schritt nach vorn<br>Hinteres Knie fast zum Boden<br>Oberkörper aufrecht | **Lunges (dumbbells)**<br>Big step forward<br>Rear knee almost to the floor<br>Torso upright | **Chùng chân (Lunge) với tạ đơn**<br>Bước dài về trước<br>Gối sau gần chạm sàn<br>Thân thẳng |
 | `step-ups` | **Step-ups (Kurzhantel)**<br>Ganzer Fuß auf der Box<br>Über das vordere Bein hochdrücken<br>Langsam absteigen | **Step-ups (dumbbells)**<br>Whole foot on the box<br>Push up through the front leg<br>Step down slowly | **Bước lên bục với tạ đơn**<br>Đặt cả bàn chân lên bục<br>Đẩy người lên bằng chân trước<br>Bước xuống chậm |
 | `bulgarian-kg` | **Bulgarische Split Squats (Körpergewicht)**<br>Hinterer Fuß auf Stuhl oder Sofa<br>Langsam absenken<br>Druck über die vordere Ferse | **Bulgarian split squats (bodyweight)**<br>Rear foot on a chair or sofa<br>Lower slowly<br>Drive through the front heel | **Bulgarian split squat không tạ**<br>Chân sau gác lên ghế hoặc sofa<br>Hạ người chậm<br>Đẩy lên bằng gót chân trước |
 | `ausfallschritte-kg` | **Ausfallschritte rückwärts**<br>Schritt nach hinten<br>Hinteres Knie Richtung Boden<br>Über die vordere Ferse zurück | **Reverse lunges**<br>Step backwards<br>Rear knee towards the floor<br>Return through the front heel | **Chùng chân lùi**<br>Bước lùi ra sau<br>Gối sau hạ về phía sàn<br>Trở về bằng gót chân trước |
+| `pistol-squat` | **Pistol Squats**<br>Auf einem Bein stehen, das andere gestreckt nach vorn<br>Langsam tief in die Hocke, Ferse bleibt am Boden<br>Arme nach vorn als Gegengewicht, ohne Schwung hochdrücken | **Pistol squats**<br>Stand on one leg, the other straight out in front<br>Sink slowly into a deep squat, heel stays down<br>Arms forward as a counterweight, press up without swinging | **Pistol squat (squat một chân)**<br>Đứng một chân, chân kia duỗi thẳng ra trước<br>Hạ thấp chậm, gót chân không nhấc<br>Đưa tay ra trước giữ thăng bằng, đứng lên không lấy đà |
+| `pistol-box` | **Pistol Squats auf Bank oder Stuhl**<br>Vor Bank oder Stuhl stehen, ein Bein nach vorn<br>Auf einem Bein langsam absetzen<br>Über die Ferse ohne Schwung aufstehen | **Box pistol squats (bench or chair)**<br>Stand in front of a bench or chair, one leg forward<br>Sit down slowly on one leg<br>Stand up through the heel without swinging | **Pistol squat ngồi xuống ghế**<br>Đứng trước ghế dài hoặc ghế, một chân đưa ra trước<br>Ngồi xuống chậm bằng một chân<br>Đẩy qua gót chân đứng lên, không lấy đà |
 | `beinstrecker` | **Beinstrecker (Maschine)**<br>Knie auf Höhe der Drehachse<br>Oben 1 Sekunde halten<br>Langsam ablassen | **Leg extension (machine)**<br>Knees in line with the pivot<br>Hold 1 second at the top<br>Lower slowly | **Máy đá đùi trước (Leg extension)**<br>Gối thẳng hàng với trục xoay<br>Giữ 1 giây ở trên<br>Hạ chậm |
 | `sissy-squat` | **Sissy Squat (unterstützt)**<br>An einer Tür oder Stange festhalten<br>Knie nach vorn, Körper nach hinten lehnen<br>Nur so tief, wie es die Knie zulassen | **Sissy squat (assisted)**<br>Hold on to a door or bar<br>Knees forward, lean the body back<br>Only as deep as the knees allow | **Sissy squat (có vịn)**<br>Vịn vào cửa hoặc thanh xà<br>Đẩy gối về trước, ngả thân ra sau<br>Chỉ hạ sâu trong giới hạn của gối |
 | `spanish-squat` | **Spanish Squat (Band)**<br>Band hinter den Knien befestigen<br>Nach hinten lehnen und tief sitzen<br>Schienbeine senkrecht | **Spanish squat (band)**<br>Anchor the band behind the knees<br>Lean back and sit deep<br>Shins vertical | **Spanish squat (dây kháng lực)**<br>Cố định dây sau đầu gối<br>Ngả người ra sau và ngồi sâu<br>Cẳng chân thẳng đứng |
@@ -956,6 +1165,8 @@ Generiert mit `pnpm i18n:review`. Korrekturen direkt in `src/i18n/ns/*.ts` bzw. 
 | `crunches` | **Crunches**<br>Lendenwirbel am Boden<br>Schultern einrollen<br>Ausatmen beim Hochkommen | **Crunches**<br>Lower back on the floor<br>Curl the shoulders up<br>Breathe out as you come up | **Gập bụng (Crunch)**<br>Lưng dưới áp sàn<br>Cuộn vai lên<br>Thở ra khi gập lên |
 | `dead-bug` | **Dead Bug**<br>Lendenwirbel an den Boden drücken<br>Gegengleich Arm und Bein strecken<br>Langsam und kontrolliert | **Dead bug**<br>Press the lower back into the floor<br>Extend opposite arm and leg<br>Slow and controlled | **Dead bug**<br>Ép lưng dưới xuống sàn<br>Duỗi tay và chân đối diện<br>Chậm và có kiểm soát |
 | `beinheben-liegend` | **Beinheben liegend**<br>Hände unter das Gesäß<br>Beine gestreckt heben<br>Unten nicht ablegen | **Lying leg raise**<br>Hands under the glutes<br>Raise straight legs<br>Do not rest them at the bottom | **Nằm nâng chân**<br>Đặt tay dưới mông<br>Nâng hai chân thẳng<br>Không đặt chân xuống sàn ở dưới |
+| `dragon-flag` | **Dragon Flag**<br>Hinter dem Kopf an Bank oder schwerem Möbel festhalten<br>Körper gestreckt wie ein Brett, nur die Schultern liegen auf<br>Langsam absenken, kein Hohlkreuz | **Dragon flag**<br>Hold on to a bench or heavy furniture behind your head<br>Body straight like a plank, only the shoulders stay down<br>Lower slowly, no arched lower back | **Dragon flag**<br>Bám vào ghế hoặc đồ nặng phía sau đầu<br>Thân thẳng như tấm ván, chỉ vai chạm sàn<br>Hạ xuống chậm, không võng lưng |
+| `dragon-flag-tuck` | **Dragon Flag mit angewinkelten Beinen**<br>Hinter dem Kopf festhalten, Knie angewinkelt<br>Hüfte gestreckt, nur die Schultern liegen auf<br>Langsam absenken, kein Hohlkreuz | **Tuck dragon flag**<br>Hold on behind your head, knees bent<br>Hips extended, only the shoulders stay down<br>Lower slowly, no arched lower back | **Dragon flag co gối**<br>Bám phía sau đầu, gập gối<br>Duỗi hông, chỉ vai chạm sàn<br>Hạ xuống chậm, không võng lưng |
 | `handgelenkcurls` | **Handgelenkcurls (Kurzhantel)**<br>Unterarme auf der Bank<br>Nur das Handgelenk bewegt sich<br>Volle Bewegung | **Wrist curls (dumbbell)**<br>Forearms on the bench<br>Only the wrist moves<br>Full range of motion | **Cuốn cổ tay với tạ đơn**<br>Cẳng tay đặt trên ghế<br>Chỉ cổ tay chuyển động<br>Biên độ đầy đủ |
 | `farmers-walk-reps` | **Farmer Holds (Kurzhantel, Sekunden als Wdh.)**<br>Schwere Hanteln seitlich halten<br>Schultern unten, aufrecht<br>Jede Wiederholung = 5 Sekunden halten | **Farmer holds (dumbbells, seconds as reps)**<br>Hold heavy dumbbells at your sides<br>Shoulders down, stand tall<br>Each rep = hold 5 seconds | **Giữ tạ (Farmer hold, giây tính như lần)**<br>Giữ tạ nặng hai bên người<br>Hạ vai, đứng thẳng<br>Mỗi lần = giữ 5 giây |
 | `toter-hang` | **Toter Hang (Sekunden als Wdh.)**<br>Locker an der Stange hängen<br>Schultern leicht aktiv<br>Jede Wiederholung = 5 Sekunden | **Dead hang (seconds as reps)**<br>Hang relaxed from the bar<br>Shoulders slightly active<br>Each rep = 5 seconds | **Treo xà (giây tính như lần)**<br>Treo người thả lỏng trên xà<br>Vai hơi chủ động<br>Mỗi lần = 5 giây |

@@ -4,7 +4,7 @@ let counter = 0
 /** Create a fresh account; the app then shows onboarding. */
 async function signUp(page: Page, email = `e2e-${Date.now()}-${counter++}-${Math.random().toString(36).slice(2, 8)}@example.test`, password = 'ein-langes-test-passwort') {
   await page.goto('/')
-  await page.getByRole('button', { name: 'Registrieren' }).click()
+  await page.getByRole('radio', { name: 'Registrieren' }).click()
   await page.getByLabel('E-Mail').fill(email)
   await page.getByLabel('Passwort').fill(password)
   await page.getByRole('checkbox').check()
@@ -39,7 +39,7 @@ test('onboarding, workout with test set, finish', async ({ page }) => {
   await page.getByRole('dialog').getByRole('button', { name: 'Training starten' }).click()
   await expect(page).toHaveURL(/#\/training/)
 
-  const first = page.locator('section.card').first()
+  const first = page.locator('[data-slot="card"]').first()
   await first.getByLabel('Gewicht Satz T').fill('60')
   await first.getByLabel('Wiederholungen Satz T').fill('10')
   await first.getByRole('button', { name: 'Satz T abhaken' }).click()
@@ -53,6 +53,12 @@ test('onboarding, workout with test set, finish', async ({ page }) => {
   await page.getByRole('dialog').getByRole('button', { name: 'Speichern' }).click()
   await expect(page.getByText('Woche 1/5 · Einheit 2/3')).toBeVisible()
 
+  // the first workout lights the daily flame and celebrates it once
+  const party = page.getByRole('dialog').filter({ hasText: 'Deine Flamme brennt' })
+  await expect(party).toBeVisible()
+  await party.getByRole('button', { name: 'Weiter' }).click()
+  await expect(page.getByRole('link', { name: /Tages-Flamme: 1 Tag/ })).toBeVisible()
+
   // survives a reload (persisted)
   await page.reload()
   await expect(page.getByText('Woche 1/5 · Einheit 2/3')).toBeVisible()
@@ -64,10 +70,10 @@ test('onboarding, workout with test set, finish', async ({ page }) => {
   await page.keyboard.press('Enter')
   await expect(page.getByRole('dialog', { name: 'Brust' })).toBeVisible()
   await page.getByRole('button', { name: 'Schließen' }).click()
-  await page.getByRole('button', { name: 'Erholung' }).click()
+  await page.getByRole('radio', { name: 'Erholung' }).click()
   await expect(figure.getByRole('button', { name: /^Brust: (Belastet|Erholt sich|Keine Daten)$/ })).toBeVisible()
 
-  await page.getByRole('button', { name: 'Verlauf' }).click()
+  await page.getByRole('radio', { name: 'Verlauf' }).click()
   await expect(page.getByText('Ganzkörper A').first()).toBeVisible()
 })
 
@@ -83,11 +89,76 @@ test('mobility: the player shows the move animation', async ({ page }) => {
   await expect(dialog.getByRole('img', { name: /^Animation:/ }).locator('svg')).toBeVisible()
 })
 
+test('flames: 15 minutes of cardio light the flame, achievements page and weekly goal', async ({ page }) => {
+  await onboard(page)
+  await expect(page.getByText('Zünde deine Flamme')).toBeVisible()
+  await page.getByRole('link', { name: 'Cardio' }).click()
+  // 30 minutes by default, down to 15
+  for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Dauer verringern' }).click()
+  await page.getByRole('button', { name: 'Eintragen' }).click()
+  const party = page.getByRole('dialog').filter({ hasText: 'Deine Flamme brennt' })
+  await expect(party).toBeVisible()
+  await party.getByRole('button', { name: 'Weiter' }).click()
+
+  await page.goto('/#/erfolge')
+  await expect(page.getByRole('heading', { name: 'Flammen und Erfolge' })).toBeVisible()
+  await expect(page.getByText('Heute erledigt, deine Flamme brennt.')).toBeVisible()
+  await expect(page.getByText('Diese Woche: 1 von 3 aktiven Tagen')).toBeVisible()
+  await page.getByRole('button', { name: 'Wochenziel in aktiven Tagen verringern' }).click()
+  await page.getByRole('button', { name: 'Wochenziel in aktiven Tagen verringern' }).click()
+  // reaching the weekly goal is celebrated (the modal sheet hides the page from assistive tech meanwhile)
+  const week = page.getByRole('dialog', { name: 'Wochenziel geschafft' })
+  await expect(week.getByText('Woche in Folge')).toBeVisible()
+  await week.getByRole('button', { name: 'Weiter' }).click()
+  await expect(page.getByRole('main').getByRole('heading', { name: 'Wochenziel geschafft' })).toBeVisible()
+  await page.getByRole('button', { name: /Feuerfest/ }).click()
+  await expect(page.getByRole('dialog').getByText('Tages-Flamme von 3 Tagen')).toBeVisible()
+})
+
+test('friends: invite link, see the flame of the friend, shared goal challenge', async ({ page, browser }) => {
+  const a = page
+  await onboard(a)
+  await a.goto('/#/freunde')
+  const code = (await a.getByText(/^[A-Z2-9]{8}$/).textContent())!
+
+  // B opens A's link, accepts and lights the flame with cardio
+  const ctx = await browser.newContext(test.info().project.use)
+  const b = await ctx.newPage()
+  await onboard(b)
+  await b.goto(`/#/einladung/${code}`)
+  await expect(b.getByText('Testi lädt dich ein.')).toBeVisible()
+  await b.getByRole('button', { name: 'Annehmen' }).click()
+  await expect(b.getByRole('heading', { name: 'Freunde', exact: true })).toBeVisible()
+  await expect(b.getByRole('button', { name: /Testi/ })).toBeVisible()
+  await b.goto('/#/cardio')
+  await b.getByRole('button', { name: 'Eintragen' }).click()
+  await b.getByRole('dialog').getByRole('button', { name: 'Weiter' }).click()
+
+  // A sees B active today once B's upload is through
+  await expect(async () => {
+    await a.reload()
+    await expect(a.getByText(/heute aktiv/)).toBeVisible({ timeout: 1000 })
+  }).toPass({ timeout: 15_000 })
+
+  // A starts a shared goal with B: B's active day already counts
+  await a.getByRole('radio', { name: 'Challenges' }).click()
+  await a.getByRole('button', { name: 'Challenge starten' }).click()
+  const sheet = a.getByRole('dialog')
+  await sheet.getByRole('button', { name: 'Testi' }).click()
+  await sheet.getByRole('button', { name: 'Starten' }).click()
+  await expect(a.getByRole('dialog').getByText('1 von 10 aktive Tage')).toBeVisible()
+
+  await b.goto('/#/freunde')
+  await b.getByRole('radio', { name: 'Challenges' }).click()
+  await expect(b.getByText('Zusammen 10 aktive Tage')).toBeVisible()
+  await ctx.close()
+})
+
 test('today: change the training days in the week strip', async ({ page }) => {
   await onboard(page)
   await expect(page.getByText('Woche 1/5 · Einheit 1/3')).toBeVisible()
   // the card keeps its height when editing starts, nothing below jumps
-  const card = page.locator('.card').filter({ has: page.getByRole('heading', { name: 'Diese Woche' }) })
+  const card = page.locator('[data-slot="card"]').filter({ has: page.getByRole('heading', { name: 'Diese Woche' }) })
   const before = (await card.boundingBox())!.height
   await page.getByRole('button', { name: 'Trainingstage ändern' }).click()
   await expect(page.getByRole('button', { name: 'Fertig' })).toBeVisible()
@@ -116,7 +187,7 @@ test('plan: switch to the Winter Arc program and back', async ({ page }) => {
   await expect(page.getByText('Aktiv: Automatisch')).toBeVisible()
   await page.getByRole('button', { name: 'Programm wechseln' }).click()
   const sheet = page.getByRole('dialog', { name: 'Programm' })
-  await sheet.getByRole('button', { name: 'Winter Arc' }).click()
+  await sheet.getByRole('radio', { name: 'Winter Arc' }).click()
   await expect(sheet.getByText(/Kevin Zhang/)).toBeVisible()
   page.once('dialog', (d) => d.accept())
   await sheet.getByRole('button', { name: 'Übernehmen' }).click()
@@ -131,7 +202,7 @@ test('plan: switch to the Winter Arc program and back', async ({ page }) => {
   await page.getByRole('button', { name: 'Schließen' }).click()
 
   await page.getByRole('button', { name: 'Programm wechseln' }).click()
-  await sheet.getByRole('button', { name: 'Automatisch' }).click()
+  await sheet.getByRole('radio', { name: 'Automatisch' }).click()
   page.once('dialog', (d) => d.accept())
   await sheet.getByRole('button', { name: 'Übernehmen' }).click()
   await expect(page.getByText('Aktiv: Automatisch')).toBeVisible()
@@ -143,7 +214,7 @@ test('nutrition: free text, recipe, supplements', async ({ page }) => {
   await page.getByRole('link', { name: 'Ernährung' }).click()
 
   await page.getByRole('button', { name: 'Zu Frühstück hinzufügen' }).click()
-  await page.getByRole('button', { name: 'Text', exact: true }).click()
+  await page.getByRole('radio', { name: 'Text', exact: true }).click()
   await page.getByLabel('Mahlzeit als Text').fill('80g Haferflocken, 250g Skyr und 1 Banane')
   await page.getByRole('button', { name: '3 Lebensmittel eintragen' }).click()
   await expect(page.getByText('Skyr natur')).toBeVisible()
@@ -153,7 +224,7 @@ test('nutrition: free text, recipe, supplements', async ({ page }) => {
   await page.getByRole('dialog').getByRole('button', { name: 'Speichern' }).click()
 
   await page.getByRole('button', { name: 'Zu Snacks hinzufügen' }).click()
-  await page.getByRole('button', { name: 'Rezepte' }).click()
+  await page.getByRole('radio', { name: 'Rezepte' }).click()
   await page.getByRole('button', { name: /^Skyr-Bowl/ }).click()
   await page.getByRole('dialog').getByRole('button', { name: 'Eintragen' }).click()
   await expect(page.getByText('Skyr natur')).toHaveCount(2)
@@ -170,7 +241,7 @@ test('every main route renders without console errors', async ({ page }) => {
   page.on('pageerror', (e) => errors.push(e.message))
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()))
   await onboard(page)
-  for (const hash of ['#/plan', '#/ernaehrung', '#/fortschritt', '#/mehr', '#/mobility', '#/cardio', '#/einstellungen', '#/modus', '#/wissen']) {
+  for (const hash of ['#/plan', '#/ernaehrung', '#/fortschritt', '#/mehr', '#/mobility', '#/cardio', '#/einstellungen', '#/modus', '#/wissen', '#/erfolge', '#/freunde']) {
     await page.goto('/' + hash)
     await expect(page.locator('h1')).toBeVisible()
   }
@@ -250,13 +321,13 @@ test('pages load on demand and still open offline', async ({ page, context }) =>
 test('meal planner: create a week, recipe, swap, log, shopping list, vegan', async ({ page }) => {
   await onboard(page)
   await page.getByRole('link', { name: 'Ernährung' }).click()
-  await page.getByRole('button', { name: 'Planer', exact: true }).click()
+  await page.getByRole('radio', { name: 'Planer', exact: true }).click()
   await page.getByRole('button', { name: 'Plan erstellen' }).click()
   await expect(page.getByText('Plan erstellt')).toBeVisible()
 
   // every main meal of today is planned
-  for (const meal of ['Frühstück', 'Mittagessen', 'Abendessen']) await expect(page.locator('section.card .eyebrow', { hasText: meal })).toBeVisible()
-  const first = page.locator('section.card').first()
+  for (const meal of ['Frühstück', 'Mittagessen', 'Abendessen']) await expect(page.locator('[data-slot="card"] .eyebrow', { hasText: meal })).toBeVisible()
+  const first = page.locator('[data-slot="card"]').filter({ has: page.locator('.eyebrow', { hasText: 'Frühstück' }) })
   const dish = (await first.locator('h3').innerText()).trim()
 
   await first.getByRole('button', { name: `Rezept für ${dish}` }).click()
@@ -264,7 +335,7 @@ test('meal planner: create a week, recipe, swap, log, shopping list, vegan', asy
   await page.getByRole('button', { name: 'Schließen' }).click()
 
   await first.getByRole('button', { name: `${dish} tauschen` }).click()
-  await page.getByRole('dialog', { name: 'Gericht tauschen' }).locator('.list-item').first().click()
+  await page.getByRole('dialog', { name: 'Gericht tauschen' }).locator('.list-row').first().click()
   await expect(page.getByText('Getauscht')).toBeVisible()
   const swapped = (await first.locator('h3').innerText()).trim()
   expect(swapped).not.toBe(dish)
@@ -272,9 +343,9 @@ test('meal planner: create a week, recipe, swap, log, shopping list, vegan', asy
   // logging puts the ingredients into today's diary
   await first.getByRole('button', { name: `${swapped} ins Tagebuch eintragen` }).click()
   await expect(first.getByText('Eingetragen', { exact: true })).toBeVisible()
-  await page.getByRole('button', { name: 'Tagebuch', exact: true }).click()
-  await expect(page.locator('section.card .list-item').first()).toBeVisible()
-  await page.getByRole('button', { name: 'Planer', exact: true }).click()
+  await page.getByRole('radio', { name: 'Tagebuch', exact: true }).click()
+  await expect(page.locator('[data-slot="card"] .list-row').first()).toBeVisible()
+  await page.getByRole('radio', { name: 'Planer', exact: true }).click()
 
   await page.getByRole('button', { name: 'Einkaufsliste' }).click()
   const list = page.getByRole('dialog', { name: 'Einkaufsliste' })
@@ -289,7 +360,7 @@ test('meal planner: create a week, recipe, swap, log, shopping list, vegan', asy
   await page.getByRole('dialog').getByRole('button', { name: 'Speichern' }).click()
   page.once('dialog', (d) => d.accept())
   await page.getByRole('button', { name: 'Neu vorschlagen' }).click()
-  await expect(page.locator('.badge', { hasText: 'Vegan' })).toBeVisible()
+  await expect(page.locator('[data-slot="badge"]', { hasText: 'Vegan' })).toBeVisible()
   // the suggestions card offers dishes for what is still open today
   await expect(page.getByRole('heading', { name: 'Was passt heute noch?' })).toBeVisible()
 })

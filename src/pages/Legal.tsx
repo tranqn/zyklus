@@ -2,6 +2,8 @@ import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useT, type Lang } from '../i18n'
 import { Icon } from '../ui/kit'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 
 /**
  * Operator details. TODO before going public: replace the bracketed placeholders with the
@@ -52,12 +54,18 @@ const DOCS: Record<Lang, { impressum: Doc; datenschutz: Doc }> = {
             'Zweck ist allein, dir den Dienst bereitzustellen: Speichern, Synchronisieren zwischen deinen Geräten und Wiederherstellen deiner Daten. Es gibt keine Werbung, kein Tracking und keine Weitergabe an Dritte zu eigenen Zwecken.',
           ],
         },
-        { title: '4. Cookies und lokaler Speicher', body: ['Wir setzen ausschließlich ein technisch notwendiges Sitzungs-Cookie (zyk_session, httpOnly, 30 Tage) für die Anmeldung, sowie den localStorage deines Browsers für deine App-Daten und deine Spracheinstellung. Eine Einwilligung ist dafür nach § 25 Abs. 2 TDDDG nicht erforderlich.'] },
-        { title: '5. Hosting', body: ['Server und Datenbank betreiben wir auf einem Server der Hetzner Online GmbH, Industriestr. 25, 91710 Gunzenhausen, in einem Rechenzentrum in der EU. Mit Hetzner besteht ein Vertrag zur Auftragsverarbeitung nach Art. 28 DSGVO. Beim Aufruf der Seite verarbeitet der Webserver deine IP-Adresse kurzzeitig, um die Verbindung herzustellen und Missbrauch (z. B. massenhafte Anmeldeversuche) zu begrenzen.'] },
-        { title: '6. E-Mail-Versand', body: ['Bestätigungs- und Passwort-E-Mails versenden wir über den SMTP-Dienst von Google (Gmail), Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland. Dabei werden deine E-Mail-Adresse und der Inhalt der E-Mail an Google übermittelt. Eine Übermittlung in die USA ist möglich; Google ist nach dem EU-US Data Privacy Framework zertifiziert.'] },
-        { title: '7. Lebensmittel-Datenbank', body: ['Für die Lebensmittelsuche leiten wir deinen Suchbegriff an Open Food Facts (Open Food Facts, Frankreich) weiter, ohne Bezug zu deiner Person. Beim Scannen eines Barcodes fragt dein Browser die Produktdaten direkt bei Open Food Facts ab; dabei sieht Open Food Facts deine IP-Adresse.'] },
         {
-          title: '8. Speicherdauer',
+          title: '4. Freunde und Challenges',
+          body: [
+            'Wenn du jemanden über deinen Einladungslink oder Code als Freund annimmst oder einer Challenge beitrittst, sehen die anderen einen Auszug: deinen Namen aus dem Profil, deine Tages- und Wochen-Flamme, deine aktiven Tage dieser Woche, deine Erfolgsstufen und deine Beiträge zu gemeinsamen Challenges (aktive Tage oder Minuten). Trainingsinhalte, Gewichte, Ernährung und Körperdaten sehen sie nicht. Dafür speichern wir neben deinen Daten eine daraus berechnete Zusammenfassung deiner Aktivitätstage. Rechtsgrundlage ist die Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO), weil du die Funktion selbst nutzt. Freundschaften und Challenges kannst du jederzeit beenden; mit dem Konto werden sie gelöscht.',
+          ],
+        },
+        { title: '5. Cookies und lokaler Speicher', body: ['Wir setzen ausschließlich ein technisch notwendiges Sitzungs-Cookie (zyk_session, httpOnly, 30 Tage) für die Anmeldung, sowie den localStorage deines Browsers für deine App-Daten und deine Spracheinstellung. Eine Einwilligung ist dafür nach § 25 Abs. 2 TDDDG nicht erforderlich.'] },
+        { title: '6. Hosting', body: ['Server und Datenbank betreiben wir auf einem Server der Hetzner Online GmbH, Industriestr. 25, 91710 Gunzenhausen, in einem Rechenzentrum in der EU. Mit Hetzner besteht ein Vertrag zur Auftragsverarbeitung nach Art. 28 DSGVO. Beim Aufruf der Seite verarbeitet der Webserver deine IP-Adresse kurzzeitig, um die Verbindung herzustellen und Missbrauch (z. B. massenhafte Anmeldeversuche) zu begrenzen.'] },
+        { title: '7. E-Mail-Versand', body: ['Bestätigungs- und Passwort-E-Mails versenden wir über den SMTP-Dienst von Google (Gmail), Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland. Dabei werden deine E-Mail-Adresse und der Inhalt der E-Mail an Google übermittelt. Eine Übermittlung in die USA ist möglich; Google ist nach dem EU-US Data Privacy Framework zertifiziert.'] },
+        { title: '8. Lebensmittel-Datenbank', body: ['Für die Lebensmittelsuche leiten wir deinen Suchbegriff an Open Food Facts (Open Food Facts, Frankreich) weiter, ohne Bezug zu deiner Person. Beim Scannen eines Barcodes fragt dein Browser die Produktdaten direkt bei Open Food Facts ab; dabei sieht Open Food Facts deine IP-Adresse.'] },
+        {
+          title: '9. Speicherdauer',
           body: [
             [
               'Kontodaten und App-Daten: bis du dein Konto löschst.',
@@ -67,8 +75,8 @@ const DOCS: Record<Lang, { impressum: Doc; datenschutz: Doc }> = {
             ],
           ],
         },
-        { title: '9. Deine Rechte', body: ['Du hast das Recht auf Auskunft (Art. 15), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung (Art. 18), Datenübertragbarkeit (Art. 20) und Widerspruch (Art. 21 DSGVO). Deine Einwilligung kannst du jederzeit mit Wirkung für die Zukunft widerrufen. Export und Löschung kannst du direkt in der App unter Mehr › Konto ausführen. Außerdem kannst du dich bei einer Datenschutz-Aufsichtsbehörde beschweren, etwa bei der Sächsischen Datenschutz- und Transparenzbeauftragten.'] },
-        { title: '10. Sicherheit', body: ['Die Verbindung ist durchgehend per TLS verschlüsselt. Passwörter werden mit scrypt gehasht, Sitzungs- und Link-Token nur als Hash gespeichert, Anmeldeversuche begrenzt.'] },
+        { title: '10. Deine Rechte', body: ['Du hast das Recht auf Auskunft (Art. 15), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung (Art. 18), Datenübertragbarkeit (Art. 20) und Widerspruch (Art. 21 DSGVO). Deine Einwilligung kannst du jederzeit mit Wirkung für die Zukunft widerrufen. Export und Löschung kannst du direkt in der App unter Mehr › Konto ausführen. Außerdem kannst du dich bei einer Datenschutz-Aufsichtsbehörde beschweren, etwa bei der Sächsischen Datenschutz- und Transparenzbeauftragten.'] },
+        { title: '11. Sicherheit', body: ['Die Verbindung ist durchgehend per TLS verschlüsselt. Passwörter werden mit scrypt gehasht, Sitzungs- und Link-Token nur als Hash gespeichert, Anmeldeversuche begrenzt.'] },
       ],
     },
   },
@@ -106,12 +114,18 @@ const DOCS: Record<Lang, { impressum: Doc; datenschutz: Doc }> = {
             'The only purpose is to provide the service to you: storing, syncing between your devices and restoring your data. There is no advertising, no tracking and no disclosure to third parties for their own purposes.',
           ],
         },
-        { title: '4. Cookies and local storage', body: ['We only use one technically necessary session cookie (zyk_session, httpOnly, 30 days) for signing in, plus your browser’s localStorage for your app data and language setting. No consent is required for this under § 25 (2) TDDDG.'] },
-        { title: '5. Hosting', body: ['We run the server and database on a server of Hetzner Online GmbH, Industriestr. 25, 91710 Gunzenhausen, Germany, in a data centre in the EU. A data processing agreement under Art. 28 GDPR is in place with Hetzner. When you open the site, the web server briefly processes your IP address to establish the connection and to limit abuse (e.g. mass sign-in attempts).'] },
-        { title: '6. Sending emails', body: ['We send confirmation and password emails via Google’s SMTP service (Gmail), Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Ireland. Your email address and the content of the email are transmitted to Google. A transfer to the USA is possible; Google is certified under the EU-US Data Privacy Framework.'] },
-        { title: '7. Food database', body: ['For the food search we forward your search term to Open Food Facts (Open Food Facts, France) without any reference to you. When you scan a barcode, your browser requests the product data directly from Open Food Facts; Open Food Facts sees your IP address in the process.'] },
         {
-          title: '8. Storage period',
+          title: '4. Friends and challenges',
+          body: [
+            'When you accept someone as a friend through an invite link or code, or join a challenge, the others see an extract: your profile name, your daily and weekly flame, your active days this week, your achievement levels and your contributions to shared challenges (active days or minutes). They do not see workout contents, weights, nutrition or body data. For this we store a summary of your active days computed from your data. The legal basis is the performance of a contract (Art. 6 (1) (b) GDPR), because you use the feature yourself. You can end friendships and challenges at any time; they are deleted with your account.',
+          ],
+        },
+        { title: '5. Cookies and local storage', body: ['We only use one technically necessary session cookie (zyk_session, httpOnly, 30 days) for signing in, plus your browser’s localStorage for your app data and language setting. No consent is required for this under § 25 (2) TDDDG.'] },
+        { title: '6. Hosting', body: ['We run the server and database on a server of Hetzner Online GmbH, Industriestr. 25, 91710 Gunzenhausen, Germany, in a data centre in the EU. A data processing agreement under Art. 28 GDPR is in place with Hetzner. When you open the site, the web server briefly processes your IP address to establish the connection and to limit abuse (e.g. mass sign-in attempts).'] },
+        { title: '7. Sending emails', body: ['We send confirmation and password emails via Google’s SMTP service (Gmail), Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Ireland. Your email address and the content of the email are transmitted to Google. A transfer to the USA is possible; Google is certified under the EU-US Data Privacy Framework.'] },
+        { title: '8. Food database', body: ['For the food search we forward your search term to Open Food Facts (Open Food Facts, France) without any reference to you. When you scan a barcode, your browser requests the product data directly from Open Food Facts; Open Food Facts sees your IP address in the process.'] },
+        {
+          title: '9. Storage period',
           body: [
             [
               'Account data and app data: until you delete your account.',
@@ -121,8 +135,8 @@ const DOCS: Record<Lang, { impressum: Doc; datenschutz: Doc }> = {
             ],
           ],
         },
-        { title: '9. Your rights', body: ['You have the right of access (Art. 15), rectification (Art. 16), erasure (Art. 17), restriction (Art. 18), data portability (Art. 20) and objection (Art. 21 GDPR). You can withdraw your consent at any time with effect for the future. You can export and delete your data directly in the app under More › Account. You can also lodge a complaint with a data protection supervisory authority, for example the Saxon Data Protection and Transparency Commissioner.'] },
-        { title: '10. Security', body: ['The connection is encrypted with TLS throughout. Passwords are hashed with scrypt, session and link tokens are only stored as hashes, and sign-in attempts are limited.'] },
+        { title: '10. Your rights', body: ['You have the right of access (Art. 15), rectification (Art. 16), erasure (Art. 17), restriction (Art. 18), data portability (Art. 20) and objection (Art. 21 GDPR). You can withdraw your consent at any time with effect for the future. You can export and delete your data directly in the app under More › Account. You can also lodge a complaint with a data protection supervisory authority, for example the Saxon Data Protection and Transparency Commissioner.'] },
+        { title: '11. Security', body: ['The connection is encrypted with TLS throughout. Passwords are hashed with scrypt, session and link tokens are only stored as hashes, and sign-in attempts are limited.'] },
       ],
     },
   },
@@ -160,12 +174,18 @@ const DOCS: Record<Lang, { impressum: Doc; datenschutz: Doc }> = {
             'Mục đích duy nhất là cung cấp dịch vụ cho bạn: lưu trữ, đồng bộ giữa các thiết bị và khôi phục dữ liệu. Không có quảng cáo, không theo dõi và không chia sẻ cho bên thứ ba vì mục đích riêng của họ.',
           ],
         },
-        { title: '4. Cookie và bộ nhớ cục bộ', body: ['Chúng tôi chỉ dùng một cookie phiên cần thiết về mặt kỹ thuật (zyk_session, httpOnly, 30 ngày) để đăng nhập, cùng với localStorage của trình duyệt cho dữ liệu ứng dụng và cài đặt ngôn ngữ. Theo § 25 khoản 2 TDDDG, việc này không cần sự đồng ý.'] },
-        { title: '5. Lưu trữ máy chủ', body: ['Máy chủ và cơ sở dữ liệu được vận hành trên máy chủ của Hetzner Online GmbH, Industriestr. 25, 91710 Gunzenhausen, Đức, tại trung tâm dữ liệu trong EU. Chúng tôi có hợp đồng xử lý dữ liệu theo Điều 28 GDPR với Hetzner. Khi bạn truy cập trang, máy chủ web xử lý địa chỉ IP của bạn trong thời gian ngắn để thiết lập kết nối và hạn chế lạm dụng (ví dụ: đăng nhập hàng loạt).'] },
-        { title: '6. Gửi email', body: ['Email xác nhận và email mật khẩu được gửi qua dịch vụ SMTP của Google (Gmail), Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Ireland. Địa chỉ email và nội dung email của bạn được chuyển đến Google. Dữ liệu có thể được chuyển sang Hoa Kỳ; Google được chứng nhận theo Khung bảo mật dữ liệu EU - Hoa Kỳ (Data Privacy Framework).'] },
-        { title: '7. Cơ sở dữ liệu thực phẩm', body: ['Khi tìm kiếm thực phẩm, chúng tôi chuyển từ khóa tìm kiếm đến Open Food Facts (Open Food Facts, Pháp) mà không kèm thông tin về bạn. Khi quét mã vạch, trình duyệt của bạn truy vấn dữ liệu sản phẩm trực tiếp từ Open Food Facts; khi đó Open Food Facts thấy địa chỉ IP của bạn.'] },
         {
-          title: '8. Thời hạn lưu trữ',
+          title: '4. Bạn bè và thử thách',
+          body: [
+            'Khi bạn chấp nhận ai đó làm bạn qua link mời hoặc mã, hoặc tham gia một thử thách, những người khác thấy một phần thông tin: tên trong hồ sơ, lửa ngày và lửa tuần, số ngày vận động trong tuần này, cấp thành tích và phần đóng góp của bạn vào thử thách chung (ngày vận động hoặc số phút). Họ không thấy nội dung buổi tập, mức tạ, dinh dưỡng hay số đo cơ thể. Để làm việc này, chúng tôi lưu một bản tóm tắt các ngày vận động được tính từ dữ liệu của bạn. Cơ sở pháp lý là thực hiện hợp đồng (Điều 6 khoản 1 điểm b GDPR), vì bạn tự sử dụng tính năng này. Bạn có thể kết thúc tình bạn và thử thách bất cứ lúc nào; chúng sẽ bị xóa cùng tài khoản.',
+          ],
+        },
+        { title: '5. Cookie và bộ nhớ cục bộ', body: ['Chúng tôi chỉ dùng một cookie phiên cần thiết về mặt kỹ thuật (zyk_session, httpOnly, 30 ngày) để đăng nhập, cùng với localStorage của trình duyệt cho dữ liệu ứng dụng và cài đặt ngôn ngữ. Theo § 25 khoản 2 TDDDG, việc này không cần sự đồng ý.'] },
+        { title: '6. Lưu trữ máy chủ', body: ['Máy chủ và cơ sở dữ liệu được vận hành trên máy chủ của Hetzner Online GmbH, Industriestr. 25, 91710 Gunzenhausen, Đức, tại trung tâm dữ liệu trong EU. Chúng tôi có hợp đồng xử lý dữ liệu theo Điều 28 GDPR với Hetzner. Khi bạn truy cập trang, máy chủ web xử lý địa chỉ IP của bạn trong thời gian ngắn để thiết lập kết nối và hạn chế lạm dụng (ví dụ: đăng nhập hàng loạt).'] },
+        { title: '7. Gửi email', body: ['Email xác nhận và email mật khẩu được gửi qua dịch vụ SMTP của Google (Gmail), Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Ireland. Địa chỉ email và nội dung email của bạn được chuyển đến Google. Dữ liệu có thể được chuyển sang Hoa Kỳ; Google được chứng nhận theo Khung bảo mật dữ liệu EU - Hoa Kỳ (Data Privacy Framework).'] },
+        { title: '8. Cơ sở dữ liệu thực phẩm', body: ['Khi tìm kiếm thực phẩm, chúng tôi chuyển từ khóa tìm kiếm đến Open Food Facts (Open Food Facts, Pháp) mà không kèm thông tin về bạn. Khi quét mã vạch, trình duyệt của bạn truy vấn dữ liệu sản phẩm trực tiếp từ Open Food Facts; khi đó Open Food Facts thấy địa chỉ IP của bạn.'] },
+        {
+          title: '9. Thời hạn lưu trữ',
           body: [
             [
               'Dữ liệu tài khoản và dữ liệu ứng dụng: cho đến khi bạn xóa tài khoản.',
@@ -175,8 +195,8 @@ const DOCS: Record<Lang, { impressum: Doc; datenschutz: Doc }> = {
             ],
           ],
         },
-        { title: '9. Quyền của bạn', body: ['Bạn có quyền được biết (Điều 15), chỉnh sửa (Điều 16), xóa (Điều 17), hạn chế xử lý (Điều 18), chuyển dữ liệu (Điều 20) và phản đối (Điều 21 GDPR). Bạn có thể rút lại sự đồng ý bất cứ lúc nào, có hiệu lực cho tương lai. Bạn có thể xuất và xóa dữ liệu trực tiếp trong ứng dụng tại Thêm › Tài khoản. Bạn cũng có thể khiếu nại với cơ quan giám sát bảo vệ dữ liệu, ví dụ Ủy viên Bảo vệ Dữ liệu và Minh bạch bang Sachsen (Đức).'] },
-        { title: '10. Bảo mật', body: ['Kết nối luôn được mã hóa bằng TLS. Mật khẩu được băm bằng scrypt, token phiên và token đường dẫn chỉ được lưu dưới dạng băm, số lần đăng nhập được giới hạn.'] },
+        { title: '10. Quyền của bạn', body: ['Bạn có quyền được biết (Điều 15), chỉnh sửa (Điều 16), xóa (Điều 17), hạn chế xử lý (Điều 18), chuyển dữ liệu (Điều 20) và phản đối (Điều 21 GDPR). Bạn có thể rút lại sự đồng ý bất cứ lúc nào, có hiệu lực cho tương lai. Bạn có thể xuất và xóa dữ liệu trực tiếp trong ứng dụng tại Thêm › Tài khoản. Bạn cũng có thể khiếu nại với cơ quan giám sát bảo vệ dữ liệu, ví dụ Ủy viên Bảo vệ Dữ liệu và Minh bạch bang Sachsen (Đức).'] },
+        { title: '11. Bảo mật', body: ['Kết nối luôn được mã hóa bằng TLS. Mật khẩu được băm bằng scrypt, token phiên và token đường dẫn chỉ được lưu dưới dạng băm, số lần đăng nhập được giới hạn.'] },
       ],
     },
   },
@@ -186,23 +206,23 @@ function LegalPage({ doc }: { doc: Doc }) {
   const nav = useNavigate()
   const { t } = useT()
   return (
-    <div className="app">
+    <div className="mx-auto min-h-dvh max-w-[560px]">
       <div className="page">
-        <div className="row">
-          <button className="icon-btn" onClick={() => nav(-1)} aria-label={t('common.back')}>
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" size="icon" onClick={() => nav(-1)} aria-label={t('common.back')}>
             <Icon name="back" />
-          </button>
+          </Button>
         </div>
         <h1>{doc.title}</h1>
         {doc.binding && (
-          <p className="small" style={{ background: 'var(--warn-soft)', padding: '10px 12px', borderRadius: 10 }}>
+          <p className="text-[0.85rem]" style={{ background: 'var(--warn-soft)', padding: '10px 12px', borderRadius: 10 }}>
             {doc.binding}
           </p>
         )}
-        <div className="card stack lg legal">
-          {doc.stand && <p className="small muted">{doc.stand}</p>}
+        <Card className="flex flex-col gap-4 legal">
+          {doc.stand && <p className="text-[0.85rem] text-muted-foreground">{doc.stand}</p>}
           {doc.sections.map((s) => (
-            <section key={s.title} className="stack">
+            <section key={s.title} className="flex flex-col gap-2">
               <h3>{s.title}</h3>
               {s.body.map((b, i): ReactNode =>
                 Array.isArray(b) ? (
@@ -219,7 +239,7 @@ function LegalPage({ doc }: { doc: Doc }) {
               )}
             </section>
           ))}
-        </div>
+        </Card>
       </div>
     </div>
   )

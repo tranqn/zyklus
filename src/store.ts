@@ -23,7 +23,8 @@ import type {
   WorkoutSession,
 } from './domain/types'
 import type { PlannedMeal } from './domain/meals'
-import { addDays, daysBetween, nowMs, sessionEndMs, today, uid } from './domain/util'
+import { addDays, daysBetween, nowMs, sessionEndMs, startOfWeek, today, uid } from './domain/util'
+import { defaultWeeklyGoal, withWeeklyGoal } from './domain/motivation'
 
 export interface State {
   version: number
@@ -103,6 +104,8 @@ interface Actions {
   removeMeasurement(date: string): void
   updateSettings(s: Partial<Settings>): void
   setMode(mode: Mode): void
+  /** weekly flame goal in active days, applies from this week on */
+  setWeeklyGoal(days: number): void
   importData(json: string): void
   reset(): void
 }
@@ -184,7 +187,14 @@ export const useStore = create<State & Actions>()(
         const s = get()
         if (!s.profile) return
         const profile = { ...s.profile, ...patch }
-        set({ profile })
+        // a goal that follows the plan moves with the training days, from this week on
+        const goals = s.settings.weeklyGoals
+        const following = !goals?.length || goals[goals.length - 1].days === defaultWeeklyGoal(s.profile)
+        const settings =
+          following && defaultWeeklyGoal(profile) !== defaultWeeklyGoal(s.profile)
+            ? { ...s.settings, weeklyGoals: withWeeklyGoal(goals, defaultWeeklyGoal(s.profile), defaultWeeklyGoal(profile), startOfWeek(today())) }
+            : s.settings
+        set({ profile, settings })
         if (regenerate) get().regeneratePlan()
       },
 
@@ -451,6 +461,12 @@ export const useStore = create<State & Actions>()(
           settings: { ...prev, mode, modeSince: mode === 'normal' ? undefined : today(), reentryPending: prev.mode !== 'normal' && mode === 'normal' },
           meso: s.meso && { ...s.meso, pausedSince: mode === 'normal' ? undefined : today() },
         })
+      },
+
+      setWeeklyGoal(days) {
+        const s = get()
+        const weeklyGoals = withWeeklyGoal(s.settings.weeklyGoals, defaultWeeklyGoal(s.profile), Math.min(7, Math.max(1, days)), startOfWeek(today()))
+        set({ settings: { ...s.settings, weeklyGoals } })
       },
 
       importData(json) {
