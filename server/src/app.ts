@@ -6,6 +6,7 @@ import { DUMMY_HASH, hashPassword, newToken, sha256, verifyPassword } from './cr
 import { toLocale, type DB, type UserRow } from './db.ts'
 import { passwordChangedMail, resetMail, verifyMail, type Mailer } from './mail.ts'
 import { RateLimiter } from './ratelimit.ts'
+import { createSocial } from './social.ts'
 
 const COOKIE = 'zyk_session'
 const DAY = 86_400_000
@@ -125,6 +126,9 @@ export function createApp({ db, cfg, mail, now = Date.now }: Deps) {
     c.set('sessionHash', hash)
     await next()
   }
+
+  const social = createSocial({ db, now, requireUser, fail, readJson })
+  social.mount(app)
 
   app.get('/health', (c) => {
     db.prepare('SELECT 1').get()
@@ -274,10 +278,12 @@ export function createApp({ db, cfg, mail, now = Date.now }: Deps) {
       if (rev === 0) {
         if (q.getState.get(userId)) return conflict(c, userId)
         q.insertState.run(userId, json, t)
+        social.saveSummary(userId, data)
         return c.json({ rev: 1, updatedAt: t })
       }
       const res = q.updateState.run(json, t, userId, rev)
       if (res.changes === 0) return conflict(c, userId)
+      social.saveSummary(userId, data)
       return c.json({ rev: rev + 1, updatedAt: t })
     },
   )
@@ -291,7 +297,7 @@ export function createApp({ db, cfg, mail, now = Date.now }: Deps) {
     const user = c.get('user')
     const row = q.getState.get(user.id) as { data: string; updated_at: number } | undefined
     c.header('Content-Disposition', 'attachment; filename="zyklus-export.json"')
-    return c.json({ exportedAt: new Date(now()).toISOString(), account: publicUser(user), consentAt: new Date(user.consent_at).toISOString(), data: row ? JSON.parse(row.data) : null })
+    return c.json({ exportedAt: new Date(now()).toISOString(), account: publicUser(user), consentAt: new Date(user.consent_at).toISOString(), data: row ? JSON.parse(row.data) : null, social: social.exportFor(user.id) })
   })
 
   // POST with a JSON body: the password must not travel in a header that access logs record

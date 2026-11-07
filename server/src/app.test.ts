@@ -259,3 +259,97 @@ describe('mail log', () => {
     expect(maskEmail('kaputt')).toBe('***')
   })
 })
+
+describe('friends and challenges', () => {
+  const TODAY = '2026-10-15'
+  const day = (n: number) => new Date(Date.UTC(2026, 9, 15 + n)).toISOString().slice(0, 10)
+  /** a synced document with a name and cardio on the given day offsets */
+  const doc = (name: string, cardioDays: number[], extra: Record<string, unknown> = {}) => ({
+    v: 1,
+    state: { profile: { name, daysPerWeek: 3, weightKg: 80 }, settings: { mode: 'normal' }, frozenDays: [], sessions: [], mobility: [], foods: [{ date: TODAY, name: 'Geheim' }], cardio: cardioDays.map((n, i) => ({ id: `c${i}`, date: day(n), minutes: 30 })), ...extra },
+    stamps: {},
+    tombstones: {},
+  })
+  async function user(email: string, name: string, cardioDays: number[] = []) {
+    const { cookie } = await register(email)
+    await call('PUT', '/state', { cookie: cookie!, body: { rev: 0, data: doc(name, cardioDays) } })
+    return cookie!
+  }
+
+  it('connects two accounts through an invite code and shows only the summary', async () => {
+    const a = await user('a@example.test', 'Anna', [-2, -1, 0])
+    const b = await user('b@example.test', 'Ben')
+    const code = (await call('GET', `/social/me?today=${TODAY}`, { cookie: a })).body.code as string
+    expect(code).toMatch(/^[A-Z2-9]{8}$/)
+
+    expect((await call('GET', `/social/invite/${code.toLowerCase()}`, { cookie: b })).body).toEqual({ name: 'Anna', self: false, friends: false })
+    expect((await call('POST', `/social/invite/${code}/accept`, { cookie: a, body: {} })).body.error).toBe('invite_self')
+    const accepted = await call('POST', `/social/invite/${code}/accept?today=${TODAY}`, { cookie: b, body: {} })
+    expect(accepted.status).toBe(200)
+    // accepting twice is harmless
+    expect((await call('POST', `/social/invite/${code}/accept`, { cookie: b, body: {} })).status).toBe(200)
+
+    const friends = (await call('GET', `/social/friends?today=${TODAY}`, { cookie: b })).body.friends as Record<string, unknown>[]
+    expect(friends).toHaveLength(1)
+    expect(friends[0]).toMatchObject({ name: 'Anna', daily: { count: 3, activeToday: true }, weekly: { active: 3, goal: 3, done: true } })
+    // no food, weight or workout details leak to friends
+    expect(JSON.stringify(friends)).not.toMatch(/Geheim|weightKg|cardio/)
+    expect(((await call('GET', `/social/me?today=${TODAY}`, { cookie: a })).body.counts as Record<string, number>).friends).toBe(1)
+
+    const annaId = friends[0].id
+    expect((await call('POST', `/social/friends/${annaId}/remove`, { cookie: b, body: {} })).status).toBe(200)
+    expect((await call('GET', '/social/friends', { cookie: a })).body.friends).toEqual([])
+  })
+
+  it('a new invite code retires the old one', async () => {
+    const a = await user('a@example.test', 'Anna')
+    const b = await user('b@example.test', 'Ben')
+    const old = (await call('GET', '/social/me', { cookie: a })).body.code
+    const fresh = (await call('POST', '/social/invite/rotate', { cookie: a, body: {} })).body.code
+    expect(fresh).not.toBe(old)
+    expect((await call('POST', `/social/invite/${old}/accept`, { cookie: b, body: {} })).body.error).toBe('invite_unknown')
+  })
+
+  it('sums a group goal and tracks a streak challenge per member', async () => {
+    const a = await user('a@example.test', 'Anna', [0])
+    const b = await user('b@example.test', 'Ben', [0])
+    const code = (await call('GET', '/social/me', { cookie: a })).body.code
+    await call('POST', `/social/invite/${code}/accept`, { cookie: b, body: {} })
+    const bId = ((await call('GET', '/social/friends', { cookie: a })).body.friends as { id: number }[])[0].id
+
+    const goal = await call('POST', `/social/challenges?today=${TODAY}`, { cookie: a, body: { kind: 'goal', title: 'Zusammen 4 Tage', metric: 'active_days', days: 7, target: 4, invite: [bId] } })
+    expect(goal.status).toBe(201)
+    const g = goal.body.challenge as { id: string; total: number; status: string; members: unknown[]; end: string }
+    expect(g).toMatchObject({ total: 2, status: 'running', end: day(6) })
+    expect(g.members).toHaveLength(2)
+
+    // Ben logs two more days: the group reaches 4
+    await call('PUT', '/state', { cookie: b, body: { rev: 1, data: doc('Ben', [0, 1, 2]) } })
+    const later = await call('GET', `/social/challenges/${g.id}?today=${day(2)}`, { cookie: a })
+    expect(later.body.challenge).toMatchObject({ total: 4, status: 'done' })
+    expect(((await call('GET', `/social/me?today=${day(2)}`, { cookie: a })).body.counts as Record<string, number>).team).toBe(1)
+
+    const streak = await call('POST', `/social/challenges?today=${TODAY}`, { cookie: a, body: { kind: 'streak', days: 7 } })
+    const s = streak.body.challenge as { id: string; code: string }
+    expect((await call('POST', `/social/challenges/join/${s.code}?today=${TODAY}`, { cookie: b, body: {} })).status).toBe(200)
+    const view = (await call('GET', `/social/challenges/${s.id}?today=${day(2)}`, { cookie: b })).body.challenge as { members: { name: string; status: string }[] }
+    // Anna missed day 1, Ben is still in
+    expect(view.members.map((m) => [m.name, m.status])).toEqual([['Anna', 'out'], ['Ben', 'running']])
+
+    // strangers cannot read a challenge, leaving the last member removes it
+    const c = await user('c@example.test', 'Carla')
+    expect((await call('GET', `/social/challenges/${s.id}`, { cookie: c })).status).toBe(404)
+    await call('POST', `/social/challenges/${s.id}/leave`, { cookie: a, body: {} })
+    await call('POST', `/social/challenges/${s.id}/leave`, { cookie: b, body: {} })
+    expect(db.prepare('SELECT COUNT(*) AS n FROM challenges WHERE id = ?').get(s.id)).toEqual({ n: 0 })
+  })
+
+  it('rejects invalid challenges and cleans up with the account', async () => {
+    const a = await user('a@example.test', 'Anna')
+    expect((await call('POST', '/social/challenges', { cookie: a, body: { kind: 'goal', metric: 'minutes', days: 7, target: 0 } })).status).toBe(400)
+    expect((await call('POST', '/social/challenges', { cookie: a, body: { kind: 'streak', days: 5 } })).status).toBe(400)
+    await call('POST', '/social/challenges', { cookie: a, body: { kind: 'streak', days: 14 } })
+    await call('POST', '/account/delete', { cookie: a, body: { password: 'langes-passwort-1' } })
+    for (const t of ['summaries', 'invites', 'challenges', 'challenge_members']) expect(db.prepare(`SELECT COUNT(*) AS n FROM ${t}`).get()).toEqual({ n: 0 })
+  })
+})
