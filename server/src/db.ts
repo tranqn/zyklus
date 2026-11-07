@@ -29,6 +29,46 @@ const SCHEMA = [
     data TEXT NOT NULL,
     updated_at INTEGER NOT NULL
   )`,
+  // friends and challenges (see social.ts)
+  `CREATE TABLE IF NOT EXISTS summaries (
+    user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    data TEXT NOT NULL,
+    updated_at INTEGER NOT NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS invites (
+    user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    code TEXT NOT NULL UNIQUE,
+    created_at INTEGER NOT NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS friendships (
+    a INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    b INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at INTEGER NOT NULL,
+    PRIMARY KEY (a, b),
+    CHECK (a < b)
+  )`,
+  `CREATE INDEX IF NOT EXISTS friendships_b ON friendships(b)`,
+  `CREATE TABLE IF NOT EXISTS challenges (
+    id TEXT PRIMARY KEY,
+    owner_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    kind TEXT NOT NULL CHECK (kind IN ('goal', 'streak')),
+    title TEXT NOT NULL,
+    metric TEXT,
+    target INTEGER,
+    days INTEGER NOT NULL,
+    start_date TEXT NOT NULL,
+    end_date TEXT NOT NULL,
+    code TEXT NOT NULL UNIQUE,
+    created_at INTEGER NOT NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS challenge_members (
+    challenge_id TEXT NOT NULL REFERENCES challenges(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    joined_at INTEGER NOT NULL,
+    PRIMARY KEY (challenge_id, user_id)
+  )`,
+  `CREATE INDEX IF NOT EXISTS challenge_members_user ON challenge_members(user_id)`,
 ]
 
 export type DB = DatabaseSync
