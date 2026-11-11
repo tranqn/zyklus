@@ -204,6 +204,34 @@ textarea {
 button {
   cursor: pointer;
 }
+/* Tap feedback for controls that are not a <Button> (29 raw buttons, the list rows, the card
+   links on Heute, the switches). The pill-shaped controls keep the squash of `glass-press`;
+   these shrink evenly instead, because scaling a full-width row above 100 % would push it over
+   the viewport edge. data-pressed is set in usePressFeedback, :active is the fallback. */
+button,
+[role='button'],
+[role='switch'],
+[role='checkbox'],
+a.list-row,
+a.glass-card,
+label.list-row {
+  transition: transform 0.42s cubic-bezier(0.3, 1.7, 0.45, 1);
+}
+button:active,
+[role='button']:active,
+[role='switch']:active,
+[role='checkbox']:active,
+a.list-row:active,
+a.glass-card:active,
+label.list-row:active,
+[data-pressed] {
+  transform: scale(0.97);
+  transition-duration: 0.12s;
+}
+button:disabled,
+[aria-disabled='true'] {
+  transform: none;
+}
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
@@ -321,6 +349,26 @@ body::before {
 }
 .set-idx.test {
   color: var(--accent);
+}
+/* The Stepper value is an input now, so it can be typed as well as stepped. Until it has focus it
+   must look exactly like the plain number it replaced. */
+.stepper-input {
+  min-width: 0;
+  padding: 2px 4px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  text-align: center;
+  font-size: 1.6rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: inherit;
+}
+.stepper-input:focus-visible {
+  /* the border and the fill are the focus indicator, so the global outline would only double it */
+  outline: none;
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--glass-tint) calc(var(--glass-a) + 24%), transparent);
 }
 .set-input {
   width: 100%;

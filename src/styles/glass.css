@@ -88,7 +88,9 @@
 
 @utility glass-press {
   transition: transform 0.42s cubic-bezier(0.3, 1.7, 0.45, 1);
-  &:active {
+  /* data-pressed comes from usePressFeedback; :active stays as the no-JS fallback */
+  &:active,
+  &[data-pressed] {
     transform: scale(1.045, 0.94);
     transition-duration: 0.12s;
   }
