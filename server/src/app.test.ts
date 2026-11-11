@@ -20,7 +20,7 @@ beforeEach(() => {
   db = openDb(':memory:')
   mails = []
   clock = Date.UTC(2026, 9, 15)
-  app = createApp({ db, cfg, mail: async (m) => void mails.push(m), now: () => clock }).app
+  app = createApp({ db, cfg, mail: async (m) => void mails.push(m), now: () => clock, sleep: async () => {} }).app
 })
 
 type Res = { status: number; body: Record<string, unknown>; cookie?: string }
@@ -37,27 +37,45 @@ async function call(method: string, path: string, opts: { body?: unknown; cookie
 
 const tokenFrom = (m: Mail) => /token=([\w-]+)/.exec(m.text)![1]
 
+/** Registration only: it answers the same for every address and starts no session. */
+const registerRaw = (email = 'nam@example.test', password = 'langes-passwort-1', locale?: string) =>
+  call('POST', '/auth/register', { body: { email, password, consent: true, locale } })
+
+/** The whole sign-up: register, then follow the confirmation link, which signs the account in. */
 async function register(email = 'nam@example.test', password = 'langes-passwort-1') {
-  const r = await call('POST', '/auth/register', { body: { email, password, consent: true } })
-  return r
+  const r = await registerRaw(email, password)
+  if (r.status !== 202) return r
+  const m = mails.at(-1)
+  return m ? await call('POST', '/auth/verify', { body: { token: tokenFrom(m) } }) : r
 }
 
 describe('registration and login', () => {
-  it('registers, sets a hardened cookie and sends a verification mail', async () => {
+  it('registers without a session and sends a verification mail', async () => {
     const res = await app.request('/api/auth/register', {
       method: 'POST',
       headers: { origin: ORIGIN, 'content-type': 'application/json' },
       body: JSON.stringify({ email: 'Nam@Example.test ', password: 'langes-passwort-1', consent: true }),
     })
-    expect(res.status).toBe(201)
+    expect(res.status).toBe(202)
+    expect(res.headers.get('set-cookie')).toBeNull()
+    expect(mails).toHaveLength(1)
+    expect(mails[0].to).toBe('nam@example.test')
+    expect(mails[0].text).toContain(`${ORIGIN}/#/konto/bestaetigen?token=`)
+  })
+
+  it('the confirmation link signs in and sets a hardened cookie', async () => {
+    await registerRaw()
+    const res = await app.request('/api/auth/verify', {
+      method: 'POST',
+      headers: { origin: ORIGIN, 'content-type': 'application/json' },
+      body: JSON.stringify({ token: tokenFrom(mails[0]) }),
+    })
+    expect(res.status).toBe(200)
     const cookie = res.headers.get('set-cookie')!
     expect(cookie).toMatch(/HttpOnly/)
     expect(cookie).toMatch(/Secure/)
     expect(cookie).toMatch(/SameSite=Lax/)
     expect(cookie).toMatch(/Path=\/api/)
-    expect(mails).toHaveLength(1)
-    expect(mails[0].to).toBe('nam@example.test')
-    expect(mails[0].text).toContain(`${ORIGIN}/#/konto/bestaetigen?token=`)
   })
 
   it('rejects weak input and missing consent', async () => {
@@ -66,9 +84,41 @@ describe('registration and login', () => {
     expect((await call('POST', '/auth/register', { body: { email: 'a@b.de', password: 'langes-passwort-1' } })).body.error).toBe('consent')
   })
 
-  it('refuses a duplicate email', async () => {
+  it('tells a sign-up for a known address nothing, and mails the owner instead', async () => {
     await register()
-    expect((await register('NAM@example.test')).status).toBe(409)
+    mails = []
+    const fresh = await registerRaw('neu@example.test')
+    const taken = await registerRaw('NAM@example.test')
+    // identical answer: no status, body or cookie gives the existence of the account away
+    expect(taken.status).toBe(fresh.status)
+    expect(taken.body).toEqual(fresh.body)
+    expect(taken.cookie).toBeUndefined()
+    // the difference only shows in the mailbox of the address itself
+    const toOwner = mails.filter((m) => m.to === 'nam@example.test')
+    expect(toOwner).toHaveLength(1)
+    expect(toOwner[0].text).not.toContain('token=')
+    expect((db.prepare('SELECT COUNT(*) AS n FROM users').get() as { n: number }).n).toBe(2)
+  })
+
+  it('refuses to sign in before the address is confirmed', async () => {
+    await registerRaw()
+    const r = await call('POST', '/auth/login', { body: { email: 'nam@example.test', password: 'langes-passwort-1' } })
+    expect(r.status).toBe(403)
+    expect(r.body.error).toBe('unverified')
+    expect(r.cookie).toBeUndefined()
+    await call('POST', '/auth/verify', { body: { token: tokenFrom(mails[0]) } })
+    expect((await call('POST', '/auth/login', { body: { email: 'nam@example.test', password: 'langes-passwort-1' } })).status).toBe(200)
+  })
+
+  it('answers a new confirmation link the same for every address', async () => {
+    await registerRaw()
+    mails = []
+    const a = await call('POST', '/auth/resend', { body: { email: 'nam@example.test' } })
+    const b = await call('POST', '/auth/resend', { body: { email: 'niemand@example.test' } })
+    expect(a.status).toBe(b.status)
+    expect(a.body).toEqual(b.body)
+    expect(mails).toHaveLength(1)
+    expect(mails[0].to).toBe('nam@example.test')
   })
 
   it('logs in with the right password only, with a generic error', async () => {
@@ -83,14 +133,21 @@ describe('registration and login', () => {
     expect((me.body.user as { email: string }).email).toBe('nam@example.test')
   })
 
-  it('locks an email after 5 failed logins', async () => {
+  it('slows wrong guesses down but never locks the address out', async () => {
     await register()
-    for (let i = 0; i < 5; i++) await call('POST', '/auth/login', { body: { email: 'nam@example.test', password: 'falsch-falsch' } })
-    const locked = await call('POST', '/auth/login', { body: { email: 'nam@example.test', password: 'langes-passwort-1' } })
-    expect(locked.status).toBe(429)
-    clock += 16 * 60 * 1000
+    for (let i = 0; i < 6; i++) await call('POST', '/auth/login', { body: { email: 'nam@example.test', password: 'falsch-falsch' } })
+    // the owner still gets in: a hard block would let anyone keep a known account signed out
     expect((await call('POST', '/auth/login', { body: { email: 'nam@example.test', password: 'langes-passwort-1' } })).status).toBe(200)
   })
+
+  it('stops a flood of logins from one address', async () => {
+    await register()
+    for (let i = 0; i < 20; i++) await call('POST', '/auth/login', { body: { email: 'nam@example.test', password: 'falsch-falsch' } })
+    expect((await call('POST', '/auth/login', { body: { email: 'nam@example.test', password: 'langes-passwort-1' } })).status).toBe(429)
+    clock += 16 * 60 * 1000
+    expect((await call('POST', '/auth/login', { body: { email: 'nam@example.test', password: 'langes-passwort-1' } })).status).toBe(200)
+    // 20 scrypt checks are the point of the exercise, so this one needs longer than the default
+  }, 30_000)
 
   it('limits registrations per IP', async () => {
     for (let i = 0; i < 5; i++) await register(`u${i}@example.test`)
@@ -122,10 +179,11 @@ describe('csrf', () => {
 
 describe('email verification and password reset', () => {
   it('verifies with the mailed token, once', async () => {
-    const { cookie } = await register()
+    await registerRaw()
     const token = tokenFrom(mails[0])
-    expect((await call('POST', '/auth/verify', { body: { token } })).status).toBe(200)
-    expect(((await call('GET', '/auth/me', { cookie })).body.user as { verified: boolean }).verified).toBe(true)
+    const ok = await call('POST', '/auth/verify', { body: { token } })
+    expect(ok.status).toBe(200)
+    expect(((await call('GET', '/auth/me', { cookie: ok.cookie })).body.user as { verified: boolean }).verified).toBe(true)
     expect((await call('POST', '/auth/verify', { body: { token } })).status).toBe(400)
   })
 
@@ -162,10 +220,10 @@ describe('email verification and password reset', () => {
   })
 
   it('removes unverified accounts after 7 days', async () => {
-    await register('a@example.test')
+    await registerRaw('a@example.test')
     await register('b@example.test')
-    await call('POST', '/auth/verify', { body: { token: tokenFrom(mails[1]) } })
     clock += 8 * 86_400_000
+    // a is still unconfirmed, b followed its link
     expect(cleanup(db, clock).users).toBe(1)
   })
 })
@@ -220,8 +278,8 @@ describe('account', () => {
 
 describe('language', () => {
   it('stores the locale at registration and mails in that language', async () => {
-    const r = await call('POST', '/auth/register', { body: { email: 'vi@example.test', password: 'langes-passwort-1', consent: true, locale: 'vi' } })
-    expect((r.body.user as { locale: string }).locale).toBe('vi')
+    const r = await registerRaw('vi@example.test', 'langes-passwort-1', 'vi')
+    expect(r.status).toBe(202)
     expect(mails[0].subject).toContain('xác nhận')
     await call('POST', '/auth/forgot', { body: { email: 'vi@example.test' } })
     expect(mails[1].subject).toBe('Zyklus: đặt lại mật khẩu')
@@ -229,7 +287,8 @@ describe('language', () => {
 
   it('falls back to German for unknown locales', async () => {
     const r = await call('POST', '/auth/register', { body: { email: 'xx@example.test', password: 'langes-passwort-1', consent: true, locale: 'fr' } })
-    expect((r.body.user as { locale: string }).locale).toBe('de')
+    expect(r.status).toBe(202)
+    expect((await call('POST', '/auth/verify', { body: { token: tokenFrom(mails[0]) } })).body.user).toMatchObject({ locale: 'de' })
     expect(mails[0].subject).toContain('bestätige')
   })
 
@@ -254,7 +313,7 @@ describe('language', () => {
 
 describe('mail log', () => {
   it('masks addresses', () => {
-    expect(maskEmail('namquoctran24@gmail.com')).toBe('na***@gmail.com')
+    expect(maskEmail('erika.musterfrau@example.com')).toBe('er***@example.com')
     expect(maskEmail('a@b.de')).toBe('a***@b.de')
     expect(maskEmail('kaputt')).toBe('***')
   })
@@ -279,8 +338,11 @@ describe('friends and challenges', () => {
   it('connects two accounts through an invite code and shows only the summary', async () => {
     const a = await user('a@example.test', 'Anna', [-2, -1, 0])
     const b = await user('b@example.test', 'Ben')
-    const code = (await call('GET', `/social/me?today=${TODAY}`, { cookie: a })).body.code as string
+    // a GET must not write, so /social/me only reports a code that already exists
+    expect((await call('GET', `/social/me?today=${TODAY}`, { cookie: a })).body.code).toBeNull()
+    const code = (await call('POST', '/social/invite/rotate', { cookie: a, body: {} })).body.code as string
     expect(code).toMatch(/^[A-Z2-9]{8}$/)
+    expect((await call('GET', `/social/me?today=${TODAY}`, { cookie: a })).body.code).toBe(code)
 
     expect((await call('GET', `/social/invite/${code.toLowerCase()}`, { cookie: b })).body).toEqual({ name: 'Anna', self: false, friends: false })
     expect((await call('POST', `/social/invite/${code}/accept`, { cookie: a, body: {} })).body.error).toBe('invite_self')
@@ -304,7 +366,7 @@ describe('friends and challenges', () => {
   it('a new invite code retires the old one', async () => {
     const a = await user('a@example.test', 'Anna')
     const b = await user('b@example.test', 'Ben')
-    const old = (await call('GET', '/social/me', { cookie: a })).body.code
+    const old = (await call('POST', '/social/invite/rotate', { cookie: a, body: {} })).body.code
     const fresh = (await call('POST', '/social/invite/rotate', { cookie: a, body: {} })).body.code
     expect(fresh).not.toBe(old)
     expect((await call('POST', `/social/invite/${old}/accept`, { cookie: b, body: {} })).body.error).toBe('invite_unknown')
@@ -313,7 +375,7 @@ describe('friends and challenges', () => {
   it('sums a group goal and tracks a streak challenge per member', async () => {
     const a = await user('a@example.test', 'Anna', [0])
     const b = await user('b@example.test', 'Ben', [0])
-    const code = (await call('GET', '/social/me', { cookie: a })).body.code
+    const code = (await call('POST', '/social/invite/rotate', { cookie: a, body: {} })).body.code
     await call('POST', `/social/invite/${code}/accept`, { cookie: b, body: {} })
     const bId = ((await call('GET', '/social/friends', { cookie: a })).body.friends as { id: number }[])[0].id
 

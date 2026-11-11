@@ -1,3 +1,5 @@
+import { appendFileSync } from 'node:fs'
+import { join } from 'node:path'
 import nodemailer from 'nodemailer'
 import type { Config } from './config.ts'
 import type { Locale } from './db.ts'
@@ -12,8 +14,16 @@ export type Mailer = (m: Mail) => Promise<void>
 
 export function createMailer(cfg: Config): Mailer {
   if (!cfg.smtp) {
+    // Development and end-to-end tests: nothing is sent. The mail goes to the console and,
+    // so a test can follow a confirmation link, as one JSON line into the data directory.
+    // Only ever reached without SMTP_HOST, which production refuses to start without.
     return async (m) => {
       console.log(`[mail:dev] to=${m.to} subject=${m.subject}\n${m.text}`)
+      try {
+        appendFileSync(join(cfg.dataDir, 'mails.log'), `${JSON.stringify({ at: Date.now(), ...m })}\n`)
+      } catch {
+        // no data directory (unit tests): the console line is enough
+      }
     }
   }
   const transport = nodemailer.createTransport({
@@ -28,7 +38,7 @@ export function createMailer(cfg: Config): Mailer {
   }
 }
 
-/** keeps the log useful without storing full addresses: "namquoctran24@gmail.com" -> "na***@gmail.com" */
+/** keeps the log useful without storing full addresses: "erika.musterfrau@example.com" -> "er***@example.com" */
 export function maskEmail(email: string): string {
   const at = email.lastIndexOf('@')
   if (at < 1) return '***'
@@ -67,6 +77,27 @@ const RESET: Record<Locale, Template> = {
   }),
 }
 
+/*
+ * Someone entered this address on the sign-up form while an account already exists.
+ * The answer to the request itself is the same as for an unknown address, so this mail is the
+ * only place the difference shows - and it goes to the owner of the address, not to whoever
+ * typed it in.
+ */
+const EXISTS: Record<Locale, Template> = {
+  de: (link) => ({
+    subject: 'Zyklus: Es gibt schon ein Konto mit dieser Adresse',
+    text: `Hallo,\n\njemand hat gerade versucht, mit dieser E-Mail-Adresse ein Zyklus-Konto anzulegen. Ein Konto mit dieser Adresse gibt es aber schon.\n\nWarst du das? Dann melde dich einfach an:\n\n${link}\n\nHast du dein Passwort vergessen, nutze in der App „Passwort vergessen?".\n\nWarst du das nicht, musst du nichts tun. Es wurde kein neues Konto angelegt und an deinem bestehenden Konto hat sich nichts geändert.\n\nDein Zyklus-Team`,
+  }),
+  en: (link) => ({
+    subject: 'Zyklus: an account with this address already exists',
+    text: `Hello,\n\nsomeone just tried to create a Zyklus account with this email address. An account with this address already exists.\n\nWas that you? Then simply sign in:\n\n${link}\n\nIf you forgot your password, use "Forgot password?" in the app.\n\nIf that was not you, there is nothing to do. No new account was created and nothing about your existing account has changed.\n\nYour Zyklus team`,
+  }),
+  vi: (link) => ({
+    subject: 'Zyklus: đã có tài khoản dùng địa chỉ này',
+    text: `Xin chào,\n\nvừa có người thử tạo tài khoản Zyklus bằng địa chỉ email này. Nhưng đã có một tài khoản dùng địa chỉ này.\n\nĐó là bạn? Vậy hãy đăng nhập:\n\n${link}\n\nNếu bạn quên mật khẩu, hãy dùng "Quên mật khẩu?" trong ứng dụng.\n\nNếu không phải bạn, bạn không cần làm gì. Không có tài khoản mới nào được tạo và tài khoản hiện có của bạn không thay đổi gì.\n\nĐội ngũ Zyklus`,
+  }),
+}
+
 const CHANGED: Record<Locale, () => Omit<Mail, 'to'>> = {
   de: () => ({
     subject: 'Zyklus: Dein Passwort wurde geändert',
@@ -74,12 +105,16 @@ const CHANGED: Record<Locale, () => Omit<Mail, 'to'>> = {
   }),
   en: () => ({
     subject: 'Zyklus: your password was changed',
-    text: `Hello,\n\nthe password of your Zyklus account was just changed and all other devices were signed out.\n\nWasn't you? Reset your password immediately via "Forgot password?" in the app.\n\nYour Zyklus team`,
+    text: `Hello,\n\nthe password of your Zyklus account was just changed and all other devices were signed out.\n\nWasn't that you? Reset your password immediately via "Forgot password?" in the app.\n\nYour Zyklus team`,
   }),
   vi: () => ({
     subject: 'Zyklus: mật khẩu của bạn đã được thay đổi',
     text: `Xin chào,\n\nmật khẩu tài khoản Zyklus của bạn vừa được thay đổi và tất cả thiết bị khác đã được đăng xuất.\n\nNếu không phải bạn? Hãy đặt lại mật khẩu ngay qua mục "Quên mật khẩu?" trong ứng dụng.\n\nĐội ngũ Zyklus`,
   }),
+}
+
+export function accountExistsMail(origin: string, locale: Locale = 'de'): Omit<Mail, 'to'> {
+  return EXISTS[locale](origin)
 }
 
 export function verifyMail(origin: string, token: string, locale: Locale = 'de'): Omit<Mail, 'to'> {

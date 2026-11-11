@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto'
-import type { Context, Hono, Next } from 'hono'
+import type { Context, Hono, MiddlewareHandler, Next } from 'hono'
 import type { DB, UserRow } from './db.ts'
 import { RateLimiter } from './ratelimit.ts'
 import { ACHIEVEMENTS, achievementLevel, activityLog, computeFlames, dayNum, dayStr, isActive, pausedDays, type ActivityLog, type WeeklyGoal } from './shared/flames.ts'
@@ -12,6 +12,9 @@ import { ACHIEVEMENTS, achievementLevel, activityLog, computeFlames, dayNum, day
 
 export const MAX_FRIENDS = 50
 export const MAX_MEMBERS = 10
+/** Caps on a summary: it is replayed for every friend and challenge member, so its size is not the owner's to decide. */
+const MAX_FROZEN = 2000
+const MAX_GOALS = 200
 const CHALLENGE_DAYS = [7, 14, 30]
 const METRICS = ['active_days', 'minutes'] as const
 type Metric = (typeof METRICS)[number]
@@ -44,16 +47,17 @@ export function summarize(doc: unknown): { name: string; summary: Summary } {
     mobility: list(state.mobility).map((m) => ({ date: String(m.date), minutes: Number(m.minutes) || 0 })),
   })
   const goals = Array.isArray(settings.weeklyGoals)
-    ? settings.weeklyGoals.map(rec).filter((g) => typeof g.from === 'string' && typeof g.days === 'number').map((g) => ({ from: String(g.from), days: Number(g.days) }))
+    ? settings.weeklyGoals.map(rec).filter((g) => typeof g.from === 'string' && DATE_RE.test(g.from) && typeof g.days === 'number').map((g) => ({ from: String(g.from), days: Number(g.days) })).slice(0, MAX_GOALS)
     : undefined
   const days = Number(profile.daysPerWeek)
   return {
     name: str(profile.name, 40),
     summary: {
       log,
-      frozen: Array.isArray(state.frozenDays) ? state.frozenDays.filter((d): d is string => typeof d === 'string' && DATE_RE.test(d)) : [],
-      mode: typeof settings.mode === 'string' ? settings.mode : undefined,
-      modeSince: typeof settings.modeSince === 'string' ? settings.modeSince : undefined,
+      frozen: Array.isArray(state.frozenDays) ? state.frozenDays.filter((d): d is string => typeof d === 'string' && DATE_RE.test(d)).slice(0, MAX_FROZEN) : [],
+      mode: str(settings.mode, 20) || undefined,
+      // a date here drives a day loop in pausedDays, so it has to be a date
+      modeSince: typeof settings.modeSince === 'string' && DATE_RE.test(settings.modeSince) ? settings.modeSince : undefined,
       goals,
       defaultGoal: Number.isFinite(days) && days > 0 ? Math.min(7, days) : 3,
     },
@@ -61,7 +65,11 @@ export function summarize(doc: unknown): { name: string; summary: Summary } {
 }
 
 export function newCode(len = 8): string {
-  return [...randomBytes(len)].map((b) => ALPHABET[b % ALPHABET.length]).join('')
+  // rejection sampling: 256 is not a multiple of 31, so `% length` would favour the first symbols
+  const max = Math.floor(256 / ALPHABET.length) * ALPHABET.length
+  let out = ''
+  while (out.length < len) for (const b of randomBytes(len)) if (b < max && out.length < len) out += ALPHABET[b % ALPHABET.length]
+  return out
 }
 const normCode = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 16)
 
@@ -73,9 +81,11 @@ interface Helpers {
   requireUser: (c: Context<Vars>, next: Next) => Promise<Response | void>
   fail: Fail
   readJson: (c: Context) => Promise<Rec | null>
+  /** 16 KB cap; without it these routes would read a body of any size before looking at it */
+  smallBody: MiddlewareHandler
 }
 
-export function createSocial({ db, now, requireUser, fail, readJson }: Helpers) {
+export function createSocial({ db, now, requireUser, fail, readJson, smallBody }: Helpers) {
   const limit = new RateLimiter(30, 15 * 60 * 1000, now)
   const q = {
     getSummary: db.prepare('SELECT name, data FROM summaries WHERE user_id = ?'),
@@ -217,12 +227,9 @@ export function createSocial({ db, now, requireUser, fail, readJson }: Helpers) 
     return { team, grit }
   }
 
-  function inviteCode(userId: number): string {
-    const row = q.inviteOf.get(userId) as { code: string } | undefined
-    if (row) return row.code
-    const code = newCode()
-    q.putInvite.run(userId, code, now())
-    return code
+  /** Read-only: a GET must not create anything. The app asks /social/invite/rotate for a first code. */
+  function currentCode(userId: number): string | null {
+    return (q.inviteOf.get(userId) as { code: string } | undefined)?.code ?? null
   }
 
   function mount(app: Hono<Vars>) {
@@ -231,10 +238,10 @@ export function createSocial({ db, now, requireUser, fail, readJson }: Helpers) 
     app.get('/social/me', requireUser, (c) => {
       const me = c.get('user').id
       const today = dayParam(c)
-      return c.json({ name: summaryOf(me).name, code: inviteCode(me), counts: { friends: friendsOf(me).length, ...challengeCounts(me, today) } })
+      return c.json({ name: summaryOf(me).name, code: currentCode(me), counts: { friends: friendsOf(me).length, ...challengeCounts(me, today) } })
     })
 
-    app.post('/social/invite/rotate', requireUser, (c) => {
+    app.post('/social/invite/rotate', smallBody, requireUser, (c) => {
       const code = newCode()
       q.putInvite.run(c.get('user').id, code, now())
       return c.json({ code })
@@ -248,7 +255,7 @@ export function createSocial({ db, now, requireUser, fail, readJson }: Helpers) 
       return c.json({ name: summaryOf(row.user_id).name, self: row.user_id === me, friends: areFriends(me, row.user_id) })
     })
 
-    app.post('/social/invite/:code/accept', requireUser, (c) => {
+    app.post('/social/invite/:code/accept', smallBody, requireUser, (c) => {
       if (throttled(c)) return fail(c, 429, 'rate', 'Zu viele Versuche. Bitte warte ein paar Minuten.')
       const row = q.inviteByCode.get(normCode((c.req.param('code') ?? ''))) as { user_id: number } | undefined
       if (!row) return fail(c, 404, 'invite_unknown', 'Diese Einladung gibt es nicht (mehr).')
@@ -266,7 +273,7 @@ export function createSocial({ db, now, requireUser, fail, readJson }: Helpers) 
       return c.json({ friends: friendsOf(c.get('user').id).map((f) => ({ ...profileView(f.id, today), since: f.created_at })) })
     })
 
-    app.post('/social/friends/:id/remove', requireUser, (c) => {
+    app.post('/social/friends/:id/remove', smallBody, requireUser, (c) => {
       const other = Number((c.req.param('id') ?? ''))
       if (!Number.isInteger(other)) return fail(c, 404, 'not_found', 'Nicht gefunden.')
       q.removeFriend.run(...pair(c.get('user').id, other))
@@ -279,7 +286,8 @@ export function createSocial({ db, now, requireUser, fail, readJson }: Helpers) 
       return c.json({ challenges: (q.myChallenges.all(me) as unknown as ChallengeRow[]).map((ch) => challengeView(ch, today, me)) })
     })
 
-    app.post('/social/challenges', requireUser, async (c) => {
+    app.post('/social/challenges', smallBody, requireUser, async (c) => {
+      if (throttled(c)) return fail(c, 429, 'rate', 'Zu viele Versuche. Bitte warte ein paar Minuten.')
       const me = c.get('user').id
       const body = rec(await readJson(c))
       const kind = body.kind === 'streak' ? 'streak' : body.kind === 'goal' ? 'goal' : null
@@ -292,8 +300,9 @@ export function createSocial({ db, now, requireUser, fail, readJson }: Helpers) 
       const id = randomBytes(9).toString('base64url')
       q.insertChallenge.run(id, me, kind, str(body.title, 60), metric, target, days, start, dayStr(dayNum(start) + days - 1), newCode(), now())
       q.addMember.run(id, me, now())
-      const invite = Array.isArray(body.invite) ? body.invite.map(Number).filter((f) => Number.isInteger(f) && areFriends(me, f)) : []
-      for (const f of invite.slice(0, MAX_MEMBERS - 1)) q.addMember.run(id, f, now())
+      // slice first: areFriends is a synchronous query, so filtering the whole array would be one DB round per element
+      const invite = (Array.isArray(body.invite) ? body.invite : []).slice(0, MAX_MEMBERS - 1).map(Number).filter((f) => Number.isInteger(f) && areFriends(me, f))
+      for (const f of invite) q.addMember.run(id, f, now())
       return c.json({ challenge: challengeView(q.challenge.get(id) as unknown as ChallengeRow, start, me) }, 201)
     })
 
@@ -304,7 +313,7 @@ export function createSocial({ db, now, requireUser, fail, readJson }: Helpers) 
       return c.json({ challenge: challengeView(ch, dayParam(c), c.get('user').id) })
     })
 
-    app.post('/social/challenges/join/:code', requireUser, (c) => {
+    app.post('/social/challenges/join/:code', smallBody, requireUser, (c) => {
       if (throttled(c)) return fail(c, 429, 'rate', 'Zu viele Versuche. Bitte warte ein paar Minuten.')
       const ch = q.challengeByCode.get(normCode((c.req.param('code') ?? ''))) as unknown as ChallengeRow | undefined
       if (!ch) return fail(c, 404, 'challenge_unknown', 'Diese Challenge gibt es nicht (mehr).')
@@ -325,20 +334,21 @@ export function createSocial({ db, now, requireUser, fail, readJson }: Helpers) 
       return c.json({ challenge: challengeView(ch, dayParam(c), me) })
     })
 
-    app.post('/social/challenges/:id/invite', requireUser, async (c) => {
+    app.post('/social/challenges/:id/invite', smallBody, requireUser, async (c) => {
       const me = c.get('user').id
       const ch = q.challenge.get((c.req.param('id') ?? '')) as unknown as ChallengeRow | undefined
       if (!ch || !q.isMember.get(ch.id, me)) return fail(c, 404, 'not_found', 'Nicht gefunden.')
       const ids = rec(await readJson(c)).ids
-      const add = (Array.isArray(ids) ? ids : []).map(Number).filter((f) => Number.isInteger(f) && areFriends(me, f))
-      const room = MAX_MEMBERS - q.members.all(ch.id).length
-      for (const f of add.slice(0, Math.max(0, room))) q.addMember.run(ch.id, f, now())
+      const room = Math.max(0, MAX_MEMBERS - q.members.all(ch.id).length)
+      const add = (Array.isArray(ids) ? ids : []).slice(0, room).map(Number).filter((f) => Number.isInteger(f) && areFriends(me, f))
+      for (const f of add) q.addMember.run(ch.id, f, now())
       return c.json({ challenge: challengeView(ch, dayParam(c), me) })
     })
 
-    app.post('/social/challenges/:id/leave', requireUser, (c) => {
+    app.post('/social/challenges/:id/leave', smallBody, requireUser, (c) => {
       const me = c.get('user').id
       const id = (c.req.param('id') ?? '')
+      if (!q.isMember.get(id, me)) return fail(c, 404, 'not_found', 'Nicht gefunden.')
       q.removeMember.run(id, me)
       if (!q.members.all(id).length) q.deleteChallenge.run(id)
       return c.json({ ok: true })

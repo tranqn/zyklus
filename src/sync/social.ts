@@ -64,7 +64,7 @@ const day = () => `today=${today()}`
 const enc = encodeURIComponent
 
 export const social = {
-  me: () => api<{ name: string; code: string; counts: SocialCounts }>('GET', `/social/me?${day()}`),
+  me: () => api<{ name: string; code: string | null; counts: SocialCounts }>('GET', `/social/me?${day()}`),
   rotate: () => api<{ code: string }>('POST', '/social/invite/rotate', {}),
   invite: (code: string) => api<{ name: string; self: boolean; friends: boolean }>('GET', `/social/invite/${enc(code)}`),
   accept: (code: string) => api<{ friend: FriendView }>('POST', `/social/invite/${enc(code)}/accept?${day()}`, {}),
@@ -91,7 +91,9 @@ export async function refreshSocial(): Promise<void> {
   const userId = useSync.getState().user?.id
   if (!userId) return
   const [me, friends, challenges] = await Promise.all([social.me(), social.friends(), social.challenges()])
-  useSocial.setState({ userId, name: me.name, code: me.code, counts: me.counts, friends: friends.friends, challenges: challenges.challenges, fetchedAt: Date.now() })
+  // the first code is created on request, because a GET must not write
+  const code = me.code ?? (await social.rotate().then((r) => r.code, () => undefined))
+  useSocial.setState({ userId, name: me.name, code, counts: me.counts, friends: friends.friends, challenges: challenges.challenges, fetchedAt: Date.now() })
 }
 
 export function socialError(e: unknown): string {

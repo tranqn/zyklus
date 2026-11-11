@@ -172,8 +172,17 @@ export async function login(email: string, password: string) {
   await adopt(user)
 }
 
+/**
+ * Registration no longer signs in: the server answers the same whether or not the address is
+ * taken, so there is nobody to adopt yet. The confirmation link does it (see verifyEmail).
+ */
 export async function register(email: string, password: string, consent: boolean, locale: string) {
-  const { user } = await api<{ user: PublicUser }>('POST', '/auth/register', { email, password, consent, locale })
+  await api('POST', '/auth/register', { email, password, consent, locale })
+}
+
+/** Confirming the address signs the account in, so the user lands in the app straight away. */
+export async function verifyEmail(token: string) {
+  const { user } = await api<{ user: PublicUser }>('POST', '/auth/verify', { token })
   await adopt(user)
 }
 
