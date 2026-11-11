@@ -28,6 +28,33 @@ async function onboard(page: Page, register = true) {
   await expect(page.getByRole('heading', { name: /Testi/ })).toBeVisible()
 }
 
+test('onboarding: the age can be typed, not only stepped', async ({ page }) => {
+  await signUp(page)
+  await page.getByLabel('Wie dürfen wir dich nennen? (optional)').fill('Testi')
+  await page.getByRole('button', { name: 'Plan erstellen' }).click()
+  await page.getByRole('button', { name: /Muskelaufbau/ }).click()
+  const age = page.getByLabel('Alter', { exact: true })
+  for (let i = 0; i < 7 && !(await age.isVisible()); i++) await page.getByRole('button', { name: 'Weiter' }).click()
+  await expect(age).toBeVisible()
+
+  // a partial number must survive: clamped per keystroke, "1" would jump to the minimum of 14
+  await age.fill('1')
+  await expect(age).toHaveValue('1')
+  await age.fill('18')
+  await age.press('Enter')
+  await expect(age).toHaveValue('18')
+
+  // below the minimum it clamps, but only once the field is left
+  await age.fill('5')
+  await expect(age).toHaveValue('5')
+  await age.press('Enter')
+  await expect(age).toHaveValue('14')
+
+  // the buttons still work and still carry their accessible names
+  await page.getByRole('button', { name: 'Alter erhöhen' }).click()
+  await expect(age).toHaveValue('15')
+})
+
 test('onboarding, workout with test set, finish', async ({ page }) => {
   await onboard(page)
   await expect(page.getByText('Woche 1/5 · Einheit 1/3')).toBeVisible()
