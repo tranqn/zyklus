@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { onToast } from './notify'
 import { fmtNumber, useT } from '../i18n'
+import { clamp } from '../domain/util'
 import { Button } from '@/components/ui/button'
 import { SheetContent, SheetTitle, Sheet as SheetRoot } from '@/components/ui/sheet'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
@@ -121,14 +122,49 @@ export function Segmented<T extends string | number>({ value, options, onChange,
 export function Stepper({ value, onChange, step = 1, min = 0, max = 999, suffix, label }: { value: number; onChange: (v: number) => void; step?: number; min?: number; max?: number; suffix?: string; label: string }) {
   const { t } = useT()
   const round = (v: number) => Math.round(v * 100) / 100
+  /*
+   * The value is typable as well as steppable. While the field has focus the raw text lives in
+   * `draft`, so "78," stays on screen instead of being swallowed by a parse. Clamping waits for
+   * blur or Enter: clamped per keystroke, a typed "1" in a field with min 14 would jump to 14 and
+   * "18" could never be entered. An unreadable draft is dropped rather than passed on, because
+   * the age ends up in the Mifflin-St-Jeor formula and a NaN there poisons every calorie target.
+   */
+  const [draft, setDraft] = useState<string | null>(null)
+  const commit = () => {
+    if (draft === null) return
+    const n = parseFloat(draft.replace(',', '.'))
+    setDraft(null)
+    if (Number.isFinite(n)) onChange(round(clamp(n, min, max)))
+  }
+  // wide enough for the largest value this stepper allows, so the suffix does not jump around
+  const width = `${String(Math.round(max)).length + (step < 1 ? 2 : 0)}ch`
   return (
     <div className="flex items-center gap-2.5">
       <Button type="button" variant="secondary" size="icon" aria-label={t('shell.a11y.decrease', { label })} onClick={() => onChange(Math.max(min, round(value - step)))}>
         <Icon name="minus" />
       </Button>
-      <div className="min-w-0 flex-1 text-center">
-        <span className="text-[1.6rem] font-extrabold tabular-nums">{fmtNumber(value, 2)}</span>
-        {suffix && <span className="text-muted-foreground"> {suffix}</span>}
+      <div className="flex min-w-0 flex-1 items-baseline justify-center gap-1">
+        <input
+          className="stepper-input"
+          style={{ width }}
+          inputMode={step < 1 ? 'decimal' : 'numeric'}
+          enterKeyHint="done"
+          aria-label={label}
+          value={draft ?? fmtNumber(value, 2)}
+          onFocus={(e) => {
+            setDraft(String(value).replace('.', ','))
+            e.currentTarget.select()
+          }}
+          onChange={(e) => setDraft(e.target.value.replace(/[^0-9.,]/g, ''))}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              e.currentTarget.blur()
+            }
+          }}
+        />
+        {suffix && <span className="text-muted-foreground">{suffix}</span>}
       </div>
       <Button type="button" variant="secondary" size="icon" aria-label={t('shell.a11y.increase', { label })} onClick={() => onChange(Math.min(max, round(value + step)))}>
         <Icon name="plus" />
