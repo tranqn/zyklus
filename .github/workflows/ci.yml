@@ -1,24 +1,35 @@
 # Zyklus: build on GitHub's runners, publish on the Hetzner box.
 #
 # The app is a static PWA, so the server only receives the finished dist and
-# swaps it in. The publish job runs on a self-hosted runner inside the server,
-# so it has no pull_request path and refuses anything but main.
+# swaps it in. The publish job runs on a self-hosted runner inside the server.
+#
+# WHILE THIS REPO IS PRIVATE, the `if:` guards below are what keeps the deploy
+# jobs on main. They would NOT hold in a public repo: on a pull_request event
+# GitHub runs the workflow file from the fork, so a stranger could drop the
+# guards, keep `runs-on: [self-hosted, ...]` and get code execution on the box.
+# Before this repo goes public the two deploy jobs move to a private repo and
+# the runner is unregistered here.
 name: CI
 
 on:
   push:
     branches: [main]
   pull_request:
+    branches: [main]
   workflow_dispatch:
+
+# read-only by default: nothing here needs to write to the repo
+permissions:
+  contents: read
 
 jobs:
   build:
     name: Verify and build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -47,14 +58,14 @@ jobs:
       - name: End-to-end tests
         run: pnpm e2e
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: failure()
         with:
           name: playwright-traces
           path: test-results
           retention-days: 7
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: site
           path: dist
@@ -89,7 +100,7 @@ jobs:
       cancel-in-progress: false
     timeout-minutes: 15
     steps:
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: site
           path: site

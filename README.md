@@ -22,13 +22,25 @@ Mobile-first Trainings-PWA, inspiriert vom Funktionsumfang der MCI-App (MCI Solu
 
 ## Entwicklung
 
+Vorausgesetzt sind Node (Version in `.nvmrc`) und pnpm (Version in `package.json`, Feld `packageManager`).
+
 ```sh
 pnpm install
-pnpm dev        # http://localhost:5173
-pnpm verify     # tsc, oxlint, vitest
-pnpm e2e        # Playwright, mobiles Viewport (Pixel 7)
+pnpm --dir server install
+
+pnpm --dir server dev   # API auf http://localhost:8787 (der Vite-Proxy erwartet sie dort)
+pnpm dev                # App auf http://localhost:5173
+
+pnpm verify             # tsc, oxlint, vitest
+pnpm --dir server test  # Tests der API: Konten, Sitzungen, Rate Limits
+pnpm e2e                # Playwright, mobiles Viewport (Pixel 7)
 pnpm build
 ```
+
+Ein Konto ist Pflicht, die App startet also auf der Anmeldeseite. Lokal braucht es dafür
+**keine** `.env`: ohne `SMTP_HOST` verschickt die API keine E-Mails, sondern schreibt sie samt
+Bestätigungslink in ihre eigene Konsole (`server/.env.example` zeigt, was im Betrieb gesetzt
+wird). Den Link aus der Konsole aufrufen, und das Konto ist bestätigt.
 
 Die Fachlogik liegt in `src/domain/`, die Synchronisierung in `src/sync/`, die API in `server/` (Hono + node:sqlite, `pnpm --dir server dev` auf Port 8787) (ohne React, mit Tests in `src/domain/__tests__/`), die Oberfläche in `src/pages/` und `src/ui/`.
 
@@ -49,9 +61,20 @@ pnpm anim                 # alle Muster nach public/anim/
 pnpm anim squat --frames  # ein Muster, plus PNG-Kontrollbilder in tools/anim/.work/
 ```
 
+Die erzeugten Lottie-Dateien liegen fertig in `public/anim/` im Repository. Dieser Schritt ist
+also nur nötig, wenn die Animationen selbst geändert werden; für Bauen und Ausführen braucht man
+die CLI nicht. `tools/anim/sheet.py` braucht zusätzlich Pillow.
+
 ## Vor dem öffentlichen Betrieb
 
 - In `src/pages/Legal.tsx` Anschrift und Kontakt-E-Mail eintragen (Platzhalter in eckigen Klammern).
+
+## Lizenz
+
+Dieses Repository ist zum Lesen veröffentlicht, als Arbeitsprobe, und ist keine
+Open-Source-Software: ansehen und lokal ausprobieren gern, weiterverwenden nicht. Die Bedingungen
+stehen in [LICENSE](LICENSE). Fremde Bestandteile und die Herkunft der Nährwertdaten sind in
+[NOTICE.md](NOTICE.md) aufgeführt.
 
 ## Deployment
 
