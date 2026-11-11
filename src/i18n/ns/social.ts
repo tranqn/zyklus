@@ -9,7 +9,7 @@ export const social = ns({
     offline: 'Freunde und Challenges brauchen eine Internetverbindung. Du siehst den letzten Stand.',
     name: {
       title: 'Wie sollen dich Freunde sehen?',
-      hint: 'Freunde sehen deinen Namen, deine Flammen, deinen Wochenfortschritt und deine Erfolge. Training, Essen und Körperdaten bleiben privat.',
+      hint: 'Freunde sehen deinen Namen, deine Flammen, deinen Wochenfortschritt und deine Erfolge. Training, Essen und Körperdaten bleiben privat. Freunde können dich außerdem in eine gemeinsame Challenge aufnehmen; dort sehen auch die anderen Mitglieder deinen Namen und deinen Beitrag.',
       label: 'Dein Name',
       save: 'Speichern',
     },
@@ -112,7 +112,7 @@ export const social = ns({
     offline: 'Friends and challenges need an internet connection. You see the last known state.',
     name: {
       title: 'How should friends see you?',
-      hint: 'Friends see your name, your flames, your weekly progress and your achievements. Workouts, food and body data stay private.',
+      hint: 'Friends see your name, your flames, your weekly progress and your achievements. Workouts, food and body data stay private. Friends can also add you to a shared challenge, where the other members see your name and your contribution too.',
       label: 'Your name',
       save: 'Save',
     },
@@ -215,7 +215,7 @@ export const social = ns({
     offline: 'Bạn bè và thử thách cần kết nối internet. Bạn đang xem dữ liệu gần nhất.',
     name: {
       title: 'Bạn bè sẽ thấy bạn với tên gì?',
-      hint: 'Bạn bè thấy tên, ngọn lửa, tiến độ tuần và thành tích của bạn. Buổi tập, ăn uống và số đo cơ thể vẫn riêng tư.',
+      hint: 'Bạn bè thấy tên, ngọn lửa, tiến độ tuần và thành tích của bạn. Buổi tập, ăn uống và số đo cơ thể vẫn riêng tư. Bạn bè cũng có thể thêm bạn vào một thử thách chung; ở đó các thành viên khác cũng thấy tên và phần đóng góp của bạn.',
       label: 'Tên của bạn',
       save: 'Lưu',
     },

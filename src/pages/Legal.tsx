@@ -37,7 +37,7 @@ const DOCS: Record<Lang, { impressum: Doc; datenschutz: Doc }> = {
     },
     datenschutz: {
       title: 'Datenschutzerklärung',
-      stand: 'Stand: Oktober 2026',
+      stand: 'Stand: November 2026',
       sections: [
         { title: '1. Verantwortlicher', body: [`${ADDRESS}, E-Mail: ${OPERATOR.email}`] },
         { title: '2. Kopie auf deinem Gerät', body: ['Damit Zyklus auch offline funktioniert, hält die App eine Kopie deiner Daten im Speicher deines Browsers (localStorage). Beim Abmelden kannst du diese Kopie entfernen.'] },
@@ -58,12 +58,19 @@ const DOCS: Record<Lang, { impressum: Doc; datenschutz: Doc }> = {
           title: '4. Freunde und Challenges',
           body: [
             'Wenn du jemanden über deinen Einladungslink oder Code als Freund annimmst oder einer Challenge beitrittst, sehen die anderen einen Auszug: deinen Namen aus dem Profil, deine Tages- und Wochen-Flamme, deine aktiven Tage dieser Woche, deine Erfolgsstufen und deine Beiträge zu gemeinsamen Challenges (aktive Tage oder Minuten). Trainingsinhalte, Gewichte, Ernährung und Körperdaten sehen sie nicht. Dafür speichern wir neben deinen Daten eine daraus berechnete Zusammenfassung deiner Aktivitätstage. Rechtsgrundlage ist die Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO), weil du die Funktion selbst nutzt. Freundschaften und Challenges kannst du jederzeit beenden; mit dem Konto werden sie gelöscht.',
+            'Zwei Punkte, die du wissen solltest: Wer mit dir befreundet ist, kann dich in eine gemeinsame Challenge aufnehmen, ohne dass du vorher zustimmst. Dein Name und dein Beitrag zu dieser Challenge sind dann auch für die anderen Mitglieder sichtbar, selbst wenn du mit denen nicht befreundet bist. Und wer den Beitritts-Code einer Challenge hat, sieht deren Mitglieder samt Werten, auch schon vor dem Beitritt. Du kannst eine Challenge jederzeit verlassen, dann verschwinden deine Werte dort.',
           ],
         },
         { title: '5. Cookies und lokaler Speicher', body: ['Wir setzen ausschließlich ein technisch notwendiges Sitzungs-Cookie (zyk_session, httpOnly, 30 Tage) für die Anmeldung, sowie den localStorage deines Browsers für deine App-Daten und deine Spracheinstellung. Eine Einwilligung ist dafür nach § 25 Abs. 2 TDDDG nicht erforderlich.'] },
         { title: '6. Hosting', body: ['Server und Datenbank betreiben wir auf einem Server der Hetzner Online GmbH, Industriestr. 25, 91710 Gunzenhausen, in einem Rechenzentrum in der EU. Mit Hetzner besteht ein Vertrag zur Auftragsverarbeitung nach Art. 28 DSGVO. Beim Aufruf der Seite verarbeitet der Webserver deine IP-Adresse kurzzeitig, um die Verbindung herzustellen und Missbrauch (z. B. massenhafte Anmeldeversuche) zu begrenzen.'] },
         { title: '7. E-Mail-Versand', body: ['Bestätigungs- und Passwort-E-Mails versenden wir über den SMTP-Dienst von Google (Gmail), Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland. Dabei werden deine E-Mail-Adresse und der Inhalt der E-Mail an Google übermittelt. Eine Übermittlung in die USA ist möglich; Google ist nach dem EU-US Data Privacy Framework zertifiziert.'] },
-        { title: '8. Lebensmittel-Datenbank', body: ['Für die Lebensmittelsuche leiten wir deinen Suchbegriff an Open Food Facts (Open Food Facts, Frankreich) weiter, ohne Bezug zu deiner Person. Beim Scannen eines Barcodes fragt dein Browser die Produktdaten direkt bei Open Food Facts ab; dabei sieht Open Food Facts deine IP-Adresse.'] },
+        {
+          title: '8. Lebensmittel-Datenbank und Barcode-Scanner',
+          body: [
+            'Für die Lebensmittelsuche leiten wir deinen Suchbegriff an Open Food Facts (Open Food Facts, Frankreich) weiter, ohne Bezug zu deiner Person. Beim Scannen eines Barcodes fragt dein Browser die Produktdaten direkt bei Open Food Facts ab; dabei sieht Open Food Facts deine IP-Adresse.',
+            'Für den Scanner fragt die App den Zugriff auf deine Kamera. Das Kamerabild wird ausschließlich auf deinem Gerät ausgewertet, um die Ziffern des Barcodes zu erkennen. Es wird nicht gespeichert, nicht an uns und nicht an Dritte übertragen; nur die erkannte Barcode-Nummer verlässt dein Gerät. Du kannst Lebensmittel jederzeit ohne Kamera suchen oder eintippen.',
+          ],
+        },
         {
           title: '9. Speicherdauer',
           body: [
@@ -96,7 +103,7 @@ const DOCS: Record<Lang, { impressum: Doc; datenschutz: Doc }> = {
     },
     datenschutz: {
       title: 'Privacy policy',
-      stand: 'Last updated: October 2026',
+      stand: 'Last updated: November 2026',
       binding: 'This is a translation for your convenience. The German version is legally binding.',
       sections: [
         { title: '1. Controller', body: [`${ADDRESS}, Germany, email: ${OPERATOR.email}`] },
@@ -118,12 +125,19 @@ const DOCS: Record<Lang, { impressum: Doc; datenschutz: Doc }> = {
           title: '4. Friends and challenges',
           body: [
             'When you accept someone as a friend through an invite link or code, or join a challenge, the others see an extract: your profile name, your daily and weekly flame, your active days this week, your achievement levels and your contributions to shared challenges (active days or minutes). They do not see workout contents, weights, nutrition or body data. For this we store a summary of your active days computed from your data. The legal basis is the performance of a contract (Art. 6 (1) (b) GDPR), because you use the feature yourself. You can end friendships and challenges at any time; they are deleted with your account.',
+            'Two things worth knowing: anyone who is your friend can add you to a shared challenge without asking you first. Your name and your contribution to that challenge are then visible to the other members too, even to those you are not friends with. And anyone holding a challenge join code can see its members and their values, even before joining. You can leave a challenge at any time, which removes your values from it.',
           ],
         },
         { title: '5. Cookies and local storage', body: ['We only use one technically necessary session cookie (zyk_session, httpOnly, 30 days) for signing in, plus your browser’s localStorage for your app data and language setting. No consent is required for this under § 25 (2) TDDDG.'] },
         { title: '6. Hosting', body: ['We run the server and database on a server of Hetzner Online GmbH, Industriestr. 25, 91710 Gunzenhausen, Germany, in a data centre in the EU. A data processing agreement under Art. 28 GDPR is in place with Hetzner. When you open the site, the web server briefly processes your IP address to establish the connection and to limit abuse (e.g. mass sign-in attempts).'] },
         { title: '7. Sending emails', body: ['We send confirmation and password emails via Google’s SMTP service (Gmail), Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Ireland. Your email address and the content of the email are transmitted to Google. A transfer to the USA is possible; Google is certified under the EU-US Data Privacy Framework.'] },
-        { title: '8. Food database', body: ['For the food search we forward your search term to Open Food Facts (Open Food Facts, France) without any reference to you. When you scan a barcode, your browser requests the product data directly from Open Food Facts; Open Food Facts sees your IP address in the process.'] },
+        {
+          title: '8. Food database and barcode scanner',
+          body: [
+            'For the food search we forward your search term to Open Food Facts (Open Food Facts, France) without any reference to you. When you scan a barcode, your browser requests the product data directly from Open Food Facts; Open Food Facts sees your IP address in the process.',
+            'For the scanner the app asks for access to your camera. The camera image is evaluated on your device only, to read the digits of the barcode. It is not stored and never transmitted to us or to anyone else; only the barcode number leaves your device. You can always search or type in a food without the camera.',
+          ],
+        },
         {
           title: '9. Storage period',
           body: [
@@ -156,7 +170,7 @@ const DOCS: Record<Lang, { impressum: Doc; datenschutz: Doc }> = {
     },
     datenschutz: {
       title: 'Chính sách quyền riêng tư',
-      stand: 'Cập nhật: tháng 10/2026',
+      stand: 'Cập nhật: tháng 11/2026',
       binding: 'Đây là bản dịch để bạn tiện theo dõi. Bản tiếng Đức có giá trị pháp lý.',
       sections: [
         { title: '1. Bên chịu trách nhiệm', body: [`${ADDRESS}, Đức, email: ${OPERATOR.email}`] },
@@ -178,12 +192,19 @@ const DOCS: Record<Lang, { impressum: Doc; datenschutz: Doc }> = {
           title: '4. Bạn bè và thử thách',
           body: [
             'Khi bạn chấp nhận ai đó làm bạn qua link mời hoặc mã, hoặc tham gia một thử thách, những người khác thấy một phần thông tin: tên trong hồ sơ, lửa ngày và lửa tuần, số ngày vận động trong tuần này, cấp thành tích và phần đóng góp của bạn vào thử thách chung (ngày vận động hoặc số phút). Họ không thấy nội dung buổi tập, mức tạ, dinh dưỡng hay số đo cơ thể. Để làm việc này, chúng tôi lưu một bản tóm tắt các ngày vận động được tính từ dữ liệu của bạn. Cơ sở pháp lý là thực hiện hợp đồng (Điều 6 khoản 1 điểm b GDPR), vì bạn tự sử dụng tính năng này. Bạn có thể kết thúc tình bạn và thử thách bất cứ lúc nào; chúng sẽ bị xóa cùng tài khoản.',
+            'Hai điều bạn nên biết: người đã là bạn của bạn có thể thêm bạn vào một thử thách chung mà không hỏi trước. Khi đó tên bạn và phần đóng góp của bạn trong thử thách cũng hiển thị với các thành viên khác, kể cả những người bạn không kết bạn. Ngoài ra, ai có mã tham gia của một thử thách đều thấy danh sách thành viên và số liệu của họ, ngay cả trước khi tham gia. Bạn có thể rời thử thách bất cứ lúc nào, số liệu của bạn ở đó sẽ biến mất.',
           ],
         },
         { title: '5. Cookie và bộ nhớ cục bộ', body: ['Chúng tôi chỉ dùng một cookie phiên cần thiết về mặt kỹ thuật (zyk_session, httpOnly, 30 ngày) để đăng nhập, cùng với localStorage của trình duyệt cho dữ liệu ứng dụng và cài đặt ngôn ngữ. Theo § 25 khoản 2 TDDDG, việc này không cần sự đồng ý.'] },
         { title: '6. Lưu trữ máy chủ', body: ['Máy chủ và cơ sở dữ liệu được vận hành trên máy chủ của Hetzner Online GmbH, Industriestr. 25, 91710 Gunzenhausen, Đức, tại trung tâm dữ liệu trong EU. Chúng tôi có hợp đồng xử lý dữ liệu theo Điều 28 GDPR với Hetzner. Khi bạn truy cập trang, máy chủ web xử lý địa chỉ IP của bạn trong thời gian ngắn để thiết lập kết nối và hạn chế lạm dụng (ví dụ: đăng nhập hàng loạt).'] },
         { title: '7. Gửi email', body: ['Email xác nhận và email mật khẩu được gửi qua dịch vụ SMTP của Google (Gmail), Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Ireland. Địa chỉ email và nội dung email của bạn được chuyển đến Google. Dữ liệu có thể được chuyển sang Hoa Kỳ; Google được chứng nhận theo Khung bảo mật dữ liệu EU - Hoa Kỳ (Data Privacy Framework).'] },
-        { title: '8. Cơ sở dữ liệu thực phẩm', body: ['Khi tìm kiếm thực phẩm, chúng tôi chuyển từ khóa tìm kiếm đến Open Food Facts (Open Food Facts, Pháp) mà không kèm thông tin về bạn. Khi quét mã vạch, trình duyệt của bạn truy vấn dữ liệu sản phẩm trực tiếp từ Open Food Facts; khi đó Open Food Facts thấy địa chỉ IP của bạn.'] },
+        {
+          title: '8. Cơ sở dữ liệu thực phẩm và máy quét mã vạch',
+          body: [
+            'Khi tìm kiếm thực phẩm, chúng tôi chuyển từ khóa tìm kiếm đến Open Food Facts (Open Food Facts, Pháp) mà không kèm thông tin về bạn. Khi quét mã vạch, trình duyệt của bạn truy vấn dữ liệu sản phẩm trực tiếp từ Open Food Facts; khi đó Open Food Facts thấy địa chỉ IP của bạn.',
+            'Để quét mã, ứng dụng xin quyền truy cập camera của bạn. Hình ảnh camera chỉ được xử lý ngay trên thiết bị của bạn để đọc các chữ số của mã vạch. Hình ảnh không được lưu lại và không được truyền đến chúng tôi hay bất kỳ bên thứ ba nào; chỉ số mã vạch đã nhận dạng rời khỏi thiết bị. Bạn luôn có thể tìm hoặc tự nhập thực phẩm mà không cần camera.',
+          ],
+        },
         {
           title: '9. Thời hạn lưu trữ',
           body: [
