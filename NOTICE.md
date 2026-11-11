@@ -15,6 +15,10 @@ Die eingebaute Lebensmittel-Datenbank (`src/domain/foods.ts`) stützt sich auf d
 
 Die Werte sind Orientierung, keine Laboranalyse, und keine medizinische Auskunft.
 
+Die Mikronährstoffe stammen aus **USDA FoodData Central** (SR Legacy und Foundation Foods). Die
+Daten sind gemeinfrei unter CC0 1.0; die USDA bittet um Nennung als Quelle. Welcher USDA-Eintrag zu
+welchem Lebensmittel gehört, steht nachvollziehbar in `tools/micronutrients/usda-mapping.json`.
+
 ## Open Food Facts
 
 Die Produktsuche und der Barcode-Scanner fragen **Open Food Facts** ab
