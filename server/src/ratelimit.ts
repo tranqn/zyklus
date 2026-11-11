@@ -29,6 +29,12 @@ export class RateLimiter {
     return !!cur && cur.resetAt > this.now() && cur.count >= this.limit
   }
 
+  /** Hits counted in the running window, 0 once it has passed. */
+  count(key: string): number {
+    const cur = this.hits.get(key)
+    return cur && cur.resetAt > this.now() ? cur.count : 0
+  }
+
   reset(key: string): void {
     this.hits.delete(key)
   }

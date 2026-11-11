@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { confirm } from './mailbox.ts'
 
 let n = 0
 async function signUpVi(page: Page) {
@@ -6,10 +7,13 @@ async function signUpVi(page: Page) {
   // browser language vi-VN: the app starts in Vietnamese
   await expect(page.getByRole('heading', { name: 'Chào mừng bạn trở lại' })).toBeVisible()
   await page.getByRole('radio', { name: 'Đăng ký' }).click()
-  await page.getByLabel('Email').fill(`vi-${Date.now()}-${n++}-${Math.random().toString(36).slice(2, 8)}@example.test`)
+  const email = `vi-${Date.now()}-${n++}-${Math.random().toString(36).slice(2, 8)}@example.test`
+  await page.getByLabel('Email').fill(email)
   await page.getByLabel('Mật khẩu').fill('mot-mat-khau-dai-123')
   await page.getByRole('checkbox').check()
   await page.getByRole('button', { name: 'Tạo tài khoản' }).click()
+  await expect(page.getByRole('heading', { name: 'Hãy kiểm tra hộp thư' })).toBeVisible()
+  await confirm(page, email, 'Vào ứng dụng')
   await page.getByLabel('Chúng tôi nên gọi bạn là gì? (không bắt buộc)').fill('Lan')
   await page.getByRole('button', { name: 'Tạo giáo án' }).click()
   await page.getByRole('button', { name: /Tăng cơ/ }).click()

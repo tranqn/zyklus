@@ -12,6 +12,17 @@ export interface Config {
 }
 
 export function loadConfig(env = process.env): Config {
+  /*
+   * Production refuses to start on a missing setting instead of falling back quietly.
+   * Without APP_ORIGIN the cookie would ship without `Secure`, and without SMTP_HOST the dev
+   * mailer takes over and prints whole verification and reset links, tokens included, to stdout
+   * - which the json-file log driver then keeps on disk.
+   */
+  if (env.NODE_ENV === 'production') {
+    const missing = (['APP_ORIGIN', 'SMTP_HOST', 'MAIL_FROM'] as const).filter((k) => !env[k])
+    if (missing.length) throw new Error(`config: ${missing.join(', ')} must be set when NODE_ENV=production`)
+    if (!env.APP_ORIGIN!.startsWith('https://')) throw new Error('config: APP_ORIGIN must be https in production')
+  }
   const appOrigin = env.APP_ORIGIN ?? 'http://localhost:5173'
   return {
     port: Number(env.PORT ?? 8080),

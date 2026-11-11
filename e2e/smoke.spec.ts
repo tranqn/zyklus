@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { confirm } from './mailbox.ts'
 
 let counter = 0
 /** Create a fresh account; the app then shows onboarding. */
@@ -9,6 +10,9 @@ async function signUp(page: Page, email = `e2e-${Date.now()}-${counter++}-${Math
   await page.getByLabel('Passwort').fill(password)
   await page.getByRole('checkbox').check()
   await page.getByRole('button', { name: 'Konto erstellen' }).click()
+  // registration only sends a mail; the link in it confirms the address and signs in
+  await expect(page.getByRole('heading', { name: 'Schau in dein Postfach' })).toBeVisible()
+  await confirm(page, email, 'Zur App')
   return { email, password }
 }
 
@@ -264,8 +268,8 @@ test('account: register, data syncs to a second device, logout clears it', async
   const phone = await browser.newPage()
   await signUp(phone, email, password)
   await onboard(phone, false)
-  await expect(phone.getByText('Bitte bestätige deine E-Mail-Adresse')).toBeVisible()
-  await expect(phone.getByText(/Schau im Spam-Ordner/)).toBeVisible()
+  // signing up goes through the confirmation link now, so the reminder banner must be gone
+  await expect(phone.getByText('Bitte bestätige deine E-Mail-Adresse')).toHaveCount(0)
 
   // log something and wait for the upload
   await phone.getByRole('link', { name: 'Mehr' }).click()

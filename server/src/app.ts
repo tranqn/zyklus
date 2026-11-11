@@ -2,9 +2,9 @@ import { Hono, type Context } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
 import type { Config } from './config.ts'
-import { DUMMY_HASH, hashPassword, newToken, sha256, verifyPassword } from './crypto.ts'
+import { DUMMY_HASH, hashPassword, needsRehash, newToken, sha256, verifyPassword } from './crypto.ts'
 import { toLocale, type DB, type UserRow } from './db.ts'
-import { passwordChangedMail, resetMail, verifyMail, type Mailer } from './mail.ts'
+import { accountExistsMail, passwordChangedMail, resetMail, verifyMail, type Mailer } from './mail.ts'
 import { RateLimiter } from './ratelimit.ts'
 import { createSocial } from './social.ts'
 
@@ -21,11 +21,13 @@ export interface Deps {
   cfg: Config
   mail: Mailer
   now?: () => number
+  /** injectable so tests do not actually wait out the login penalty */
+  sleep?: (ms: number) => Promise<void>
 }
 
 type Vars = { Variables: { user: UserRow; sessionHash: string } }
 
-export function createApp({ db, cfg, mail, now = Date.now }: Deps) {
+export function createApp({ db, cfg, mail, now = Date.now, sleep = (ms) => new Promise((r) => setTimeout(r, ms)) }: Deps) {
   const app = new Hono<Vars>().basePath('/api')
 
   const limits = {
@@ -35,6 +37,15 @@ export function createApp({ db, cfg, mail, now = Date.now }: Deps) {
     forgotIp: new RateLimiter(10, 60 * 60 * 1000, now),
     forgotEmail: new RateLimiter(3, 60 * 60 * 1000, now),
     resend: new RateLimiter(3, 60 * 60 * 1000, now),
+    // every scrypt check costs ~200 ms and 32 MiB, so the routes that verify a password
+    // outside of login need a cap of their own
+    password: new RateLimiter(10, 15 * 60 * 1000, now),
+    // token redemption is safe through 256-bit tokens alone; this only keeps the log quiet
+    tokenIp: new RateLimiter(60, 60 * 60 * 1000, now),
+    // a sync writes up to 5 MB and rebuilds the summary; generous for a client, finite for abuse
+    state: new RateLimiter(300, 15 * 60 * 1000, now),
+    // so repeated sign-up attempts cannot be used to flood someone's mailbox
+    existsEmail: new RateLimiter(2, 60 * 60 * 1000, now),
   }
 
   const q = {
@@ -127,7 +138,9 @@ export function createApp({ db, cfg, mail, now = Date.now }: Deps) {
     await next()
   }
 
-  const social = createSocial({ db, now, requireUser, fail, readJson })
+  const smallBody = bodyLimit({ maxSize: 16 * 1024, onError: (c) => fail(c, 413, 'too_large', 'Anfrage zu groß.') })
+
+  const social = createSocial({ db, now, requireUser, fail, readJson, smallBody })
   social.mount(app)
 
   app.get('/health', (c) => {
@@ -135,8 +148,14 @@ export function createApp({ db, cfg, mail, now = Date.now }: Deps) {
     return c.json({ ok: true })
   })
 
-  const smallBody = bodyLimit({ maxSize: 16 * 1024, onError: (c) => fail(c, 413, 'too_large', 'Anfrage zu groß.') })
-
+  /*
+   * Registration answers the same whether or not the address is already taken, and never
+   * starts a session: "an account exists for this address" is sensitive on its own for a
+   * health app. Which of the two mails goes out is the only difference, and it goes to the
+   * owner of the address rather than to whoever filled in the form. Because of that, signing
+   * in needs a confirmed address (see /auth/login) - otherwise the success of a following
+   * login attempt would give the answer away again.
+   */
   app.post('/auth/register', smallBody, async (c) => {
     if (!limits.register.take(ip(c))) return fail(c, 429, 'rate_limited', 'Zu viele Registrierungen. Versuch es später erneut.')
     const body = await readJson(c)
@@ -145,23 +164,35 @@ export function createApp({ db, cfg, mail, now = Date.now }: Deps) {
     const pwErr = passwordProblem(body?.password)
     if (pwErr) return fail(c, 400, ...pwErr)
     if (body?.consent !== true) return fail(c, 400, 'consent', 'Bitte stimme der Verarbeitung deiner Gesundheitsdaten zu.')
-    if (q.userByEmail.get(email)) return fail(c, 409, 'exists', 'Für diese E-Mail gibt es schon ein Konto. Melde dich an oder setze dein Passwort zurück.')
-    const t = now()
+    const locale = toLocale(body?.locale)
+    const existing = q.userByEmail.get(email) as UserRow | undefined
+    // The same work in both branches: without it the answer would come back measurably
+    // faster for a known address, and the timing would give away what the body does not.
     const hash = await hashPassword(body!.password as string)
-    const res = q.insertUser.run(email, hash, t, t, toLocale(body?.locale))
-    const user = q.userById.get(Number(res.lastInsertRowid)) as unknown as UserRow
-    startSession(c, user.id)
-    await sendToken(user, 'verify').catch((e) => console.error('verify mail failed', e))
-    return c.json({ user: publicUser(user) }, 201)
+    if (existing) {
+      if (limits.existsEmail.take(email)) {
+        await mail({ to: existing.email, ...accountExistsMail(cfg.appOrigin, existing.locale) }).catch((e) => console.error('exists mail failed', e))
+      }
+    } else {
+      const t = now()
+      const res = q.insertUser.run(email, hash, t, t, locale)
+      const user = q.userById.get(Number(res.lastInsertRowid)) as unknown as UserRow
+      await sendToken(user, 'verify').catch((e) => console.error('verify mail failed', e))
+    }
+    return c.json({ pending: true }, 202)
   })
 
   app.post('/auth/login', smallBody, async (c) => {
     const body = await readJson(c)
     const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : ''
     const password = typeof body?.password === 'string' ? body.password : ''
-    if (limits.loginEmail.blocked(email) || !limits.loginIp.take(ip(c))) {
+    if (!limits.loginIp.take(ip(c))) {
       return fail(c, 429, 'rate_limited', 'Zu viele Anmeldeversuche. Warte 15 Minuten oder setze dein Passwort zurück.')
     }
+    // Wrong guesses slow the next attempt down instead of locking the address: a hard block
+    // would let anyone keep a known account signed out by guessing wrong five times.
+    const misses = limits.loginEmail.count(email)
+    if (misses > 0) await sleep(Math.min(2000, 250 * 2 ** (misses - 1)))
     const user = q.userByEmail.get(email) as UserRow | undefined
     const ok = await verifyPassword(password, user?.password_hash ?? DUMMY_HASH)
     if (!user || !ok) {
@@ -169,6 +200,11 @@ export function createApp({ db, cfg, mail, now = Date.now }: Deps) {
       return fail(c, 401, 'credentials', 'E-Mail oder Passwort ist falsch.')
     }
     limits.loginEmail.reset(email)
+    // Without this, registering for a stranger's address and then signing in would reveal
+    // whether that address was free - the answer registration itself no longer gives.
+    if (!user.email_verified_at) return fail(c, 403, 'unverified', 'Bitte bestätige zuerst deine E-Mail-Adresse. Wir haben dir dafür einen Link geschickt.')
+    // the only moment the plain password is at hand, so old parameters are upgraded here
+    if (needsRehash(user.password_hash)) q.setPassword.run(await hashPassword(password), user.id)
     startSession(c, user.id)
     return c.json({ user: publicUser(user) })
   })
@@ -192,13 +228,17 @@ export function createApp({ db, cfg, mail, now = Date.now }: Deps) {
   })
 
   app.post('/auth/verify', smallBody, async (c) => {
+    if (!limits.tokenIp.take(ip(c))) return fail(c, 429, 'rate_limited', 'Zu viele Versuche. Versuch es später erneut.')
     const body = await readJson(c)
     const token = typeof body?.token === 'string' ? body.token : ''
     const row = q.findToken.get(sha256(token), 'verify') as { user_id: number; expires_at: number; token_hash: string } | undefined
-    if (!row || row.expires_at < now()) return fail(c, 400, 'token', 'Der Link ist ungültig oder abgelaufen. Fordere in deinem Konto einen neuen an.')
+    if (!row || row.expires_at < now()) return fail(c, 400, 'token', 'Der Link ist ungültig oder abgelaufen. Fordere einen neuen an.')
     q.verifyUser.run(now(), row.user_id)
     q.deleteToken.run(row.token_hash)
-    return c.json({ ok: true })
+    // the link proves access to the mailbox, so it signs the account in - same as a reset
+    const user = q.userById.get(row.user_id) as unknown as UserRow
+    startSession(c, user.id)
+    return c.json({ ok: true, user: publicUser(user) })
   })
 
   app.post('/auth/resend-verification', requireUser, async (c) => {
@@ -206,6 +246,22 @@ export function createApp({ db, cfg, mail, now = Date.now }: Deps) {
     if (user.email_verified_at) return c.json({ ok: true })
     if (!limits.resend.take(String(user.id))) return fail(c, 429, 'rate_limited', 'Bitte warte etwas, bevor du eine neue E-Mail anforderst.')
     await sendToken(user, 'verify')
+    return c.json({ ok: true })
+  })
+
+  /*
+   * A new confirmation link for someone who cannot sign in yet, so a lost mail is not a dead
+   * end. Like /auth/forgot it answers the same for every address and only acts on an account
+   * that exists and is still unconfirmed.
+   */
+  app.post('/auth/resend', smallBody, async (c) => {
+    const body = await readJson(c)
+    const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : ''
+    if (!limits.forgotIp.take(ip(c))) return fail(c, 429, 'rate_limited', 'Zu viele Anfragen. Versuch es später erneut.')
+    const user = q.userByEmail.get(email) as UserRow | undefined
+    if (user && !user.email_verified_at && limits.resend.take(String(user.id))) {
+      await sendToken(user, 'verify').catch((e) => console.error('verify mail failed', e))
+    }
     return c.json({ ok: true })
   })
 
@@ -220,6 +276,7 @@ export function createApp({ db, cfg, mail, now = Date.now }: Deps) {
   })
 
   app.post('/auth/reset', smallBody, async (c) => {
+    if (!limits.tokenIp.take(ip(c))) return fail(c, 429, 'rate_limited', 'Zu viele Versuche. Versuch es später erneut.')
     const body = await readJson(c)
     const token = typeof body?.token === 'string' ? body.token : ''
     const pwErr = passwordProblem(body?.password)
@@ -238,6 +295,7 @@ export function createApp({ db, cfg, mail, now = Date.now }: Deps) {
 
   app.post('/auth/change-password', smallBody, requireUser, async (c) => {
     const user = c.get('user')
+    if (!limits.password.take(String(user.id))) return fail(c, 429, 'rate_limited', 'Zu viele Versuche. Bitte warte ein paar Minuten.')
     const body = await readJson(c)
     if (!(await verifyPassword(String(body?.current ?? ''), user.password_hash))) return fail(c, 403, 'credentials', 'Das aktuelle Passwort stimmt nicht.')
     const pwErr = passwordProblem(body?.next)
@@ -263,9 +321,11 @@ export function createApp({ db, cfg, mail, now = Date.now }: Deps) {
 
   app.put(
     '/state',
-    bodyLimit({ maxSize: MAX_STATE_BYTES, onError: (c) => fail(c, 413, 'too_large', 'Deine Daten überschreiten 5 MB.') }),
+    // requireUser first: an anonymous request must not get 5 MB of buffer out of the server
     requireUser,
+    bodyLimit({ maxSize: MAX_STATE_BYTES, onError: (c) => fail(c, 413, 'too_large', 'Deine Daten überschreiten 5 MB.') }),
     async (c) => {
+      if (!limits.state.take(String(c.get('user').id))) return fail(c, 429, 'rate_limited', 'Zu viele Synchronisierungen. Bitte warte einen Moment.')
       const body = await readJson(c)
       const rev = body?.rev
       const data = body?.data
@@ -303,6 +363,7 @@ export function createApp({ db, cfg, mail, now = Date.now }: Deps) {
   // POST with a JSON body: the password must not travel in a header that access logs record
   app.post('/account/delete', smallBody, requireUser, async (c) => {
     const user = c.get('user')
+    if (!limits.password.take(String(user.id))) return fail(c, 429, 'rate_limited', 'Zu viele Versuche. Bitte warte ein paar Minuten.')
     const body = await readJson(c)
     if (!(await verifyPassword(String(body?.password ?? ''), user.password_hash))) return fail(c, 403, 'credentials', 'Das Passwort stimmt nicht.')
     q.deleteUser.run(user.id)

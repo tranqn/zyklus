@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { api, apiMessage } from '../sync/api'
-import { login, register, resetPassword, useSync } from '../sync/engine'
+import { ApiError, api, apiMessage } from '../sync/api'
+import { login, register, resetPassword, verifyEmail } from '../sync/engine'
 import { Icon, Segmented, Sheet } from '../ui/kit'
 import { toast } from '../ui/notify'
 import { getLang, t as tr, useT } from '../i18n'
@@ -19,23 +19,65 @@ export function AuthScreen() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [forgot, setForgot] = useState(false)
+  // the address we sent a mail to; while it is set, the form is replaced by the hint
+  const [sent, setSent] = useState('')
+  const [unverified, setUnverified] = useState(false)
   const { t } = useT()
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setBusy(true)
     setError('')
+    setUnverified(false)
     try {
       if (mode === 'login') await login(email, password)
       else {
         await register(email, password, consent, getLang())
-        toast(tr('account.created'))
+        setSent(email.trim())
       }
     } catch (err) {
       setError(message(err, mode))
+      if (err instanceof ApiError && err.code === 'unverified') setUnverified(true)
     } finally {
       setBusy(false)
     }
+  }
+
+  const resend = async () => {
+    setBusy(true)
+    try {
+      await api('POST', '/auth/resend', { email: email.trim() })
+      setSent(email.trim())
+      setUnverified(false)
+    } catch (err) {
+      setError(message(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (sent) {
+    return (
+      <div className="mx-auto min-h-dvh max-w-[560px]">
+        <div className="page" style={{ minHeight: '100dvh', justifyContent: 'center', paddingBottom: 'calc(24px + var(--safe-b))' }}>
+          <div className="flex flex-col gap-4">
+            <div style={{ fontSize: '3rem' }} aria-hidden="true">
+              📬
+            </div>
+            <h1>{t('account.checkTitle')}</h1>
+            <p className="text-muted-foreground">{t('account.checkText', { email: sent })}</p>
+            <p className="text-[0.85rem] text-muted-foreground">{t('account.spamHint')}</p>
+            <Button
+              variant="secondary"
+              className="w-full whitespace-normal text-center leading-tight py-2.5"
+              onClick={() => (setSent(''), setMode('login'), setPassword(''))}
+            >
+              {t('account.backToLogin')}
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -87,6 +129,11 @@ export function AuthScreen() {
             <p className="text-[0.85rem]" role="alert" style={{ color: 'var(--bad)' }}>
               {error}
             </p>
+          )}
+          {unverified && (
+            <Button variant="secondary" type="button" className="w-full whitespace-normal text-center leading-tight py-2.5" disabled={busy} onClick={resend}>
+              {t('account.page.resend')}
+            </Button>
           )}
           <Button className="w-full whitespace-normal text-center leading-tight py-2.5" type="submit" disabled={busy || (mode === 'register' && !consent)}>
             {busy ? t('common.oneMoment') : mode === 'login' ? t('account.login') : t('account.createAccount')}
@@ -163,12 +210,8 @@ export function VerifyPage() {
   useEffect(() => {
     if (started.current) return
     started.current = true
-    api('POST', '/auth/verify', { token })
-      .then(() => {
-        setState('ok')
-        const user = useSync.getState().user
-        if (user) useSync.setState({ user: { ...user, verified: true } })
-      })
+    verifyEmail(token)
+      .then(() => setState('ok'))
       .catch((e) => {
         setState('error')
         setError(message(e))

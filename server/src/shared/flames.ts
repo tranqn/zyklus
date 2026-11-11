@@ -45,6 +45,16 @@ export function dayStr(n: number): string {
 const weekday = (n: number) => (((n + 3) % 7) + 7) % 7
 const mondayOf = (n: number) => n - weekday(n)
 
+/**
+ * Longest history a replay walks (ten years). A synced document may carry any date, and a
+ * crafted one ("0001-01-01" passes every format check) would otherwise send the day loops below
+ * through millions of iterations. On the server that replay runs on behalf of every friend and
+ * every challenge member, so one account could stall the API for all of them; the bound lives
+ * here because both the app and the API go through these two loops.
+ */
+export const MAX_REPLAY_DAYS = 3660
+const replayStart = (n: number, todayN: number) => (Number.isFinite(n) ? Math.max(n, todayN - MAX_REPLAY_DAYS) : todayN)
+
 interface SessionLike {
   date: string
   startedAt?: string
@@ -94,7 +104,10 @@ export function goalFor(goals: WeeklyGoal[] | undefined, monday: string, fallbac
 /** Vacation and sick days: recorded days plus a mode that is still running since `modeSince`. */
 export function pausedDays(frozen: string[] | undefined, mode: string | undefined, modeSince: string | undefined, today: string): string[] {
   const out = [...(frozen ?? [])]
-  if (mode && mode !== 'normal' && modeSince) for (let n = dayNum(modeSince); n <= dayNum(today); n++) out.push(dayStr(n))
+  if (mode && mode !== 'normal' && modeSince) {
+    const end = dayNum(today)
+    for (let n = replayStart(dayNum(modeSince), end); n <= end; n++) out.push(dayStr(n))
+  }
   return out
 }
 
@@ -192,7 +205,7 @@ export function computeFlames(log: ActivityLog, opts: FlameOptions): Flames {
 
   const first = activeDays[0]
   if (first !== undefined) {
-    for (let d = first; d <= todayN; d++) {
+    for (let d = replayStart(first, todayN); d <= todayN; d++) {
       if (active.has(d)) {
         if (daily === 0 && lastActive !== undefined && d - lastActive > COMEBACK_GAP) reach('comeback', ++comebacks, d)
         daily++
