@@ -1,0 +1,959 @@
+{
+ "apfel": {
+  "fdcId": 171692,
+  "macroDelta": 0.42,
+  "usda": "Apples, dried, sulfured, stewed, without added sugar",
+  "values": {
+   "calcium": 3.0,
+   "folate": 0.0,
+   "iron": 0.33,
+   "magnesium": 4.0,
+   "potassium": 105.0,
+   "sodium": 20.0,
+   "vitaminB12": 0.0,
+   "vitaminC": 1.0,
+   "vitaminD": 0.0,
+   "zinc": 0.05
+  }
+ },
+ "avocado": {
+  "fdcId": 171705,
+  "macroDelta": 1.46,
+  "review": "macros differ, check the match by hand",
+  "usda": "Avocados, raw, all commercial varieties",
+  "values": {
+   "calcium": 12.0,
+   "folate": 81.0,
+   "iron": 0.55,
+   "magnesium": 29.0,
+   "potassium": 485.0,
+   "sodium": 7.0,
+   "vitaminB12": 0.0,
+   "vitaminC": 10.0,
+   "vitaminD": 0.0,
+   "zinc": 0.64
+  }
+ },
+ "banane": {
+  "fdcId": 173944,
+  "macroDelta": 0.17,
+  "usda": "Bananas, raw",
+  "values": {
+   "calcium": 5.0,
+   "folate": 20.0,
+   "iron": 0.26,
+   "magnesium": 27.0,
+   "potassium": 358.0,
+   "sodium": 1.0,
+   "vitaminB12": 0.0,
+   "vitaminC": 8.7,
+   "vitaminD": 0.0,
+   "zinc": 0.15
+  }
+ },
+ "blumenkohl": {
+  "fdcId": 169986,
+  "macroDelta": 1.12,
+  "review": "macros differ, check the match by hand",
+  "usda": "Cauliflower, raw",
+  "values": {
+   "calcium": 22.0,
+   "folate": 57.0,
+   "iron": 0.42,
+   "magnesium": 15.0,
+   "potassium": 299.0,
+   "sodium": 30.0,
+   "vitaminB12": 0.0,
+   "vitaminC": 48.2,
+   "vitaminD": 0.0,
+   "zinc": 0.27
+  }
+ },
+ "brokkoli": {
+  "fdcId": 170379,
+  "macroDelta": 1.29,
+  "review": "macros differ, check the match by hand",
+  "usda": "Broccoli, raw",
+  "values": {
+   "calcium": 47.0,
+   "folate": 63.0,
+   "iron": 0.73,
+   "magnesium": 21.0,
+   "potassium": 316.0,
+   "sodium": 33.0,
+   "vitaminB12": 0.0,
+   "vitaminC": 89.2,
+   "vitaminD": 0.0,
+   "zinc": 0.41
+  }
+ },
+ "butter": {
+  "fdcId": 173410,
+  "macroDelta": 0.39,
+  "usda": "Butter, salted",
+  "values": {
+   "calcium": 24.0,
+   "folate": 3.0,
+   "iron": 0.02,
+   "magnesium": 2.0,
+   "potassium": 24.0,
+   "sodium": 643.0,
+   "vitaminB12": 0.17,
+   "vitaminC": 0.0,
+   "vitaminD": 0.0,
+   "zinc": 0.09
+  }
+ },
+ "champignons": {
+  "fdcId": 169251,
+  "macroDelta": 1.38,
+  "review": "macros differ, check the match by hand",
+  "usda": "Mushrooms, white, raw",
+  "values": {
+   "calcium": 3.0,
+   "folate": 17.0,
+   "iron": 0.5,
+   "magnesium": 9.0,
+   "potassium": 318.0,
+   "sodium": 5.0,
+   "vitaminB12": 0.04,
+   "vitaminC": 2.1,
+   "vitaminD": 0.2,
+   "zinc": 0.52
+  }
+ },
+ "couscous-roh": {
+  "fdcId": 169699,
+  "macroDelta": 0.86,
+  "usda": "Couscous, dry",
+  "values": {
+   "calcium": 24.0,
+   "folate": 20.0,
+   "iron": 1.08,
+   "magnesium": 44.0,
+   "potassium": 166.0,
+   "sodium": 10.0,
+   "vitaminB12": 0.0,
+   "vitaminC": 0.0,
+   "vitaminD": 0.0,
+   "zinc": 0.83
+  }
+ },
+ "datteln": {
+  "fdcId": 171726,
+  "macroDelta": 0.46,
+  "usda": "Dates, deglet noor",
+  "values": {
+   "calcium": 39.0,
+   "folate": 19.0,
+   "iron": 1.02,
+   "magnesium": 43.0,
+   "potassium": 656.0,
+   "sodium": 2.0,
+   "vitaminB12": 0.0,
+   "vitaminC": 0.4,
+   "vitaminD": 0.0,
+   "zinc": 0.29
+  }
+ },
+ "dau-phong": {
+  "fdcId": 172433,
+  "macroDelta": 0.15,
+  "usda": "Peanuts, valencia, oil-roasted, with salt",
+  "values": {
+   "calcium": 54.0,
+   "folate": 126.0,
+   "iron": 1.65,
+   "magnesium": 160.0,
+   "potassium": 612.0,
+   "sodium": 772.0,
+   "vitaminB12": 0.0,
+   "vitaminC": 0.0,
+   "vitaminD": 0.0,
+   "zinc": 3.08
+  }
+ },
+ "du-du": {
+  "fdcId": 169926,
+  "macroDelta": 0.05,
+  "usda": "Papayas, raw",
+  "values": {
+   "calcium": 20.0,
+   "folate": 37.0,
+   "iron": 0.25,
+   "magnesium": 21.0,
+   "potassium": 182.0,
+   "sodium": 8.0,
+   "vitaminB12": 0.0,
+   "vitaminC": 60.9,
+   "vitaminD": 0.0,
+   "zinc": 0.08
+  }
+ },
+ "edamame": {
+  "fdcId": 168411,
+  "macroDelta": 0.14,
+  "usda": "Edamame, frozen, prepared",
+  "values": {
+   "calcium": 63.0,
+   "folate": 311.0,
+   "iron": 2.27,
+   "magnesium": 64.0,
+   "potassium": 436.0,
+   "sodium": 6.0,
+   "vitaminB12": 0.0,
+   "vitaminC": 6.1,
+   "vitaminD": 0.0,
+   "zinc": 1.37
+  }
+ },
+ "ei": {
+  "fdcId": 171287,
+  "macroDelta": 0.08,
+  "usda": "Egg, whole, raw, fresh",
+  "values": {
+   "calcium": 56.0,
+   "folate": 47.0,
+   "iron": 1.75,
+   "magnesium": 12.0,
+   "potassium": 138.0,
+   "sodium": 142.0,
+   "vitaminB12": 0.89,
+   "vitaminC": 0.0,
+   "vitaminD": 2.0,
+   "zinc": 1.29
+  }
+ },
+ "eiklar": {
+  "fdcId": 172183,
+  "macroDelta": 0.08,
+  "usda": "Egg, white, raw, fresh",
+  "values": {
+   "calcium": 7.0,
+   "folate": 4.0,
+   "iron": 0.08,
+   "magnesium": 11.0,
+   "potassium": 163.0,
+   "sodium": 166.0,
+   "vitaminB12": 0.09,
+   "vitaminC": 0.0,
+   "vitaminD": 0.0,
+   "zinc": 0.03
+  }
+ },
+ "erbsen": {
+  "fdcId": 170017,
+  "macroDelta": 0.58,
+  "usda": "Peas, green, frozen, cooked, boiled, drained, without salt",
+  "values": {
+   "calcium": 24.0,
+   "folate": 59.0,
+   "iron": 1.52,
+   "magnesium": 22.0,
+   "potassium": 110.0,
+   "sodium": 72.0,
+   "vitaminB12": 0.0,
+   "vitaminC": 9.9,
+   "vitaminD": 0.0,
+   "zinc": 0.67
+  }
+ },
+ "erdnussbutter": {
+  "fdcId": 172460,
+  "macroDelta": 0.37,
+  "usda": "Peanut butter, chunky, vitamin and mineral fortified",
+  "values": {
+   "calcium": 45.0,
+   "folate": 467.0,
+   "iron": 17.5,
+   "magnesium": 370.0,
+   "potassium": 744.0,
+   "sodium": 366.0,
+   "vitaminB12": 0.0,
+   "vitaminC": 0.0,
+   "vitaminD": 0.0,
+   "zinc": 15.1
+  }
+ },
+ "ga-luoc": {
+  "fdcId": 171120,
+  "macroDelta": 0.07,
+  "usda": "Chicken, broilers or fryers, rotisserie, original seasoning, thigh, meat only, cooked",
+  "values": {
+   "calcium": 13.0,
+   "folate": 12.0,
+   "iron": 0.97,
+   "magnesium": 21.0,
+   "potassium": 264.0,
+   "sodium": 337.0,
+   "vitaminB12": 0.45,
+   "vitaminC": 0.0,
+   "zinc": 2.01
+  }
+ },
+ "gurke": {
+  "fdcId": 169225,
+  "macroDelta": 0.33,
+  "usda": "Cucumber, peeled, raw",
+  "values": {
+   "calcium": 14.0,
+   "folate": 14.0,
+   "iron": 0.22,
+   "magnesium": 12.0,
+   "potassium": 136.0,
+   "sodium": 2.0,
+   "vitaminB12": 0.0,
+   "vitaminC": 3.2,
+   "vitaminD": 0.0,
+   "zinc": 0.17
+  }
+ },
+ "haehnchenbrust": {
+  "fdcId": 171077,
+  "macroDelta": 0.67,
+  "usda": "Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw",
+  "values": {
+   "calcium": 5.0,
+   "folate": 9.0,
+   "iron": 0.37,
+   "magnesium": 28.0,
+   "potassium": 334.0,
+   "sodium": 45.0,
+   "vitaminB12": 0.21,
+   "vitaminC": 0.0,
+   "vitaminD": 0.0,
+   "zinc": 0.68
+  }
+ },
+ "haehnchenschenkel": {
+  "fdcId": 173627,
+  "macroDelta": 0.1,
+  "usda": "Chicken, broilers or fryers, dark meat, thigh, meat only, raw",
+  "values": {
+   "calcium": 7.0,
+   "folate": 4.0,
+   "iron": 0.81,
+   "magnesium": 23.0,
+   "potassium": 242.0,
+   "sodium": 95.0,
+   "vitaminB12": 0.61,
+   "vitaminC": 0.0,
+   "vitaminD": 0.0,
+   "zinc": 1.58
+  }
+ },
+ "heidelbeeren": {
+  "fdcId": 169799,
+  "macroDelta": 0.78,
+  "usda": "Blueberries, wild, frozen (Alaska Native)",
+  "values": {
+   "calcium": 15.0,
+   "iron": 1.1,
+   "vitaminC": 2.2
+  }
+ },
+ "honig": {
+  "fdcId": 169640,
+  "macroDelta": 0.14,
+  "usda": "Honey",
+  "values": {
+   "calcium": 6.0,
+   "folate": 2.0,
+   "iron": 0.42,
+   "magnesium": 2.0,
+   "potassium": 52.0,
+   "sodium": 4.0,
+   "vitaminB12": 0.0,
+   "vitaminC": 0.5,
+   "vitaminD": 0.0,
+   "zinc": 0.22
+  }
+ },
+ "hummus": {
+  "fdcId": 174289,
+  "macroDelta": 0.33,
+  "usda": "Hummus, commercial",
+  "values": {
+   "calcium": 47.0,
+   "folate": 48.0,
+   "iron": 2.54,
+   "magnesium": 75.0,
+   "potassium": 312.0,
+   "sodium": 426.0,
+   "vitaminB12": 0.0,
+   "vitaminC": 0.0,
+   "vitaminD": 0.0,
+   "zinc": 1.44
+  }
+ },
+ "kakao": {
+  "fdcId": 169593,
+  "macroDelta": 4.9,
+  "review": "macros differ, check the match by hand",
+  "usda": "Cocoa, dry powder, unsweetened",
+  "values": {
+   "calcium": 128.0,
+   "folate": 32.0,
+   "iron": 13.86,
+   "magnesium": 499.0,
+   "potassium": 1524.0,
+   "sodium": 21.0,
+   "vitaminB12": 0.0,
+   "vitaminC": 0.0,
+   "vitaminD": 0.0,
+   "zinc": 6.81
+  }
+ },
+ "karotte": {
+  "fdcId": 170393,
+  "macroDelta": 0.54,
+  "usda": "Carrots, raw",
+  "values": {
+   "calcium": 33.0,
+   "folate": 19.0,
+   "iron": 0.3,
+   "magnesium": 12.0,
+   "potassium": 320.0,
+   "sodium": 69.0,
+   "vitaminB12": 0.0,
+   "vitaminC": 5.9,
+   "vitaminD": 0.0,
+   "zinc": 0.24
+  }
+ },
+ "kartoffeln": {
+  "fdcId": 170049,
+  "macroDelta": 0.25,
+  "usda": "Potatoes, frozen, whole, cooked, boiled, drained, without salt",
+  "values": {
+   "calcium": 7.0,
+   "folate": 8.0,
+   "iron": 0.84,
+   "magnesium": 11.0,
+   "potassium": 287.0,
+   "sodium": 20.0,
+   "vitaminB12": 0.0,
+   "vitaminC": 9.4,
+   "vitaminD": 0.0,
+   "zinc": 0.25
+  }
+ },
+ "kochschinken": {
+  "fdcId": 173863,
+  "macroDelta": 0.44,
+  "usda": "Ham, sliced, pre-packaged, deli meat (96%fat free, water added)",
+  "values": {
+   "calcium": 5.0,
+   "folate": 0.0,
+   "iron": 0.59,
+   "magnesium": 19.0,
+   "potassium": 463.0,
+   "sodium": 945.0,
+   "vitaminB12": 0.36,
+   "vitaminC": 0.0,
+   "vitaminD": 0.6,
+   "zinc": 1.51
+  }
+ },
+ "lachs": {
+  "fdcId": 175174,
+  "macroDelta": 0.71,
+  "usda": "Salmon, sockeye, canned, total can contents",
+  "values": {
+   "calcium": 198.0,
+   "folate": 3.0,
+   "iron": 0.57,
+   "magnesium": 30.0,
+   "potassium": 329.0,
+   "sodium": 433.0,
+   "vitaminB12": 0.4,
+   "vitaminC": 0.0,
+   "vitaminD": 19.0,
+   "zinc": 0.67
+  }
+ },
+ "milch-15": {
+  "fdcId": 170870,
+  "macroDelta": 0.33,
+  "usda": "Milk, reduced fat, fluid, 2% milkfat, with added nonfat milk solids and vitamin A and vitamin D",
+  "values": {
+   "calcium": 128.0,
+   "folate": 5.0,
+   "iron": 0.05,
+   "magnesium": 14.0,
+   "potassium": 162.0,
+   "sodium": 52.0,
+   "vitaminB12": 0.38,
+   "vitaminC": 1.0,
+   "vitaminD": 1.0,
+   "zinc": 0.4
+  }
+ },
+ "milch-35": {
+  "fdcId": 171266,
+  "macroDelta": 0.08,
+  "usda": "Milk, producer, fluid, 3.7% milkfat",
+  "values": {
+   "calcium": 119.0,
+   "folate": 5.0,
+   "iron": 0.05,
+   "magnesium": 13.0,
+   "potassium": 151.0,
+   "sodium": 49.0,
+   "vitaminB12": 0.36,
+   "vitaminC": 1.5,
+   "zinc": 0.38
+  }
+ },
+ "mit": {
+  "fdcId": 174687,
+  "macroDelta": 0.04,
+  "usda": "Jackfruit, raw",
+  "values": {
+   "calcium": 24.0,
+   "folate": 24.0,
+   "iron": 0.23,
+   "magnesium": 29.0,
+   "potassium": 448.0,
+   "sodium": 2.0,
+   "vitaminB12": 0.0,
+   "vitaminC": 13.7,
+   "zinc": 0.13
+  }
+ },
+ "nudeln-gekocht": {
+  "fdcId": 169751,
+  "macroDelta": 0.19,
+  "usda": "Pasta, cooked, enriched, with added salt",
+  "values": {
+   "calcium": 7.0,
+   "folate": 119.0,
+   "iron": 1.28,
+   "magnesium": 18.0,
+   "potassium": 44.0,
+   "sodium": 131.0,
+   "vitaminB12": 0.0,
+   "vitaminC": 0.0,
+   "vitaminD": 0.0,
+   "zinc": 0.51
+  }
+ },
+ "nudeln-roh": {
+  "fdcId": 168927,
+  "macroDelta": 0.16,
+  "usda": "Pasta, dry, unenriched",
+  "values": {
+   "calcium": 21.0,
+   "folate": 18.0,
+   "iron": 1.3,
+   "magnesium": 53.0,
+   "potassium": 223.0,
+   "sodium": 6.0,
+   "vitaminB12": 0.0,
+   "vitaminC": 0.0,
+   "vitaminD": 0.0,
+   "zinc": 1.41
+  }
+ },
+ "orange": {
+  "fdcId": 169097,
+  "macroDelta": 0.42,
+  "usda": "Oranges, raw, all commercial varieties",
+  "values": {
+   "calcium": 40.0,
+   "folate": 30.0,
+   "iron": 0.1,
+   "magnesium": 10.0,
+   "potassium": 181.0,
+   "sodium": 0.0,
+   "vitaminB12": 0.0,
+   "vitaminC": 53.2,
+   "vitaminD": 0.0,
+   "zinc": 0.07
+  }
+ },
+ "orangensaft": {
+  "fdcId": 169099,
+  "macroDelta": 0.3,
+  "usda": "Orange juice, canned, unsweetened",
+  "values": {
+   "calcium": 10.0,
+   "folate": 24.0,
+   "iron": 0.1,
+   "magnesium": 10.0,
+   "potassium": 184.0,
+   "sodium": 4.0,
+   "vitaminB12": 0.0,
+   "vitaminC": 30.1,
+   "vitaminD": 0.0,
+   "zinc": 0.04
+  }
+ },
+ "putenbrust": {
+  "fdcId": 171098,
+  "macroDelta": 0.41,
+  "usda": "Turkey, whole, breast, meat only, raw",
+  "values": {
+   "calcium": 11.0,
+   "folate": 7.0,
+   "iron": 0.73,
+   "magnesium": 28.0,
+   "potassium": 242.0,
+   "sodium": 113.0,
+   "vitaminB12": 0.63,
+   "vitaminC": 0.0,
+   "vitaminD": 0.1,
+   "zinc": 1.28
+  }
+ },
+ "quinoa-roh": {
+  "fdcId": 168874,
+  "macroDelta": 0.03,
+  "usda": "Quinoa, uncooked",
+  "values": {
+   "calcium": 47.0,
+   "folate": 184.0,
+   "iron": 4.57,
+   "magnesium": 197.0,
+   "potassium": 563.0,
+   "sodium": 5.0,
+   "vitaminB12": 0.0,
+   "vitaminD": 0.0,
+   "zinc": 3.1
+  }
+ },
+ "reis-gekocht": {
+  "fdcId": 168878,
+  "macroDelta": 0.02,
+  "usda": "Rice, white, long-grain, regular, enriched, cooked",
+  "values": {
+   "calcium": 10.0,
+   "folate": 97.0,
+   "iron": 1.2,
+   "magnesium": 12.0,
+   "potassium": 35.0,
+   "sodium": 1.0,
+   "vitaminB12": 0.0,
+   "vitaminC": 0.0,
+   "vitaminD": 0.0,
+   "zinc": 0.49
+  }
+ },
+ "reis-roh": {
+  "fdcId": 168881,
+  "macroDelta": 0.15,
+  "usda": "Rice, white, short-grain, enriched, uncooked",
+  "values": {
+   "calcium": 3.0,
+   "folate": 389.0,
+   "iron": 4.23,
+   "magnesium": 23.0,
+   "potassium": 76.0,
+   "sodium": 1.0,
+   "vitaminB12": 0.0,
+   "vitaminC": 0.0,
+   "vitaminD": 0.0,
+   "zinc": 1.1
+  }
+ },
+ "reisnudeln-roh": {
+  "fdcId": 169742,
+  "macroDelta": 0.04,
+  "usda": "Rice noodles, dry",
+  "values": {
+   "calcium": 18.0,
+   "folate": 3.0,
+   "iron": 0.7,
+   "magnesium": 12.0,
+   "potassium": 30.0,
+   "sodium": 182.0,
+   "vitaminB12": 0.0,
+   "vitaminC": 0.0,
+   "vitaminD": 0.0,
+   "zinc": 0.74
+  }
+ },
+ "reiswaffel": {
+  "fdcId": 168107,
+  "macroDelta": 0.57,
+  "usda": "Rice cake, cracker (include hain mini rice cakes)",
+  "values": {
+   "calcium": 11.0,
+   "folate": 21.0,
+   "iron": 1.49,
+   "magnesium": 131.0,
+   "potassium": 428.0,
+   "sodium": 71.0,
+   "vitaminB12": 0.0,
+   "vitaminC": 0.0,
+   "vitaminD": 0.0,
+   "zinc": 3.0
+  }
+ },
+ "rind-mager": {
+  "fdcId": 174749,
+  "macroDelta": 1.25,
+  "review": "macros differ, check the match by hand",
+  "usda": "Beef, New Zealand, imported, rump centre, separable lean only, raw",
+  "values": {
+   "calcium": 4.0,
+   "iron": 2.3,
+   "magnesium": 22.0,
+   "potassium": 343.0,
+   "sodium": 49.0,
+   "vitaminB12": 2.15,
+   "vitaminC": 0.0,
+   "vitaminD": 0.1,
+   "zinc": 3.46
+  }
+ },
+ "rindersteak": {
+  "fdcId": 170819,
+  "macroDelta": 0.05,
+  "usda": "Beef, shoulder pot roast or steak, boneless, separable lean and fat, trimmed to 0\" fat, select, raw",
+  "values": {
+   "calcium": 12.0,
+   "folate": 3.0,
+   "iron": 2.56,
+   "magnesium": 26.0,
+   "potassium": 383.0,
+   "sodium": 70.0,
+   "vitaminB12": 2.83,
+   "vitaminC": 0.0,
+   "vitaminD": 0.0,
+   "zinc": 6.88
+  }
+ },
+ "salami": {
+  "fdcId": 174582,
+  "macroDelta": 0.2,
+  "usda": "Salami, dry or hard, pork, beef",
+  "values": {
+   "calcium": 24.0,
+   "folate": 0.0,
+   "iron": 1.36,
+   "magnesium": 20.0,
+   "potassium": 363.0,
+   "sodium": 1756.0,
+   "vitaminB12": 1.15,
+   "vitaminC": 0.0,
+   "vitaminD": 0.9,
+   "zinc": 2.67
+  }
+ },
+ "salat": {
+  "fdcId": 168429,
+  "macroDelta": 0.48,
+  "usda": "Lettuce, butterhead (includes boston and bibb types), raw",
+  "values": {
+   "calcium": 35.0,
+   "folate": 73.0,
+   "iron": 1.24,
+   "magnesium": 13.0,
+   "potassium": 238.0,
+   "sodium": 5.0,
+   "vitaminB12": 0.0,
+   "vitaminC": 3.7,
+   "vitaminD": 0.0,
+   "zinc": 0.2
+  }
+ },
+ "schweinefilet": {
+  "fdcId": 168312,
+  "macroDelta": 0.13,
+  "usda": "Pork, fresh, loin, tenderloin, separable lean and fat, raw",
+  "values": {
+   "calcium": 6.0,
+   "folate": 0.0,
+   "iron": 0.97,
+   "magnesium": 27.0,
+   "potassium": 393.0,
+   "sodium": 52.0,
+   "vitaminB12": 0.52,
+   "vitaminC": 0.0,
+   "vitaminD": 0.3,
+   "zinc": 1.87
+  }
+ },
+ "sojasauce": {
+  "fdcId": 172474,
+  "macroDelta": 2.75,
+  "review": "macros differ, check the match by hand",
+  "usda": "Soy sauce, reduced sodium, made from hydrolyzed vegetable protein",
+  "values": {
+   "calcium": 11.0,
+   "iron": 0.43,
+   "magnesium": 34.0,
+   "potassium": 3098.0,
+   "sodium": 2890.0,
+   "vitaminB12": 0.0,
+   "vitaminC": 0.0,
+   "vitaminD": 0.0,
+   "zinc": 0.25
+  }
+ },
+ "speisestaerke": {
+  "fdcId": 169698,
+  "macroDelta": 0.19,
+  "usda": "Cornstarch",
+  "values": {
+   "calcium": 2.0,
+   "folate": 0.0,
+   "iron": 0.47,
+   "magnesium": 3.0,
+   "potassium": 3.0,
+   "sodium": 9.0,
+   "vitaminB12": 0.0,
+   "vitaminC": 0.0,
+   "vitaminD": 0.0,
+   "zinc": 0.06
+  }
+ },
+ "spinat": {
+  "fdcId": 168462,
+  "macroDelta": 1.33,
+  "review": "macros differ, check the match by hand",
+  "usda": "Spinach, raw",
+  "values": {
+   "calcium": 99.0,
+   "folate": 194.0,
+   "iron": 2.71,
+   "magnesium": 79.0,
+   "potassium": 558.0,
+   "sodium": 79.0,
+   "vitaminB12": 0.0,
+   "vitaminC": 28.1,
+   "vitaminD": 0.0,
+   "zinc": 0.53
+  }
+ },
+ "suesskartoffel": {
+  "fdcId": 168485,
+  "macroDelta": 0.19,
+  "usda": "Sweet potato, canned, vacuum pack",
+  "values": {
+   "calcium": 22.0,
+   "folate": 17.0,
+   "iron": 0.89,
+   "magnesium": 22.0,
+   "potassium": 312.0,
+   "sodium": 53.0,
+   "vitaminB12": 0.0,
+   "vitaminC": 26.4,
+   "vitaminD": 0.0,
+   "zinc": 0.18
+  }
+ },
+ "tempeh": {
+  "fdcId": 172467,
+  "macroDelta": 0.24,
+  "usda": "Tempeh, cooked",
+  "values": {
+   "calcium": 96.0,
+   "folate": 21.0,
+   "iron": 2.13,
+   "magnesium": 77.0,
+   "potassium": 401.0,
+   "sodium": 14.0,
+   "vitaminB12": 0.14,
+   "vitaminD": 0.0,
+   "zinc": 1.57
+  }
+ },
+ "thit-luoc": {
+  "fdcId": 167812,
+  "macroDelta": 2.82,
+  "review": "macros differ, check the match by hand",
+  "usda": "Pork, fresh, belly, raw",
+  "values": {
+   "calcium": 5.0,
+   "folate": 1.0,
+   "iron": 0.52,
+   "magnesium": 4.0,
+   "potassium": 185.0,
+   "sodium": 32.0,
+   "vitaminB12": 0.84,
+   "vitaminC": 0.3,
+   "zinc": 1.02
+  }
+ },
+ "tomate": {
+  "fdcId": 170096,
+  "macroDelta": 0.34,
+  "usda": "Tomatoes, yellow, raw",
+  "values": {
+   "calcium": 11.0,
+   "folate": 30.0,
+   "iron": 0.49,
+   "magnesium": 12.0,
+   "potassium": 258.0,
+   "sodium": 23.0,
+   "vitaminB12": 0.0,
+   "vitaminC": 9.0,
+   "vitaminD": 0.0,
+   "zinc": 0.28
+  }
+ },
+ "weintrauben": {
+  "fdcId": 174683,
+  "macroDelta": 0.23,
+  "usda": "Grapes, red or green (European type, such as Thompson seedless), raw",
+  "values": {
+   "calcium": 10.0,
+   "folate": 2.0,
+   "iron": 0.36,
+   "magnesium": 7.0,
+   "potassium": 191.0,
+   "sodium": 2.0,
+   "vitaminB12": 0.0,
+   "vitaminC": 3.2,
+   "vitaminD": 0.0,
+   "zinc": 0.07
+  }
+ },
+ "xoai": {
+  "fdcId": 169910,
+  "macroDelta": 0.02,
+  "usda": "Mangos, raw",
+  "values": {
+   "calcium": 11.0,
+   "folate": 43.0,
+   "iron": 0.16,
+   "magnesium": 10.0,
+   "potassium": 168.0,
+   "sodium": 1.0,
+   "vitaminB12": 0.0,
+   "vitaminC": 36.4,
+   "vitaminD": 0.0,
+   "zinc": 0.09
+  }
+ },
+ "zucker": {
+  "fdcId": 170674,
+  "macroDelta": 0.0,
+  "usda": "Sugar, turbinado",
+  "values": {
+   "calcium": 12.0,
+   "iron": 0.37,
+   "magnesium": 2.0,
+   "potassium": 29.0,
+   "sodium": 3.0,
+   "zinc": 0.03
+  }
+ },
+ "zwiebel": {
+  "fdcId": 170008,
+  "macroDelta": 0.6,
+  "usda": "Onions, sweet, raw",
+  "values": {
+   "calcium": 20.0,
+   "iron": 0.26,
+   "magnesium": 9.0,
+   "potassium": 119.0,
+   "sodium": 8.0,
+   "vitaminC": 4.8,
+   "vitaminD": 0.0,
+   "zinc": 0.13
+  }
+ }
+}
