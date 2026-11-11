@@ -9,6 +9,10 @@ export default defineConfig({
     baseURL: 'http://localhost:4173',
     locale: 'de-DE',
     trace: 'retain-on-failure',
+    // Playwright waits for an element to stop moving before it clicks, and every control now
+    // springs on press. The app turns all animation off under reduce (src/index.css), so this
+    // keeps the tests deterministic instead of racing the spring.
+    reducedMotion: 'reduce',
   },
   // mobile first: the app is built for phones
   projects: [

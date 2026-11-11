@@ -7,6 +7,7 @@ import { AuthScreen } from './pages/Auth'
 import { checkSession, startSync, useSync } from './sync/engine'
 import { useLang, useT } from './i18n'
 import { FlameCelebration } from './ui/Flames'
+import { usePressFeedback } from './ui/usePressFeedback'
 import { rememberInvite, takeInvite } from './sync/social'
 import { GlassFilters } from './components/GlassFilters'
 import { cn } from './lib/utils'
@@ -155,6 +156,7 @@ function Gate() {
 }
 
 export default function App() {
+  usePressFeedback()
   const lang = useLang((s) => s.lang)
   const syncedLang = useStore((s) => s.settings.language)
   useEffect(() => {
