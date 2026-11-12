@@ -1,14 +1,13 @@
-# Zyklus: build on GitHub's runners, publish on the Hetzner box.
+# Zyklus: build and verify on GitHub's runners. Deploying is the server's job.
 #
-# The app is a static PWA, so the server only receives the finished dist and
-# swaps it in. The publish job runs on a self-hosted runner inside the server.
+# NOTHING HERE DEPLOYS. There is no self-hosted runner on this repo and no
+# deploy secret, so a pull_request from a fork can run only what you see below,
+# on GitHub's own machines, with a read-only token.
 #
-# WHILE THIS REPO IS PRIVATE, the `if:` guards below are what keeps the deploy
-# jobs on main. They would NOT hold in a public repo: on a pull_request event
-# GitHub runs the workflow file from the fork, so a stranger could drop the
-# guards, keep `runs-on: [self-hosted, ...]` and get code execution on the box.
-# Before this repo goes public the two deploy jobs move to a private repo and
-# the runner is unregistered here.
+# The Hetzner box asks instead of being told: a timer polls this repo for the
+# newest green run on main and publishes the `site` artifact that run built
+# (/opt/ci/bin/github-pull on the server). Nothing on the internet can make the
+# box deploy anything, and no runner token lives there.
 name: CI
 
 on:
@@ -71,42 +70,3 @@ jobs:
           path: dist
           retention-days: 3
           if-no-files-found: error
-
-  deploy-api:
-    name: Deploy API to Hetzner
-    needs: [build]
-    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
-    runs-on: [self-hosted, hetzner, deploy]
-    concurrency:
-      group: deploy-zyklus-api
-      cancel-in-progress: false
-    timeout-minutes: 20
-    steps:
-      # no checkout: the root-owned deploy script fetches the commit itself and refuses
-      # anything that is not on origin/main, then builds, probes and rolls back if unhealthy
-      - name: Deploy
-        env:
-          SHA: ${{ github.sha }}
-        run: /opt/ci/bin/deploy zyklus-api "$SHA"
-
-  publish:
-    name: Publish to Hetzner
-    # the new frontend may rely on new API routes, so the API goes first
-    needs: [build, deploy-api]
-    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
-    runs-on: [self-hosted, hetzner, deploy]
-    concurrency:
-      group: deploy-zyklus
-      cancel-in-progress: false
-    timeout-minutes: 15
-    steps:
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
-        with:
-          name: site
-          path: site
-
-      # rsync into staging, swap in with a rename, roll back if TLS probe fails
-      - name: Publish
-        env:
-          DEPLOY_SHA: ${{ github.sha }}
-        run: /opt/ci/bin/deploy zyklus --from "$GITHUB_WORKSPACE/site"
