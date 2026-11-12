@@ -72,6 +72,11 @@ if [ "$KIND" = "static" ]; then
 	[ -n "$SITE_CHECKOUT" ] || { echo "github-pull: $CONF is KIND=static but sets no SITE_CHECKOUT" >&2; exit 2; }
 	[ -d "$SITE_CHECKOUT/.git" ] || { echo "github-pull: $SITE_CHECKOUT is not a checkout of $SITE_BRANCH" >&2; exit 2; }
 
+	# Before the first green run the branch does not exist. Asking first keeps
+	# git's "couldn't find remote ref" out of the journal every five minutes,
+	# while a fetch that fails for a real reason stays loud.
+	git -C "$SITE_CHECKOUT" ls-remote --exit-code --heads origin "$SITE_BRANCH" >/dev/null 2>&1 || exit 0
+
 	# GitHub unreachable is not an error worth a failed unit: try again next tick.
 	git -C "$SITE_CHECKOUT" fetch -q --depth 1 origin "$SITE_BRANCH" || exit 0
 
