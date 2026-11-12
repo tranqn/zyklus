@@ -6,14 +6,14 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 
 /**
- * Operator details. TODO before going public: replace the bracketed placeholders with the
- * real postal address and contact email (§ 5 DDG requires a summonable address).
+ * Operator details, identical to the imprint on quocnamtran.com. § 5 DDG wants an address
+ * you can be summoned at, so this is the postal one, not a box, and the e-mail is read.
  */
 const OPERATOR = {
   name: 'Quóc Nam Tràn',
-  street: '[Straße und Hausnummer]',
-  city: '[PLZ] Leipzig',
-  email: '[Kontakt-E-Mail]',
+  street: 'Niedermarkt 35',
+  city: '04736 Waldheim',
+  email: 'info@quocnamtran.com',
 }
 const ADDRESS = `${OPERATOR.name}, ${OPERATOR.street}, ${OPERATOR.city}`
 
