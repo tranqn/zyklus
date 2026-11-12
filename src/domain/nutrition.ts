@@ -1,3 +1,4 @@
+import { addMicros, scaleMicros, type Micros } from './micronutrients'
 import type { CardioEntry, Food, FoodEntry, Macros, Profile, WeightEntry } from './types'
 import { addDays, daysBetween, sum, today } from './util'
 
@@ -42,6 +43,27 @@ export function totals(entries: Pick<FoodEntry, 'grams' | 'per100'>[]): Macros {
     carbs: sum(ms.map((m) => m.carbs)),
     fat: sum(ms.map((m) => m.fat)),
   }
+}
+
+/**
+ * Micronutrients of a day. Returns the coverage alongside the sums, because a total is only
+ * worth as much as the share of the food behind it that has data at all: an entry typed as free
+ * text, a scanned product without a label, a food nobody has mapped yet. The UI has to be able
+ * to say "out of 7 of your 11 entries", otherwise the number reads as the whole truth.
+ */
+export function microTotals(
+  entries: Pick<FoodEntry, 'grams' | 'foodId'>[],
+  per100: (foodId: string) => Micros | undefined,
+): { totals: Micros; withData: number; entries: number } {
+  const totals: Micros = {}
+  let withData = 0
+  for (const e of entries) {
+    const m = e.foodId ? scaleMicros(per100(e.foodId), e.grams) : undefined
+    if (!m) continue
+    withData++
+    addMicros(totals, m)
+  }
+  return { totals, withData, entries: entries.length }
 }
 
 /** Exponentially smoothed weight trend (like a moving average but robust to gaps). */

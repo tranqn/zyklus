@@ -1,11 +1,13 @@
 import { useState } from 'react'
-import { macrosOf, totals } from '../domain/nutrition'
+import { MICROS_PER_100G } from '../domain/micronutrient-data'
+import { MICRO_IDS, MICRO_UNIT, MICRO_UPPER, microTargets } from '../domain/micronutrients'
+import { macrosOf, microTotals, totals } from '../domain/nutrition'
 import type { FoodEntry, Meal, Recipe } from '../domain/types'
 import { addDays, uid } from '../domain/util'
 import { useStore } from '../store'
-import { Icon, Sheet, Stepper } from '../ui/kit'
+import { Bar, Icon, Sheet, Stepper } from '../ui/kit'
 import { confirmAction, toast } from '../ui/notify'
-import { getLang, t as tr, useT } from '../i18n'
+import { fmtNumber, getLang, t as tr, useT } from '../i18n'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -252,3 +254,71 @@ export function MealActions({ day, meal, items, onSaveRecipe }: { day: string; m
   )
 }
 
+
+/**
+ * Micronutrients of the day, for people who have to watch a deficiency.
+ *
+ * Two rules decide how this reads. A value that is missing shows as "no data" and gets no bar,
+ * never a zero and never an empty bar: a gap must not look like a deficit. And the card always
+ * says how many of the day's entries carried data at all, because a sum from two of six entries
+ * is not the day.
+ */
+export function MicronutrientsCard({ day }: { day: string }) {
+  const s = useStore()
+  const { t } = useT()
+  const [open, setOpen] = useState(false)
+  const entries = s.foods.filter((f) => f.date === day)
+  const own = new Map(s.customFoods.map((f) => [f.id, f.micros]))
+  const per100 = (id: string) => MICROS_PER_100G[id] ?? own.get(id)
+  const { totals, withData } = microTotals(entries, per100)
+  const goals = microTargets(s.profile)
+  return (
+    <Card className="flex flex-col gap-2">
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <h3>{t('nutrition.micro.title')}</h3>
+          <span className="text-[0.85rem] text-muted-foreground">
+            {withData ? t('nutrition.micro.coverage', { n: withData, total: entries.length }) : t('nutrition.micro.none')}
+          </span>
+        </div>
+        {withData > 0 && (
+          <Button variant="secondary" size="sm" onClick={() => setOpen(!open)}>
+            {open ? t('nutrition.micro.hide') : t('nutrition.micro.show')}
+          </Button>
+        )}
+      </div>
+      {open && withData > 0 && (
+        <div className="flex flex-col gap-2" style={{ gap: 10 }}>
+          {MICRO_IDS.map((id) => {
+            const value = totals[id]
+            const unit = MICRO_UNIT[id]
+            const max = MICRO_UPPER[id] ?? goals[id]
+            return (
+              <div key={id} className="flex flex-col gap-1" style={{ gap: 3 }}>
+                <div className="flex items-baseline justify-between gap-2">
+                  <span style={{ fontWeight: 600 }}>{t(`nutrition.micro.name.${id}`)}</span>
+                  <span className="text-[0.85rem] tabular-nums text-muted-foreground">
+                    {value === undefined ? (
+                      t('nutrition.micro.noData')
+                    ) : (
+                      <>
+                        <strong className="text-foreground">
+                          {fmtNumber(value, value < 10 ? 1 : 0)} {unit}
+                        </strong>{' '}
+                        {t('nutrition.micro.target', { target: fmtNumber(max, 0), unit })}
+                      </>
+                    )}
+                  </span>
+                </div>
+                {value !== undefined && <Bar value={value} max={max} color={id === 'sodium' ? 'var(--warn)' : undefined} />}
+              </div>
+            )
+          })}
+          <p className="text-[0.85rem] text-muted-foreground">{t('nutrition.micro.sodiumNote')}</p>
+          <p className="text-[0.85rem] text-muted-foreground">{t('nutrition.micro.note')}</p>
+          <p className="text-xs text-muted-foreground">{t('nutrition.micro.source')}</p>
+        </div>
+      )}
+    </Card>
+  )
+}

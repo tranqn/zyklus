@@ -7,7 +7,7 @@ import { addDays, fmt, formatDate, today, uid } from '../domain/util'
 import { recentFoods, useStore } from '../store'
 import { Bar, Icon, Ring, Segmented, Sheet } from '../ui/kit'
 import { toast } from '../ui/notify'
-import { MealActions, RecipeTab, SaveRecipeSheet, SupplementsCard } from './NutritionExtras'
+import { MealActions, MicronutrientsCard, RecipeTab, SaveRecipeSheet, SupplementsCard } from './NutritionExtras'
 import MealPlanner from './MealPlanner'
 import { getLang, t as tr, useT } from '../i18n'
 import { allFoods, foodName, foodPortion } from '../domain/foods'
@@ -167,6 +167,8 @@ function Diary({ switcher }: { switcher: ReactNode }) {
           </Card>
         )
       })}
+
+      <MicronutrientsCard day={day} />
 
       <SupplementsCard day={day} />
 

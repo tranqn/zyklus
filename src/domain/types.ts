@@ -1,3 +1,4 @@
+import type { Micros } from './micronutrients'
 import type { MealPrefs } from './meals'
 
 export type Goal = 'muskelaufbau' | 'fettabbau' | 'rekomposition' | 'kraft'
@@ -212,6 +213,12 @@ export interface Food {
   viPortion?: { grams: number; label: string }
   /** cuisine the dish belongs to; ranked first in that language */
   region?: 'de' | 'vi'
+  /**
+   * Micronutrients per 100 g, for a food the user entered or scanned. Built-in foods get theirs
+   * from micronutrient-data.ts instead, so the table is not copied into every synced document.
+   * A missing key means no data, which is not the same as zero.
+   */
+  micros?: Micros
   /** extra search words (any language) */
   aliases?: string[]
 }

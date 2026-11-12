@@ -265,6 +265,15 @@ test('nutrition: free text, recipe, supplements', async ({ page }) => {
   await page.getByRole('button', { name: 'Schließen' }).click()
   await page.getByRole('button', { name: /Kreatin/ }).click()
   await expect(page.getByText('1 von 1 genommen')).toBeVisible()
+
+  // micronutrients: of the six logged entries only the two bananas have data, and the card says so
+  const micro = page.getByRole('heading', { name: 'Mikronährstoffe' }).locator('..').locator('..')
+  await expect(micro.getByText(/Aus 2 von 6 Einträgen/)).toBeVisible()
+  await micro.getByRole('button', { name: 'Anzeigen' }).click()
+  await expect(page.getByText('Kalium', { exact: true })).toBeVisible()
+  // iodine is in no source we use: it must say so instead of showing a zero
+  await expect(page.getByText('keine Daten').first()).toBeVisible()
+  await expect(page.getByText(/Blutuntersuchung/)).toBeVisible()
 })
 
 test('every main route renders without console errors', async ({ page }) => {
