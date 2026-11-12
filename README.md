@@ -78,4 +78,11 @@ stehen in [LICENSE](LICENSE). Fremde Bestandteile und die Herkunft der Nährwert
 
 ## Deployment
 
-Push auf `main`: GitHub baut und testet (inklusive Playwright), dann deployt der Self-hosted-Runner zuerst die API (`deploy zyklus-api <sha>`, Compose) und danach das Frontend auf dem Hetzner-Server mit `/opt/ci/bin/deploy zyklus --from site`. Caddy-Block und Projektkonfiguration liegen als Kopie in `deploy/`.
+Push auf `main`: GitHub baut und testet auf eigenen Maschinen, inklusive Playwright. Deployt wird von hier aus nichts. Der Hetzner-Server fragt stattdessen alle fünf Minuten nach, in zwei Spuren:
+
+- **Frontend.** Ein grüner Lauf schiebt das fertige `dist` in den Branch `site`. Der Server zieht den Branch mit einem Lesekey und veröffentlicht ihn (`/opt/ci/bin/deploy zyklus --from …`). Die Betreffzeile des Branch-Commits ist der `main`-Commit, aus dem der Build stammt.
+- **API.** Der Server liest die Lauf-Liste dieses Repos, nimmt den neuesten grünen `push`-Lauf auf `main` und baut diesen Commit selbst (`deploy zyklus-api <sha>`, Compose).
+
+Der Grund für den Umweg: ein Self-hosted-Runner am Repo wäre in einem öffentlichen Repo eine offene Tür. GitHub führt bei einem Pull Request die Workflow-Datei so aus, wie der Fork sie geschrieben hat, also auch ohne die Absicherungen, die im Original stehen. Ein Timer, der nur liest, lässt sich von außen zu nichts überreden.
+
+Caddy-Block, Projektkonfigurationen und die auf dem Server installierten Skripte liegen als Kopie in `deploy/` und `deploy/host/`.

@@ -1,0 +1,12 @@
+[Unit]
+Description=Deploy the newest green GitHub commit of %i
+After=docker.service network-online.target
+Requires=docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# ci, never nam: nam has passwordless sudo, ci has none (/opt/ci/README.md).
+User=ci
+Group=ci
+ExecStart=/opt/ci/bin/github-pull %i

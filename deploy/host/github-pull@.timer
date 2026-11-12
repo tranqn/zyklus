@@ -1,0 +1,12 @@
+[Unit]
+Description=Poll GitHub for a green commit of %i
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=5min
+# A deploy can take minutes and holds the server-wide lock; systemd does not
+# start the service again while the previous run is still going.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

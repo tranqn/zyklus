@@ -4,10 +4,11 @@
 # deploy secret, so a pull_request from a fork can run only what you see below,
 # on GitHub's own machines, with a read-only token.
 #
-# The Hetzner box asks instead of being told: a timer polls this repo for the
-# newest green run on main and publishes the `site` artifact that run built
-# (/opt/ci/bin/github-pull on the server). Nothing on the internet can make the
-# box deploy anything, and no runner token lives there.
+# The Hetzner box asks instead of being told. Every green run on main pushes
+# the finished app to the `site` branch, and a timer on the box pulls that
+# branch with the read-only deploy key it already has (/opt/ci/bin/github-pull).
+# Nothing on the internet can make the box deploy anything, no runner token
+# lives there, and this workflow holds no server credential.
 name: CI
 
 on:
@@ -17,7 +18,7 @@ on:
     branches: [main]
   workflow_dispatch:
 
-# read-only by default: nothing here needs to write to the repo
+# read-only by default: only publish-site asks for more, and only on main
 permissions:
   contents: read
 
@@ -70,3 +71,53 @@ jobs:
           path: dist
           retention-days: 3
           if-no-files-found: error
+
+  # The built app goes to the `site` branch, which the server pulls. Only runs
+  # on main reach this: a pull_request from a fork gets a read-only token from
+  # GitHub whatever its workflow file asks for, so it cannot write the branch.
+  publish-site:
+    name: Push the build to the site branch
+    needs: [build]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: site-branch
+      cancel-in-progress: false
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: site
+          path: site
+
+      - name: The artifact is a real app
+        run: test -f site/index.html && test -f site/sw.js
+
+      # A note at the branch root, outside site/, so it is never published.
+      - name: Explain the branch
+        run: |
+          cat > README.md <<'EOF'
+          # site
+
+          Maschinell erzeugt. Dieser Branch enthaelt die gebaute App in `site/`,
+          gepusht von der CI nach einem gruenen Lauf auf `main`. Die Betreffzeile
+          des Commits ist der `main`-Commit, aus dem der Build stammt.
+
+          Hier von Hand etwas zu aendern ist sinnlos: der naechste gruene Lauf
+          ueberschreibt den Branch.
+          EOF
+
+      # One orphan commit, overwritten every time: the branch never grows a
+      # history of build outputs, so the repository does not swell per deploy.
+      - name: Push
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+        run: |
+          git init -q -b site
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A site README.md
+          git commit -q -m "$SHA" -m "Build aus Lauf $GITHUB_RUN_ID."
+          git push --force "https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git" HEAD:refs/heads/site
