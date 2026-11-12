@@ -15,9 +15,13 @@ Die eingebaute Lebensmittel-Datenbank (`src/domain/foods.ts`) stützt sich auf d
 
 Die Werte sind Orientierung, keine Laboranalyse, und keine medizinische Auskunft.
 
-Die Mikronährstoffe stammen aus **USDA FoodData Central** (SR Legacy und Foundation Foods). Die
-Daten sind gemeinfrei unter CC0 1.0; die USDA bittet um Nennung als Quelle. Welcher USDA-Eintrag zu
-welchem Lebensmittel gehört, steht nachvollziehbar in `tools/micronutrients/usda-mapping.json`.
+Die Mikronährstoffe stammen aus **USDA FoodData Central**, Datensatz SR Legacy. Die Daten sind
+gemeinfrei unter CC0 1.0; die USDA bittet um Nennung als Quelle. Welcher USDA-Eintrag zu welchem
+Lebensmittel gehört, steht von Hand gepflegt in `tools/micronutrients/pin.json`.
+
+Die Zielwerte sind die **DGE/ÖGE-Referenzwerte für die Nährstoffzufuhr** (Erwachsene), abgelesen von
+den Nährstoffseiten auf dge.de am 11.11.2026. Sie stehen mit Stand und Begründung in
+`src/domain/micronutrients.ts`.
 
 ## Open Food Facts
 

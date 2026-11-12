@@ -546,7 +546,7 @@ function Toggle({ label, on, onChange }: { label: string; on: boolean; onChange:
 }
 
 export function Knowledge() {
-  const keys = ['meso', 'rir', 'test', 'double', 'checkin', 'kcal', 'map'] as const
+  const keys = ['meso', 'rir', 'test', 'double', 'checkin', 'kcal', 'micro', 'map'] as const
   const blocks = keys.map((k) => [tr(`more.knowledge.${k}`), tr(`more.knowledge.${k}T`)] as const)
   return (
     <SubPage title={tr('more.knowledge.title')} eyebrow={tr('more.knowledge.eyebrow')}>

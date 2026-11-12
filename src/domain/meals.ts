@@ -1,3 +1,4 @@
+import { addMicros, scaleMicros, type Micros } from './micronutrients'
 import type { Food, Macros, Meal } from './types'
 
 /**
@@ -137,6 +138,29 @@ export function dishMacros(d: Pick<Dish, 'items'>, foods: Map<string, Food>, pre
     out.fat += (f.per100.fat * grams) / 100
   }
   return out
+}
+
+/**
+ * Micronutrients of a dish, summed from its ingredients. A dish in the planner is a real recipe
+ * (`items` is food id plus grams), so nothing has to be entered twice. `covered` says how many
+ * of its ingredients had data, because a sum from three of nine ingredients is not a dish value.
+ */
+export function dishMicros(
+  d: Pick<Dish, 'items'>,
+  per100: (foodId: string) => Micros | undefined,
+  prefs: Pick<MealPrefs, 'lactoseFree'> = DEFAULT_MEAL_PREFS,
+  factor = 1,
+): { micros: Micros; covered: number; items: number } {
+  const items = dishItems(d, prefs, factor)
+  const micros: Micros = {}
+  let covered = 0
+  for (const { foodId, grams } of items) {
+    const m = scaleMicros(per100(foodId), grams)
+    if (!m) continue
+    covered++
+    addMicros(micros, m)
+  }
+  return { micros, covered, items: items.length }
 }
 
 export interface PlannedMeal {

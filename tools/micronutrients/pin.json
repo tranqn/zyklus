@@ -1,0 +1,40 @@
+{
+  "_": "Food id from src/domain/foods.ts -> USDA FoodData Central fdc_id, picked by hand. Nothing is matched automatically: a wrong entry would put wrong micronutrients in front of someone who watches a deficiency. Use suggest.py to find candidates for a food that is still missing, then add it here with its description.",
+
+  "haehnchenbrust": [171077, "Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw"],
+  "haehnchenschenkel": [173627, "Chicken, broilers or fryers, dark meat, thigh, meat only, raw"],
+  "putenbrust": [171098, "Turkey, whole, breast, meat only, raw"],
+  "schweinefilet": [168312, "Pork, fresh, loin, tenderloin, separable lean and fat, raw"],
+  "lachs": [175167, "Fish, salmon, Atlantic, farmed, raw"],
+  "ei": [171287, "Egg, whole, raw, fresh"],
+  "eiklar": [172183, "Egg, white, raw, fresh"],
+  "butter": [173410, "Butter, salted"],
+
+  "spinat": [168462, "Spinach, raw"],
+  "brokkoli": [170379, "Broccoli, raw"],
+  "blumenkohl": [169986, "Cauliflower, raw"],
+  "champignons": [169251, "Mushrooms, white, raw"],
+  "karotte": [170393, "Carrots, raw"],
+  "zwiebel": [170000, "Onions, raw"],
+  "gurke": [168409, "Cucumber, with peel, raw"],
+  "salat": [169247, "Lettuce, cos or romaine, raw"],
+  "tomate": [170457, "Tomatoes, red, ripe, raw, year round average"],
+  "avocado": [171705, "Avocados, raw, all commercial varieties"],
+
+  "banane": [173944, "Bananas, raw"],
+  "apfel": [168202, "Apples, raw, golden delicious, with skin"],
+  "orange": [169097, "Oranges, raw, all commercial varieties"],
+  "heidelbeeren": [171711, "Blueberries, raw"],
+  "xoai": [169910, "Mangos, raw"],
+  "du-du": [169926, "Papayas, raw"],
+  "mit": [174687, "Jackfruit, raw"],
+
+  "edamame": [168411, "Edamame, frozen, prepared"],
+  "tempeh": [174272, "Tempeh"],
+  "quinoa-roh": [168874, "Quinoa, uncooked"],
+  "reisnudeln-roh": [169742, "Rice noodles, dry"],
+  "couscous-roh": [169699, "Couscous, dry"],
+  "honig": [169640, "Honey"],
+  "speisestaerke": [169698, "Cornstarch"],
+  "kakao": [169593, "Cocoa, dry powder, unsweetened"]
+}
