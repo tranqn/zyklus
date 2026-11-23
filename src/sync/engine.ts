@@ -5,6 +5,7 @@ import { api, ApiError, apiMessage, configureApi, LocalError, type PublicUser } 
 import { tk } from '../i18n'
 import { canon, merge, sameDoc as same, track, type SyncDoc } from './merge'
 import { discardStash, putStash, rawStash, readStash, writeRawStash, type Stash } from './stash'
+import { toast } from '../ui/notify'
 
 type Status = 'idle' | 'pending' | 'syncing' | 'ok' | 'offline' | 'error'
 
@@ -363,14 +364,28 @@ export async function checkSession(): Promise<void> {
   // from before it (say, from the account_mismatch recheck) must not adopt anyone afterwards.
   const gen = generation
   try {
-    const { user } = await api<{ user: PublicUser | null }>('GET', '/auth/me')
+    let user: PublicUser | null
+    try {
+      ;({ user } = await api<{ user: PublicUser | null }>('GET', '/auth/me'))
+    } catch (e) {
+      if (gen !== generation) return
+      // offline: keep the cached user so the app still opens
+      if (!(e instanceof ApiError && e.status === 0)) useSync.setState({ user: undefined })
+      return
+    }
     if (gen !== generation) return
-    if (user) await adopt(user)
-    else useSync.setState({ user: undefined })
-  } catch (e) {
-    if (gen !== generation) return
-    // offline: keep the cached user so the app still opens
-    if (!(e instanceof ApiError && e.status === 0)) useSync.setState({ user: undefined })
+    if (!user) {
+      useSync.setState({ user: undefined })
+      return
+    }
+    try {
+      await adopt(user)
+    } catch (e) {
+      // adopt itself failed (the switch was refused), which is not a superseded answer: the
+      // session belongs to someone else now, so the cached user must not stay on screen
+      useSync.setState({ user: undefined })
+      toast(apiMessage(e))
+    }
   } finally {
     useSync.setState({ checked: true })
   }

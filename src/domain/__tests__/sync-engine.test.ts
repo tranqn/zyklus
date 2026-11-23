@@ -864,6 +864,28 @@ describe('sync engine: late session checks', () => {
     expect(d.engine.useSync.getState().user).toBeUndefined()
   })
 
+  it("a session check whose switch is refused clears the stale user and says so, instead of swallowing it", async () => {
+    const x = server.add('x@example.test')
+    const y = server.add('y@example.test')
+    const d = await device()
+    await d.engine.login('x@example.test', 'pw')
+    d.s.addFood(meal('X-Essen'))
+    await d.sync()
+    // another tab signs in as Y, and this device has no room to keep X's data aside
+    server.session = y.id
+    d.storage.full = true
+    const { onToast } = await import('../../ui/notify')
+    const { tk } = await import('../../i18n')
+    const toasts: string[] = []
+    const off = onToast((m) => toasts.push(m))
+    await d.engine.checkSession()
+    off()
+    expect(d.engine.useSync.getState().user).toBeUndefined()
+    expect(toasts).toEqual([tk('account.apiError.switch_refused')])
+    expect(names(d.s.foods)).toEqual(['X-Essen'])
+    expect(d.s.owner).toEqual({ origin: ORIGIN, id: x.id, createdAt: x.createdAt })
+  })
+
   it('a session check that answers "nobody" after the same account signed in again does not sign it out', async () => {
     server.add('a@example.test')
     const d = await device()
