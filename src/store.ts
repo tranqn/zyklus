@@ -71,6 +71,12 @@ export interface State {
    * synced, never in a backup, not changed by reset or a restore.
    */
   owner?: DataOwner
+  /**
+   * The server revision this data was last merged with. Stored with the data for the same reason
+   * as `owner`: a tab that paired one tab's data with another tab's revision could upload over
+   * changes it never merged. Not user data either.
+   */
+  rev?: number
 }
 
 interface Actions {
@@ -525,7 +531,7 @@ export const useStore = create<State & Actions>()(
       version: 1,
       partialize: (s) => {
         const out: Partial<State> = {}
-        for (const k of Object.keys(initial).concat(['profile', 'meso', 'active', 'owner']) as (keyof State)[]) {
+        for (const k of Object.keys(initial).concat(['profile', 'meso', 'active', 'owner', 'rev']) as (keyof State)[]) {
           ;(out as Record<string, unknown>)[k] = s[k]
         }
         return out as State
@@ -569,7 +575,7 @@ export const DATA_KEYS = [...Object.keys(initial).filter((k) => k !== 'syncMeta'
 
 /** The backup file: the persisted store without functions and without the account binding. */
 export function backupOf(s: State): Record<string, unknown> {
-  return Object.fromEntries(Object.entries(s).filter(([k, v]) => typeof v !== 'function' && k !== 'owner'))
+  return Object.fromEntries(Object.entries(s).filter(([k, v]) => typeof v !== 'function' && k !== 'owner' && k !== 'rev'))
 }
 
 /** A fresh, empty state (used when switching accounts). */

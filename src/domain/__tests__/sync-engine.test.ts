@@ -165,7 +165,7 @@ async function device(storage = new MemStorage()) {
     doc(): SyncDoc {
       const st = useStore.getState() as unknown as Record<string, unknown>
       const state: Record<string, unknown> = {}
-      for (const k of Object.keys(st)) if (typeof st[k] !== 'function' && k !== 'syncMeta' && k !== 'owner') state[k] = st[k]
+      for (const k of Object.keys(st)) if (typeof st[k] !== 'function' && k !== 'syncMeta' && k !== 'owner' && k !== 'rev') state[k] = st[k]
       return { v: 1, state, stamps: useStore.getState().syncMeta.stamps, tombstones: useStore.getState().syncMeta.tombstones }
     },
     /** let pending uploads go out, then pull */
@@ -401,7 +401,7 @@ describe('sync engine: account binding', () => {
     await pending
     await d.sync()
     expect(d.s.foods).toEqual([])
-    expect(d.engine.useSync.getState().rev).toBe(0)
+    expect(d.s.rev).toBe(0)
   })
 
   it('drops a pull for X that answers after the device switched to Y', async () => {
@@ -796,7 +796,7 @@ describe('sync engine: the server lost the document', () => {
     await d.engine.login('a@example.test', 'pw')
     d.s.addFood(meal('Apfel'))
     await d.sync()
-    expect(d.engine.useSync.getState().rev).toBeGreaterThan(0)
+    expect(d.s.rev).toBeGreaterThan(0)
     server.docs.clear()
     d.s.addFood(meal('Birne'))
     // the upload alone, no pull in between
@@ -804,7 +804,8 @@ describe('sync engine: the server lost the document', () => {
     await settle()
     expect(names(server.doc(a)?.data.state.foods as never)).toEqual(['Apfel', 'Birne'])
     expect(server.puts().at(-2)).toMatchObject({ status: 409 })
-    expect(d.engine.useSync.getState()).toMatchObject({ status: 'ok', rev: server.doc(a)!.rev })
+    expect(d.engine.useSync.getState().status).toBe('ok')
+    expect(d.s.rev).toBe(server.doc(a)!.rev)
   })
 })
 
@@ -900,5 +901,60 @@ describe('sync engine: the stash', () => {
     const stash = stashOf(storage)!
     expect(stash.owner).toEqual({ origin: ORIGIN, id: x.id, createdAt: x.createdAt })
     expect(names(stash.doc.state.foods as never).sort()).toEqual(['Eins', 'Zwei'])
+  })
+})
+
+describe('sync engine: the revision is stored with the data', () => {
+  it("a new tab that would pair tab 1's data with tab 2's revision does not overwrite other devices' changes", async () => {
+    const acc = server.add('a@example.test')
+    const other = await device()
+    await other.engine.login('a@example.test', 'pw')
+    const storage = new MemStorage()
+    const tab1 = await device(storage)
+    await tab1.engine.login('a@example.test', 'pw')
+    await tab1.sync()
+    const tab2 = await device(storage)
+    // another device adds something; only tab 2 pulls it
+    other.s.addFood(meal('Fremd'))
+    await other.sync()
+    await tab2.sync()
+    expect(names(tab2.s.foods)).toEqual(['Fremd'])
+    // tab 1, still without it, edits offline: it writes its data (and its upload fails)
+    server.online = false
+    tab1.s.addFood(meal('Eins'))
+    await vi.advanceTimersByTimeAsync(2000)
+    server.online = true
+    // tab 2 writes its sync state again without touching the data
+    await tab2.engine.syncNow()
+    // a new tab opens and edits right away, before any pull
+    const tab3 = await device(storage)
+    expect(names(tab3.s.foods)).toEqual(['Eins'])
+    tab3.s.addFood(meal('Drei'))
+    await vi.advanceTimersByTimeAsync(2000)
+    await settle()
+    expect(names(server.doc(acc)!.data.state.foods as never).sort()).toEqual(['Drei', 'Eins', 'Fremd'])
+  })
+
+  it('reads the revision of an older version once from zyklus-sync and moves it into the store', async () => {
+    const x = server.add('x@example.test')
+    server.docs.set(x.id, { rev: 4, data: docWith('Konto') })
+    server.session = x.id
+    const storage = new MemStorage()
+    const pub = { id: x.id, email: x.email, verified: true, createdAt: x.createdAt, locale: 'de' }
+    storage.setItem('zyklus-sync', JSON.stringify({ state: { user: pub, ownerId: x.id, rev: 4 }, version: 0 }))
+    storage.setItem('zyklus-v1', JSON.stringify({ state: { foods: [{ id: 'l1', ...meal('Lokal') }], syncMeta: { stamps: { 'i:foods:l1': T0 - 5000 }, tombstones: {} } }, version: 1 }))
+    const d = await device(storage)
+    const release = server.gate('GET', '/state')
+    const check = d.engine.checkSession()
+    await settle()
+    // bound, the first pull still on its way: the old revision now lives with the data
+    expect(d.s.rev).toBe(4)
+    expect(JSON.parse(storage.getItem('zyklus-v1')!).state.rev).toBe(4)
+    expect(JSON.parse(storage.getItem('zyklus-sync')!).state.rev).toBeUndefined()
+    release()
+    await check
+    await d.sync()
+    expect(names(server.doc(x)!.data.state.foods as never).sort()).toEqual(['Konto', 'Lokal'])
+    expect(d.s.rev).toBe(server.doc(x)!.rev)
   })
 })

@@ -150,10 +150,12 @@ describe('store: restoring a backup', () => {
   it('the account binding is neither written into a backup nor taken from one', () => {
     current()
     const owner = { origin: 'https://mci.example.test', id: 7, createdAt: 1 }
-    useStore.setState({ owner })
+    useStore.setState({ owner, rev: 12 })
     expect(backupOf(useStore.getState())).not.toHaveProperty('owner')
-    useStore.getState().importData(JSON.stringify({ ...withPlanner, owner: { origin: 'x', id: 9, createdAt: 2 } }))
+    expect(backupOf(useStore.getState())).not.toHaveProperty('rev')
+    useStore.getState().importData(JSON.stringify({ ...withPlanner, owner: { origin: 'x', id: 9, createdAt: 2 }, rev: 99 }))
     expect(useStore.getState().owner).toEqual(owner)
+    expect(useStore.getState().rev).toBe(12)
   })
 
   it.each([

@@ -23,7 +23,8 @@ interface SyncState {
    * so an older cached bundle running on this device keeps its own guard against mixing accounts.
    */
   ownerId?: number
-  rev: number
+  /** Legacy: the revision older versions kept here. Read once by adopt, now `useStore.rev`. */
+  rev?: number
   lastSyncedAt?: number
   status: Status
   error?: string
@@ -32,7 +33,7 @@ interface SyncState {
 }
 
 export const useSync = create<SyncState>()(
-  persist((): SyncState => ({ rev: 0, status: 'idle', checked: false }), {
+  persist((): SyncState => ({ status: 'idle', checked: false }), {
     name: 'zyklus-sync',
     storage: createJSONStorage(() => localStorage),
     partialize: (s) => ({ user: s.user, ownerId: s.ownerId, rev: s.rev, lastSyncedAt: s.lastSyncedAt }),
@@ -59,11 +60,15 @@ function bound(): boolean {
   return !!user && sameOwner(dataOwner(), user)
 }
 
-/** Change the binding without it counting as a change of the user's data. */
-function setOwner(owner: Owner | undefined) {
+type Binding = Partial<Pick<State, 'owner' | 'rev'>>
+/** The server revision the local data was last merged with (stored with the data). */
+const storeRev = () => useStore.getState().rev ?? 0
+
+/** Change binding or revision without it counting as a change of the user's data. */
+function setBinding(binding: Binding) {
   applyingRemote = true
   try {
-    useStore.setState({ owner })
+    useStore.setState(binding)
   } finally {
     applyingRemote = false
   }
@@ -175,12 +180,13 @@ const hasData = (d: SyncDoc) => Object.keys(d.stamps).length > 0 || Object.keys(
  */
 function stashAndClean(owner: Owner | undefined, ownerId: number | undefined) {
   const doc = toDoc()
-  applyDoc(emptyDoc())
+  const rev = useStore.getState().rev
+  applyDoc(emptyDoc(), { rev: 0 })
   if (hasData(doc) && !putStash({ savedAt: Date.now(), owner, ownerId: owner ? undefined : ownerId, doc })) {
-    applyDoc(doc)
+    applyDoc(doc, { rev })
     throw new LocalError('switch_refused', 'Kontowechsel abgebrochen: nicht genug Speicher für die bisherigen Daten.')
   }
-  useSync.setState({ rev: 0, lastSyncedAt: undefined })
+  useSync.setState({ lastSyncedAt: undefined })
 }
 
 function toDoc(s: State = useStore.getState()): SyncDoc {
@@ -189,8 +195,9 @@ function toDoc(s: State = useStore.getState()): SyncDoc {
   return { v: 2, state, stamps: s.syncMeta.stamps, tombstones: s.syncMeta.tombstones }
 }
 
-function applyDoc(doc: SyncDoc) {
-  const patch: Record<string, unknown> = { syncMeta: { stamps: doc.stamps, tombstones: doc.tombstones } }
+/** Write a document into the store, with binding or revision in the same write (one localStorage entry). */
+function applyDoc(doc: SyncDoc, binding: Binding = {}) {
+  const patch: Record<string, unknown> = { syncMeta: { stamps: doc.stamps, tombstones: doc.tombstones }, ...binding }
   for (const k of DATA_KEYS) patch[k] = doc.state[k]
   applyingRemote = true
   try {
@@ -227,12 +234,13 @@ async function pushNow(): Promise<void> {
   const gen = generation
   useSync.setState({ status: 'syncing' })
   let local = toDoc()
-  let rev = useSync.getState().rev
+  let rev = storeRev()
   for (let attempt = 0; attempt < 4; attempt++) {
     try {
       const res = await api<{ rev: number }>('PUT', '/state', { rev, data: local })
       if (gen !== generation) return
-      useSync.setState({ rev: res.rev, status: 'ok', lastSyncedAt: Date.now(), error: undefined })
+      setBinding({ rev: res.rev })
+      useSync.setState({ status: 'ok', lastSyncedAt: Date.now(), error: undefined })
       return
     } catch (e) {
       if (gen !== generation) return
@@ -246,8 +254,8 @@ async function pushNow(): Promise<void> {
       }
       // rev 0: this device has never synced with the account (see pullNow)
       local = merge(toDoc(), remote, { preferRemote: rev === 0 })
-      applyDoc(local)
       rev = Number(e.body.rev)
+      applyDoc(local, { rev })
     }
   }
   useSync.setState({ status: 'error', error: tk('account.apiError.conflict') })
@@ -267,15 +275,16 @@ async function pullNow(): Promise<void> {
     const res = await api<{ rev: number; data: SyncDoc | null }>('GET', '/state')
     if (gen !== generation) return
     if (!res.data) {
-      useSync.setState({ rev: 0 })
+      setBinding({ rev: 0 })
       return pushNow()
     }
     const local = toDoc()
     // First sync of this device with the account (rev 0): on equal zero stamps the account's
     // values win, so the defaults of a fresh device never replace values that were never stamped.
-    const merged = merge(local, res.data, { preferRemote: useSync.getState().rev === 0 })
-    if (!same(merged, local)) applyDoc(merged)
-    useSync.setState({ rev: res.rev })
+    const merged = merge(local, res.data, { preferRemote: storeRev() === 0 })
+    // data and the revision it now includes go into the store in one write
+    if (!same(merged, local)) applyDoc(merged, { rev: res.rev })
+    else if (useStore.getState().rev !== res.rev) setBinding({ rev: res.rev })
     if (!same(merged, res.data)) return pushNow()
     useSync.setState({ status: 'ok', lastSyncedAt: Date.now(), error: undefined })
   } catch (e) {
@@ -341,9 +350,11 @@ async function adopt(user: PublicUser) {
     const unbound = !owner && s.ownerId == null
     window.clearTimeout(pushTimer)
     if (!legacySame && !unbound) stashAndClean(owner, s.ownerId)
-    setOwner(ownerOf(user))
+    // data kept from an older version: its revision is read once from zyklus-sync
+    else if (useStore.getState().rev === undefined) setBinding({ rev: s.rev ?? 0 })
+    setBinding({ owner: ownerOf(user) })
   }
-  useSync.setState({ user, ownerId: user.id })
+  useSync.setState({ user, ownerId: user.id, rev: undefined })
   await syncNow()
 }
 
@@ -407,10 +418,9 @@ export async function logout(clearDevice: boolean) {
     await api('POST', '/auth/logout', {}).catch(() => undefined)
     generation++
     if (clearDevice) {
-      applyDoc(emptyDoc())
-      setOwner(undefined)
+      applyDoc(emptyDoc(), { owner: undefined, rev: 0 })
       discardStash()
-      useSync.setState({ ownerId: undefined, rev: 0 })
+      useSync.setState({ ownerId: undefined })
     }
     // otherwise the binding stays, so the same account signing in again keeps the data
     useSync.setState({ user: undefined, status: 'idle', lastSyncedAt: undefined })
@@ -429,8 +439,7 @@ export async function setAccountLocale(locale: string) {
 export function forgetAccount() {
   generation++
   window.clearTimeout(pushTimer)
-  applyDoc(emptyDoc())
-  setOwner(undefined)
+  applyDoc(emptyDoc(), { owner: undefined, rev: 0 })
   discardStash()
-  useSync.setState({ user: undefined, ownerId: undefined, rev: 0, status: 'idle', lastSyncedAt: undefined })
+  useSync.setState({ user: undefined, ownerId: undefined, status: 'idle', lastSyncedAt: undefined })
 }
