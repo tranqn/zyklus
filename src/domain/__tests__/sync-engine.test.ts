@@ -580,6 +580,31 @@ describe('sync engine: restoring a backup', () => {
     expect(server.puts().length).toBe(puts)
   })
 
+  it('a backup that does not fit in localStorage is rolled back and reported as full storage, not as invalid', async () => {
+    const acc = server.add('a@example.test')
+    const d = await device()
+    await d.engine.login('a@example.test', 'pw')
+    d.s.addFood(meal('Apfel'))
+    await d.sync()
+    const big = JSON.parse(await backupOf(d))
+    big.foods = Array.from({ length: 300 }, (_, i) => ({ id: `b${i}`, ...meal(`Backup ${i}`) }))
+    d.storage.maxItem['zyklus-v1'] = d.storage.getItem('zyklus-v1')!.length + 100
+    const stored = d.storage.getItem('zyklus-v1')
+    const before = canon({ ...d.doc(), meta: d.s.syncMeta })
+    const { restoreBackup } = await import('../../sync/restore')
+    const { onToast } = await import('../../ui/notify')
+    const { t } = await import('../../i18n')
+    const toasts: string[] = []
+    const off = onToast((m) => toasts.push(m))
+    expect(restoreBackup(JSON.stringify(big))).toBe(false)
+    off()
+    expect(toasts).toEqual([t('more.settings.storageFull')])
+    expect(canon({ ...d.doc(), meta: d.s.syncMeta })).toBe(before)
+    expect(d.storage.getItem('zyklus-v1')).toBe(stored)
+    await d.sync()
+    expect(names(server.doc(acc)!.data.state.foods as never)).toEqual(['Apfel'])
+  })
+
   it('delete, restore an older backup, an old offline device syncs: nothing deleted after the backup comes back', async () => {
     server.add('a@example.test')
     const old = await device()

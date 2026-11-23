@@ -104,6 +104,31 @@ export function canRestoreStash(stash: Stash | undefined = readStash()): boolean
 const isStamps = (v: unknown) => !!v && typeof v === 'object' && !Array.isArray(v) && Object.values(v).every((x) => typeof x === 'number')
 
 /**
+ * Restore a backup file: it replaces the data (see importData), which validates everything
+ * before it writes. If the restored data does not fit into localStorage, the previous data and
+ * its stamps go back unchanged, and the answer says so instead of calling the file invalid.
+ */
+export function importBackup(json: string): 'ok' | 'invalid' | 'storage' {
+  try {
+    parseBackup(json)
+  } catch {
+    return 'invalid'
+  }
+  const before = toDoc()
+  try {
+    useStore.getState().importData(json)
+  } catch {
+    try {
+      applyDoc(before)
+    } catch {
+      /* the previous data is still what localStorage holds */
+    }
+    return 'storage'
+  }
+  return 'ok'
+}
+
+/**
  * Bring the stash of the signed-in account back by merging it into the current data: stamps and
  * tombstones of both sides count, nothing the account has and the stash lacks is deleted. The
  * result is uploaded like any local change.
