@@ -313,6 +313,66 @@ describe('state sync', () => {
     const { cookie } = await register()
     expect((await call('PUT', '/state', { cookie, body: { rev: 0, data: { v: 2 } } })).status).toBe(400)
     expect((await call('PUT', '/state', { cookie, body: { rev: -1, data: doc(1) } })).status).toBe(400)
+    expect((await call('PUT', '/state', { cookie, body: { rev: 0, data: { ...doc(1), v: 3 } } })).status).toBe(400)
+  })
+
+  describe('document version 2', () => {
+    const doc2 = (n: number) => ({ v: 2, state: { n }, stamps: {}, tombstones: {} })
+    async function signedIn() {
+      const { cookie } = await register()
+      const u = (await call('GET', '/auth/me', { cookie })).body.user as { id: number; createdAt: number }
+      return { cookie, account: `${u.id}:${u.createdAt}`, id: u.id }
+    }
+
+    it('is accepted with the account header only', async () => {
+      const { cookie, account } = await signedIn()
+      const bare = await call('PUT', '/state', { cookie, body: { rev: 0, data: doc2(1) } })
+      expect(bare.status).toBe(400)
+      expect(bare.body.error).toBe('account')
+      expect((await call('PUT', '/state', { cookie, account, body: { rev: 0, data: { v: 2, state: [], stamps: {}, tombstones: {} } } })).body.error).toBe('data')
+      expect((await call('PUT', '/state', { cookie, account, body: { rev: 0, data: doc2(1) } })).status).toBe(200)
+      expect((await call('GET', '/state', { cookie, account })).body.data).toEqual(doc2(1))
+    })
+
+    it('keeps accepting version 1 while the stored document is version 1', async () => {
+      const { cookie, account } = await signedIn()
+      expect((await call('PUT', '/state', { cookie, body: { rev: 0, data: doc(1) } })).status).toBe(200)
+      expect((await call('PUT', '/state', { cookie, body: { rev: 1, data: doc(2) } })).status).toBe(200)
+      // the first upload of a new bundle lifts the document to version 2
+      expect((await call('PUT', '/state', { cookie, account, body: { rev: 2, data: doc2(3) } })).status).toBe(200)
+    })
+
+    it('an old bundle that comes back online cannot overwrite a version 2 document', async () => {
+      const { cookie, account, id } = await signedIn()
+      // the old bundle synced, then went offline
+      await call('PUT', '/state', { cookie, body: { rev: 0, data: doc(1) } })
+      // meanwhile the new bundle writes version 2
+      await call('PUT', '/state', { cookie, account, body: { rev: 1, data: doc2(2) } })
+      const before = db.prepare('SELECT rev, data, updated_at FROM states WHERE user_id = ?').get(id)
+      clock += 60_000
+      // the old bundle comes online with its stale revision, and again after a conflict
+      for (const rev of [1, 2, 0]) {
+        const old = await call('PUT', '/state', { cookie, body: { rev, data: doc(9) } })
+        expect(old.status).toBe(426)
+        expect(old.body.error).toBe('client_outdated')
+      }
+      expect(db.prepare('SELECT rev, data, updated_at FROM states WHERE user_id = ?').get(id)).toEqual(before)
+    })
+
+    it('produces the same friend summary as version 1', async () => {
+      const state = { profile: { name: 'Anna', daysPerWeek: 3 }, settings: { mode: 'normal' }, frozenDays: [], sessions: [], mobility: [], cardio: [{ id: 'c1', date: '2026-10-15', minutes: 30 }] }
+      const summary = (id: number) => db.prepare('SELECT name, data FROM summaries WHERE user_id = ?').get(id)
+      const a = await signedIn()
+      await call('PUT', '/state', { cookie: a.cookie, body: { rev: 0, data: { v: 1, state, stamps: {}, tombstones: {} } } })
+      const b = await (async () => {
+        const { cookie } = await register('b@example.test')
+        const u = (await call('GET', '/auth/me', { cookie })).body.user as { id: number; createdAt: number }
+        return { cookie, account: `${u.id}:${u.createdAt}`, id: u.id }
+      })()
+      await call('PUT', '/state', { cookie: b.cookie, account: b.account, body: { rev: 0, data: { v: 2, state, stamps: { 's:profile': 1 }, tombstones: {} } } })
+      expect(summary(a.id)).toBeDefined()
+      expect(summary(b.id)).toEqual(summary(a.id))
+    })
   })
 })
 

@@ -73,13 +73,16 @@ export function createApp({ db, cfg, mail, now = Date.now, sleep = (ms) => new P
     deleteToken: db.prepare('DELETE FROM tokens WHERE token_hash = ?'),
     deleteUserTokens: db.prepare('DELETE FROM tokens WHERE user_id = ? AND kind = ?'),
     getState: db.prepare('SELECT rev, data, updated_at FROM states WHERE user_id = ?'),
+    // SQLite reads the version out of the stored JSON, so a 5 MB document is not parsed in JS
+    stateVersion: db.prepare("SELECT json_extract(data, '$.v') AS v FROM states WHERE user_id = ?"),
     insertState: db.prepare('INSERT INTO states (user_id, rev, data, updated_at) VALUES (?, 1, ?, ?)'),
     updateState: db.prepare('UPDATE states SET rev = rev + 1, data = ?, updated_at = ? WHERE user_id = ? AND rev = ?'),
   }
 
   const ip = (c: Context) => c.req.header('x-forwarded-for')?.split(',').pop()?.trim() || 'local'
   const publicUser = (u: UserRow) => ({ id: u.id, email: u.email, verified: u.email_verified_at != null, createdAt: u.created_at, locale: u.locale })
-  const fail = (c: Context, status: 400 | 401 | 403 | 404 | 409 | 413 | 429, error: string, message: string) => c.json({ error, message }, status)
+  const fail = (c: Context, status: 400 | 401 | 403 | 404 | 409 | 413 | 426 | 429, error: string, message: string) => c.json({ error, message }, status)
+  const isObject = (v: unknown) => !!v && typeof v === 'object' && !Array.isArray(v)
 
   function startSession(c: Context, userId: number) {
     const token = newToken()
@@ -341,20 +344,32 @@ export function createApp({ db, cfg, mail, now = Date.now, sleep = (ms) => new P
       const rev = body?.rev
       const data = body?.data
       if (typeof rev !== 'number' || !Number.isInteger(rev) || rev < 0) return fail(c, 400, 'rev', 'Ungültige Revision.')
-      if (!data || typeof data !== 'object' || Array.isArray(data) || (data as { v?: unknown }).v !== 1) return fail(c, 400, 'data', 'Ungültige Daten.')
+      const v = isObject(data) ? (data as { v?: unknown }).v : undefined
+      if (v !== 1 && v !== 2) return fail(c, 400, 'data', 'Ungültige Daten.')
+      const doc = data as Record<string, unknown>
+      if (v === 2) {
+        // version 2 comes from clients that bind their data to an account (see requireUser)
+        if (c.req.header('x-zyklus-account') === undefined) return fail(c, 400, 'account', 'Konto fehlt.')
+        if (!isObject(doc.state) || !isObject(doc.stamps) || !isObject(doc.tombstones)) return fail(c, 400, 'data', 'Ungültige Daten.')
+      }
       const userId = c.get('user').id
-      const json = JSON.stringify(data)
+      // Once a version 2 client has written, an old cached bundle must not write over it: it would
+      // drop what it does not know. No await between this check and the write, so nothing can slip in.
+      if (v === 1 && (q.stateVersion.get(userId) as { v: unknown } | undefined)?.v === 2) {
+        return fail(c, 426, 'client_outdated', 'Bitte lade die App neu.')
+      }
+      const json = JSON.stringify(doc)
       const t = now()
       // optimistic concurrency: the write only lands if nobody else wrote in between
       if (rev === 0) {
         if (q.getState.get(userId)) return conflict(c, userId)
         q.insertState.run(userId, json, t)
-        social.saveSummary(userId, data)
+        social.saveSummary(userId, doc)
         return c.json({ rev: 1, updatedAt: t })
       }
       const res = q.updateState.run(json, t, userId, rev)
       if (res.changes === 0) return conflict(c, userId)
-      social.saveSummary(userId, data)
+      social.saveSummary(userId, doc)
       return c.json({ rev: rev + 1, updatedAt: t })
     },
   )
