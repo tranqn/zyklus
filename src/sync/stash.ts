@@ -4,10 +4,12 @@ import { merge, type SyncDoc } from './merge'
 /*
  * Local stash: when the data on this device cannot be shown to belong to the account that signs
  * in, it is kept here before the device starts clean, and the settings offer to restore it to
- * the account it came from. One stash at a time; a second one of the same account is merged in.
+ * the account it came from. One entry per account, at most three: X -> Y -> X keeps X's entry
+ * while Y's is added, so X can still restore it after switching back.
  */
 
 const STASH = 'zyklus-stash'
+const MAX_ENTRIES = 3
 
 export interface Stash {
   savedAt: number
@@ -18,6 +20,10 @@ export interface Stash {
   doc: SyncDoc
 }
 
+/** The identity an entry is kept under; without owner or ownerId the identity is unknown. */
+export const stashKey = (s: Pick<Stash, 'owner' | 'ownerId' | 'savedAt'>): string =>
+  s.owner ? `o:${s.owner.origin}|${s.owner.id}|${s.owner.createdAt}` : s.ownerId != null ? `i:${s.ownerId}` : `u:${s.savedAt}`
+
 // captured once, so every copy of the engine (tabs in tests) keeps the storage it started with
 const storage: Storage | undefined = (() => {
   try {
@@ -27,15 +33,26 @@ const storage: Storage | undefined = (() => {
   }
 })()
 
-export function readStash(): Stash | undefined {
+function valid(v: unknown): v is Stash {
+  const s = v as Stash
+  return !!s && typeof s === 'object' && typeof s.savedAt === 'number' && !!s.doc && typeof s.doc === 'object' && !!s.doc.state && typeof s.doc.state === 'object'
+}
+
+/** All entries, newest first. */
+export function readStashes(): Stash[] {
   try {
-    const v = JSON.parse(storage?.getItem(STASH) ?? 'null') as Stash | null
-    return v && typeof v === 'object' && typeof v.savedAt === 'number' && v.doc && typeof v.doc === 'object' && v.doc.state && typeof v.doc.state === 'object' ? v : undefined
+    const v = JSON.parse(storage?.getItem(STASH) ?? 'null') as { entries?: unknown } | null
+    const entries = Array.isArray(v?.entries) ? v.entries.filter(valid) : []
+    return entries.sort((a, b) => b.savedAt - a.savedAt)
   } catch {
-    return undefined
+    return []
   }
 }
 
+/** The newest entry. */
+export const readStash = (): Stash | undefined => readStashes()[0]
+
+/** Remove every entry (logout with "remove data", "delete all data", deleted account). */
 export function discardStash() {
   try {
     storage?.removeItem(STASH)
@@ -62,15 +79,27 @@ export function writeRawStash(raw: string): boolean {
   }
 }
 
-const sameOwner = (a: Stash, b: Pick<Stash, 'owner' | 'ownerId'>) =>
-  a.owner && b.owner ? a.owner.origin === b.owner.origin && a.owner.id === b.owner.id && a.owner.createdAt === b.owner.createdAt : !a.owner && !b.owner && a.ownerId != null && a.ownerId === b.ownerId
+const write = (entries: Stash[]) => (entries.length ? writeRawStash(JSON.stringify({ entries })) : (discardStash(), true))
+
+/** Remove one entry. */
+export function removeStash(key: string): boolean {
+  return write(readStashes().filter((s) => stashKey(s) !== key))
+}
 
 /**
- * Keep `next` in the stash. If the stash already holds data of the same account (two tabs that
- * both switched away from it), the two are merged, so neither tab's unsynced edits are lost.
+ * Keep `next` in the stash. An entry of the same account (two tabs that both switched away from
+ * it) is merged in, so neither tab's unsynced edits are lost. Beyond three entries the oldest go,
+ * but never those listed in `keep` (the account signing in).
  */
-export function putStash(next: Stash): boolean {
-  const prev = readStash()
-  const doc = prev && sameOwner(prev, next) ? merge(prev.doc, next.doc) : next.doc
-  return writeRawStash(JSON.stringify({ ...next, doc }))
+export function putStash(next: Stash, keep: string[] = []): boolean {
+  const key = stashKey(next)
+  const all = readStashes()
+  const prev = all.find((s) => stashKey(s) === key)
+  const entries = [{ ...next, doc: prev ? merge(prev.doc, next.doc) : next.doc }, ...all.filter((s) => s !== prev)].sort((a, b) => b.savedAt - a.savedAt)
+  while (entries.length > MAX_ENTRIES) {
+    const drop = entries.findLastIndex((s) => stashKey(s) !== key && !keep.includes(stashKey(s)))
+    if (drop < 0) break
+    entries.splice(drop, 1)
+  }
+  return write(entries)
 }

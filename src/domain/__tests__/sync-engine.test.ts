@@ -266,7 +266,14 @@ describe('sync engine: first sync of a device', () => {
 const names = (foods: { name: string }[] | undefined) => (foods ?? []).map((f) => f.name)
 const docWith = (...foods: string[]) =>
   JSON.stringify({ v: 1, state: { foods: foods.map((name, i) => ({ id: `${name}-${i}`, ...meal(name) })) }, stamps: Object.fromEntries(foods.map((name, i) => [`i:foods:${name}-${i}`, T0 - 1000])), tombstones: {} })
-const stashOf = (storage: MemStorage) => JSON.parse(storage.getItem('zyklus-stash') ?? 'null') as { savedAt: number; owner?: unknown; ownerId?: number; doc: SyncDoc } | null
+type StashEntry = { savedAt: number; owner?: { id: number }; ownerId?: number; doc: SyncDoc }
+/** the newest stash entry, as stored */
+const stashOf = (storage: MemStorage) => {
+  const entries = (JSON.parse(storage.getItem('zyklus-stash') ?? 'null') as { entries: StashEntry[] } | null)?.entries ?? []
+  return entries.sort((a, b) => b.savedAt - a.savedAt)[0] ?? null
+}
+/** a stash with one entry, in the stored format */
+const oneStash = (entry: Omit<StashEntry, 'owner'> & { owner?: unknown }) => JSON.stringify({ entries: [entry] })
 /** let a session check that api() started in the background run to its end */
 const settle = () => vi.advanceTimersByTimeAsync(10)
 
@@ -708,7 +715,7 @@ describe('sync engine: restoring the stash', () => {
     await d.engine.logout(true)
     expect(d.storage.getItem('zyklus-stash')).toBeNull()
     for (const wipe of [() => d.s.reset(), () => d.engine.forgetAccount()]) {
-      d.storage.setItem('zyklus-stash', JSON.stringify({ savedAt: 1, owner: { origin: ORIGIN, id: 1, createdAt: 1 }, doc: { v: 2, state: {}, stamps: {}, tombstones: {} } }))
+      d.storage.setItem('zyklus-stash', oneStash({ savedAt: 1, owner: { origin: ORIGIN, id: 1, createdAt: 1 }, doc: { v: 2, state: {}, stamps: {}, tombstones: {} } }))
       wipe()
       expect(d.storage.getItem('zyklus-stash')).toBeNull()
     }
@@ -770,7 +777,7 @@ describe('sync engine: restoring the stash', () => {
   it('keeps a stash that does not pass the backup check, and ignores a broken one', async () => {
     const { d, x } = await ambiguous()
     const { restoreStash } = await import('../../sync/restore')
-    d.storage.setItem('zyklus-stash', JSON.stringify({ savedAt: 1, ownerId: x.id, doc: { v: 2, state: { sessions: [] }, stamps: {}, tombstones: {} } }))
+    d.storage.setItem('zyklus-stash', oneStash({ savedAt: 1, ownerId: x.id, doc: { v: 2, state: { sessions: [] }, stamps: {}, tombstones: {} } }))
     const before = canon(d.doc())
     expect(restoreStash()).toBe(false)
     expect(canon(d.doc())).toBe(before)
@@ -901,6 +908,45 @@ describe('sync engine: late session checks', () => {
     release()
     await check
     expect(d.engine.useSync.getState().user?.email).toBe('a@example.test')
+  })
+})
+
+describe('sync engine: one stash per account', () => {
+  it('X to Y and back to X: switching back keeps X\'s stash, so X can still restore it', async () => {
+    const x = server.add('x@example.test')
+    const y = server.add('y@example.test')
+    server.docs.set(y.id, { rev: 1, data: docWith('Y-Essen') })
+    const d = await device()
+    await d.engine.login('x@example.test', 'pw')
+    await d.sync()
+    // edited offline, never uploaded
+    server.online = false
+    d.s.addFood(meal('X-Ungesichert'))
+    await vi.advanceTimersByTimeAsync(2000)
+    server.online = true
+    // another tab signs in as Y, later as X again
+    server.session = y.id
+    await d.engine.checkSession()
+    server.session = x.id
+    await d.engine.checkSession()
+    await d.sync()
+    expect(d.engine.canRestoreStash()).toBe(true)
+    const { restoreStash } = await import('../../sync/restore')
+    expect(await restoreStash()).toBe(true)
+    await d.sync()
+    expect(names(server.doc(x)!.data.state.foods as never)).toContain('X-Ungesichert')
+    // Y's data waits in its own entry
+    expect(names(d.engine.readStashes().find((st) => st.owner?.id === y.id)?.doc.state.foods as never)).toEqual(['Y-Essen'])
+  })
+
+  it('keeps at most three entries, dropping the oldest but never the incoming account\'s', async () => {
+    await device()
+    const { putStash, readStashes } = await import('../../sync/stash')
+    const entry = (id: number, savedAt: number) => ({ savedAt, owner: { origin: ORIGIN, id, createdAt: 1 }, doc: { v: 2 as const, state: { foods: [] }, stamps: {}, tombstones: {} } })
+    for (const [id, at] of [[1, 10], [2, 20], [3, 30]]) expect(await putStash(entry(id, at))).toBe(true)
+    // account 1 signs in again: its old entry must survive a fourth one
+    expect(await putStash(entry(4, 40), [`o:${ORIGIN}|1|1`])).toBe(true)
+    expect(readStashes().map((st) => st.owner!.id)).toEqual([4, 3, 1])
   })
 })
 

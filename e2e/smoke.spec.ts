@@ -347,9 +347,10 @@ test('settings: data from before an account switch can be restored or discarded'
   // what the sync engine stashes when the device starts clean; `foreign` = another account's data
   const stash = (foreign: boolean) =>
     page.evaluate((foreign) => {
-      const { syncMeta: _, owner, ...state } = JSON.parse(localStorage.getItem('zyklus-v1')!).state
+      const { syncMeta: _, owner, rev: __, ...state } = JSON.parse(localStorage.getItem('zyklus-v1')!).state
       const from = foreign ? { ...owner, createdAt: owner.createdAt - 1 } : owner
-      localStorage.setItem('zyklus-stash', JSON.stringify({ savedAt: Date.UTC(2026, 10, 20, 12), owner: from, doc: { v: 2, state: { ...state, kcalAdjustment: 123 }, stamps: { 's:kcalAdjustment': Date.now() }, tombstones: {} } }))
+      const entry = { savedAt: Date.UTC(2026, 10, 20, 12), owner: from, doc: { v: 2, state: { ...state, kcalAdjustment: 123 }, stamps: { 's:kcalAdjustment': Date.now() }, tombstones: {} } }
+      localStorage.setItem('zyklus-stash', JSON.stringify({ entries: [entry] }))
     }, foreign)
   const restore = page.getByRole('button', { name: 'Vorherige Gerätedaten vom 20. November 2026 wiederherstellen' })
   await stash(false)

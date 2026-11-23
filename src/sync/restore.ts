@@ -18,8 +18,8 @@ export function restoreBackup(json: string): boolean {
  * Bring back the data the device held before it started clean (see recoverStash): merged into
  * the account's data, unlike a backup file, which replaces it.
  */
-export function restoreStash(): boolean {
-  const result = recoverStash()
+export function restoreStash(key?: string): boolean {
+  const result = recoverStash(key)
   if (result === 'ok') toast(t('more.settings.stashRestored'))
   else if (result === 'invalid') toast(t('more.settings.badBackup'))
   else if (result === 'storage') toast(t('more.settings.storageFull'))

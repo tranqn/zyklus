@@ -4,7 +4,7 @@ import { DATA_KEYS, emptyState, parseBackup, useStore, type DataOwner, type Stat
 import { api, ApiError, apiMessage, configureApi, LocalError, type PublicUser } from './api'
 import { tk } from '../i18n'
 import { canon, merge, sameDoc as same, track, type SyncDoc } from './merge'
-import { discardStash, putStash, rawStash, readStash, writeRawStash, type Stash } from './stash'
+import { discardStash, putStash, rawStash, readStash, readStashes, removeStash, stashKey, writeRawStash, type Stash } from './stash'
 import { toast } from '../ui/notify'
 
 type Status = 'idle' | 'pending' | 'syncing' | 'ok' | 'offline' | 'error'
@@ -127,15 +127,17 @@ function recheckSession() {
   void checkSession()
 }
 
-export { discardStash, readStash, type Stash }
+export { discardStash, readStash, readStashes, removeStash, stashKey, type Stash }
 
 /**
- * Only a stash of the signed-in account may be restored: the same id and createdAt, or for a
- * stash of a legacy binding the same id. Another account's stash can only be discarded.
+ * Only a stash entry of the signed-in account may be restored: the same id and createdAt, or for
+ * an entry of a legacy binding the same id. Other entries can only be discarded. Without an
+ * argument: is there any entry the signed-in account may restore?
  */
-export function canRestoreStash(stash: Stash | undefined = readStash()): boolean {
+export function canRestoreStash(stash?: Stash): boolean {
+  if (!stash) return readStashes().some((s) => canRestoreStash(s))
   const user = useSync.getState().user
-  if (!stash || !user || !bound()) return false
+  if (!user || !bound()) return false
   return stash.owner ? sameOwner(stash.owner, user) : stash.ownerId === user.id
 }
 
@@ -174,8 +176,8 @@ export function importBackup(json: string): 'ok' | 'invalid' | 'storage' {
  * The stash is removed before the merged data is written, so localStorage needs room for one
  * copy, not two. If even that fails, data and stash go back as they were.
  */
-export function recoverStash(): 'ok' | 'none' | 'invalid' | 'storage' {
-  const stash = readStash()
+export function recoverStash(key?: string): 'ok' | 'none' | 'invalid' | 'storage' {
+  const stash = readStashes().find((s) => (key ? stashKey(s) === key : canRestoreStash(s)))
   if (!stash || !canRestoreStash(stash)) return 'none'
   try {
     parseBackup(JSON.stringify(stash.doc.state))
@@ -186,7 +188,7 @@ export function recoverStash(): 'ok' | 'none' | 'invalid' | 'storage' {
   const before = toDoc()
   const merged = merge(before, stash.doc)
   const raw = rawStash()
-  discardStash()
+  removeStash(stashKey(stash))
   try {
     applyDoc(merged)
   } catch {
@@ -211,11 +213,13 @@ const hasData = (d: SyncDoc) => Object.keys(d.stamps).length > 0 || Object.keys(
  * the room in localStorage the stash needs. If it still cannot be written the data goes back
  * and the switch is refused: losing it silently is worse than not switching accounts.
  */
-function stashAndClean(owner: Owner | undefined, ownerId: number | undefined) {
+function stashAndClean(owner: Owner | undefined, ownerId: number | undefined, incoming: PublicUser) {
   const doc = toDoc()
   const rev = useStore.getState().rev
   applyDoc(emptyDoc(), { rev: 0 })
-  if (hasData(doc) && !putStash({ savedAt: Date.now(), owner, ownerId: owner ? undefined : ownerId, doc })) {
+  // the entries of the account signing in survive, whatever else has to go
+  const keep = [stashKey({ owner: ownerOf(incoming), savedAt: 0 }), stashKey({ ownerId: incoming.id, savedAt: 0 })]
+  if (hasData(doc) && !putStash({ savedAt: Date.now(), owner, ownerId: owner ? undefined : ownerId, doc }, keep)) {
     applyDoc(doc, { rev })
     throw new LocalError('switch_refused', 'Kontowechsel abgebrochen: nicht genug Speicher für die bisherigen Daten.')
   }
@@ -385,7 +389,7 @@ async function adopt(user: PublicUser) {
     const legacySame = legacy && s.ownerId === user.id && !!cached && cached.id === user.id && cached.createdAt === user.createdAt
     const unbound = legacy && s.ownerId == null
     window.clearTimeout(pushTimer)
-    if (!legacySame && !unbound) stashAndClean(owner, legacy ? s.ownerId : undefined)
+    if (!legacySame && !unbound) stashAndClean(owner, legacy ? s.ownerId : undefined, user)
     // data kept from an older version: its revision is read once from zyklus-sync
     else if (useStore.getState().rev === undefined) setBinding({ rev: s.rev ?? 0 })
     setBinding({ owner: ownerOf(user) })
