@@ -487,7 +487,9 @@ export const useStore = create<State & Actions>()(
         // Only the data keys the file has: what an older backup does not know yet (the meal plan,
         // say) keeps its current value. syncMeta is never taken from a file: the current stamps
         // and tombstones stay, and the sync tracker stamps the restored values as a normal local
-        // change, so they win on other devices while nothing deleted after the backup comes back.
+        // change, so they win on other devices. Items in the backup come back even if they were
+        // deleted after it (that is what restoring means); items deleted after the backup that
+        // are not in it stay deleted, because their tombstones are kept.
         const patch: Record<string, unknown> = {}
         for (const k of DATA_KEYS) if (k in data) patch[k] = data[k]
         if (data.settings) patch.settings = { ...initial.settings, ...data.settings }
