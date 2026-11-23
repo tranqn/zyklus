@@ -3,7 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware'
 import { today } from '../domain/util'
 import { tk } from '../i18n'
 import { api, ApiError, apiMessage } from './api'
-import { useSync } from './engine'
+import { isBound, useSync } from './engine'
 
 /** What a friend or challenge member shares (see server/src/social.ts). */
 export interface FriendView {
@@ -89,7 +89,8 @@ export function refreshSocialIfStale() {
 /** Fetch everything the friends page shows and keep it in the cache. */
 export async function refreshSocial(): Promise<void> {
   const userId = useSync.getState().user?.id
-  if (!userId) return
+  // before the data is bound (the session check is still running) the answer could be another account's
+  if (!userId || !isBound()) return
   const [me, friends, challenges] = await Promise.all([social.me(), social.friends(), social.challenges()])
   // the first code is created on request, because a GET must not write
   const code = me.code ?? (await social.rotate().then((r) => r.code, () => undefined))

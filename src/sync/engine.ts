@@ -60,6 +60,8 @@ function bound(): boolean {
   const user = useSync.getState().user
   return !!user && sameOwner(dataOwner(), user)
 }
+/** For account-scoped work outside the engine (friends): only once the binding is established. */
+export const isBound = bound
 
 type Binding = Partial<Pick<State, 'owner' | 'rev'>>
 /** The server revision the local data was last merged with (stored with the data). */
@@ -80,6 +82,8 @@ configureApi({
     const o = dataOwner()
     return o ? `${o.id}:${o.createdAt}` : undefined
   },
+  // signed out, requests simply get 401; signed in, only once the data is bound to the account
+  ready: () => !useSync.getState().user || bound(),
   onAccountMismatch: () => recheckSession(),
 })
 
@@ -446,7 +450,7 @@ export async function logout(clearDevice: boolean) {
 
 /** Tell the server which language to use for e-mails (best effort, retried on next change). */
 export async function setAccountLocale(locale: string) {
-  if (!useSync.getState().user) return
+  if (!bound()) return
   await api('POST', '/account/locale', { locale }).catch(() => undefined)
 }
 

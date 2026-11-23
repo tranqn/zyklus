@@ -104,6 +104,9 @@ class FakeServer {
     }
     if (!user) return [401, { error: 'unauthenticated' }]
     if (account !== undefined && account !== `${user.id}:${user.createdAt}`) return [409, { error: 'account_mismatch' }]
+    if (path.startsWith('/social/me')) return [200, { name: user.email, code: 'CODE1234', counts: { friends: 0, team: 0, grit: 0 } }]
+    if (path.startsWith('/social/friends')) return [200, { friends: [] }]
+    if (path.startsWith('/social/challenges')) return [200, { challenges: [] }]
     if (path !== '/state') return [200, { ok: true }]
     const cur = this.docs.get(user.id)
     if (method === 'GET') return [200, cur ? { rev: cur.rev, data: JSON.parse(cur.data) } : { rev: 0, data: null }]
@@ -978,5 +981,30 @@ describe('sync engine: the revision is stored with the data', () => {
     await d.sync()
     expect(names(server.doc(x)!.data.state.foods as never).sort()).toEqual(['Konto', 'Lokal'])
     expect(d.s.rev).toBe(server.doc(x)!.rev)
+  })
+})
+
+describe('sync engine: account requests wait for the binding', () => {
+  it('before the session check has bound the data, no account request goes out (no friends of Y cached under X)', async () => {
+    const x = server.add('x@example.test')
+    const y = server.add('y@example.test')
+    // an older install, cached user X; in the meantime the session became Y's
+    server.session = y.id
+    const storage = new MemStorage()
+    storage.setItem('zyklus-sync', JSON.stringify({ state: { user: { id: x.id, email: x.email, verified: true, createdAt: x.createdAt, locale: 'de' }, ownerId: x.id }, version: 0 }))
+    const d = await device(storage)
+    const { refreshSocial, useSocial } = await import('../../sync/social')
+    const { api } = await import('../../sync/api')
+    await refreshSocial().catch(() => undefined)
+    await expect(api('GET', '/social/friends')).rejects.toThrow()
+    expect(server.log.filter((r) => r.path.startsWith('/social'))).toEqual([])
+    expect(useSocial.getState().userId).toBeUndefined()
+
+    await d.engine.checkSession()
+    await refreshSocial()
+    const requests = server.log.filter((r) => r.path.startsWith('/social'))
+    expect(requests.length).toBeGreaterThan(0)
+    for (const r of requests) expect(r.account).toBe(`${y.id}:${y.createdAt}`)
+    expect(useSocial.getState()).toMatchObject({ userId: y.id, name: 'y@example.test' })
   })
 })

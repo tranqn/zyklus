@@ -32,10 +32,15 @@ export class LocalError extends Error {
 interface Binding {
   /** `<id>:<createdAt>` of the account the local data belongs to, if any */
   account: () => string | undefined
+  /** false while a signed-in user's data is not bound yet: account requests must wait */
+  ready: () => boolean
   /** the session belongs to another account than the local data (409 account_mismatch) */
   onAccountMismatch: () => void
 }
-let binding: Binding = { account: () => undefined, onAccountMismatch: () => {} }
+let binding: Binding = { account: () => undefined, ready: () => true, onAccountMismatch: () => {} }
+
+/** Routes that act on the signed-in account (behind requireUser on the server). */
+const ACCOUNT_SCOPED = /^\/(state|social\/|account\/|auth\/(resend-verification|change-password))/
 
 /** Set by the sync engine, which owns the account binding (api.ts must not import it). */
 export function configureApi(b: Binding) {
@@ -44,6 +49,9 @@ export function configureApi(b: Binding) {
 
 /** JSON call to our own /api. Network failures surface as ApiError(0, 'offline'). */
 export async function api<T>(method: 'GET' | 'POST' | 'PUT', path: string, body?: unknown): Promise<T> {
+  // Without the binding the request would carry no account header, so the server would answer for
+  // whoever the cookie belongs to now (say, friends of Y cached as X's): such requests wait.
+  if (ACCOUNT_SCOPED.test(path) && !binding.ready()) throw new LocalError('not_ready', 'Die Anmeldung wird noch geprüft.')
   const headers: Record<string, string> = {}
   if (body !== undefined) headers['content-type'] = 'application/json'
   // the server refuses to read or write for any other account than this one (see requireUser)
