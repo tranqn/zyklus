@@ -450,3 +450,34 @@ describe('sync engine: legacy binding (ownerId only, written by older bundles)',
     expect(names(server.doc(x)!.data.state.foods as never)).toEqual(['Konto'])
   })
 })
+
+describe('sync engine: document version', () => {
+  it('uploads version 2 documents, always with the account header', async () => {
+    const a = server.add('a@example.test')
+    const d = await device()
+    await d.engine.login('a@example.test', 'pw')
+    d.s.addFood(meal('Apfel'))
+    await d.sync()
+    expect(server.puts().length).toBeGreaterThan(0)
+    for (const p of server.puts()) {
+      expect(p.body?.data?.v).toBe(2)
+      expect(p.account).toBe(`${a.id}:${a.createdAt}`)
+    }
+    expect(server.doc(a)!.data.v).toBe(2)
+  })
+
+  it('lifts a version 1 document of the account to version 2 and tells an outdated client to reload', async () => {
+    const a = server.add('a@example.test')
+    server.docs.set(a.id, { rev: 4, data: docWith('Alt') })
+    const d = await device()
+    await d.engine.login('a@example.test', 'pw')
+    await d.sync()
+    expect(server.doc(a)).toMatchObject({ rev: 5, data: { v: 2 } })
+    const { ApiError, apiMessage } = await import('../../sync/api')
+    const { translate } = await import('../../i18n')
+    const msg = apiMessage(new ApiError(426, 'client_outdated', ''))
+    expect(msg).not.toBe(apiMessage(new ApiError(400, 'unknown_code', '')))
+    expect(msg).toMatch(/reload|neu/)
+    expect(translate('de', 'account.apiError.client_outdated')).toMatch(/Bitte lade die App neu/)
+  })
+})

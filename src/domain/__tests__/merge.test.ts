@@ -53,6 +53,13 @@ describe('merge', () => {
     expect(merge(a, b).state.active).toBeUndefined()
   })
 
+  it('accepts version 1 and 2 documents and returns version 2', () => {
+    const a = doc({ kcalAdjustment: 1 }, { 's:kcalAdjustment': 1 })
+    const b: SyncDoc = { v: 2, state: { kcalAdjustment: 2 }, stamps: { 's:kcalAdjustment': 2 }, tombstones: {} }
+    expect(merge(a, b)).toMatchObject({ v: 2, state: { kcalAdjustment: 2 } })
+    expect(merge(a, a).v).toBe(2)
+  })
+
   it('is idempotent', () => {
     const a = doc({ foods: [food('a')], kcalAdjustment: 5 }, { 'i:foods:a': 1, 's:kcalAdjustment': 1 })
     const b = doc({ foods: [food('b')], kcalAdjustment: 7 }, { 'i:foods:b': 2, 's:kcalAdjustment': 2 })

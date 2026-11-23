@@ -83,6 +83,7 @@ export const account = ns({
       token: 'Der Link ist ungültig oder abgelaufen. Fordere einen neuen an.',
       too_large: 'Deine Daten sind zu groß für die Synchronisierung.',
       conflict: 'Synchronisierung kollidiert wiederholt. Versuch es gleich nochmal.',
+      client_outdated: 'Diese App-Version ist veraltet. Bitte lade die App neu, damit sie weiter synchronisiert.',
     },
   },
   en: {
@@ -166,6 +167,7 @@ export const account = ns({
       token: 'The link is invalid or has expired. Please request a new one.',
       too_large: 'Your data is too large to sync.',
       conflict: 'Sync keeps colliding. Please try again in a moment.',
+      client_outdated: 'This version of the app is out of date. Please reload the app to keep syncing.',
     },
   },
   vi: {
@@ -249,6 +251,7 @@ export const account = ns({
       token: 'Đường dẫn không hợp lệ hoặc đã hết hạn. Vui lòng yêu cầu đường dẫn mới.',
       too_large: 'Dữ liệu của bạn quá lớn để đồng bộ.',
       conflict: 'Đồng bộ liên tục bị xung đột. Vui lòng thử lại sau giây lát.',
+      client_outdated: 'Phiên bản ứng dụng này đã cũ. Vui lòng tải lại ứng dụng để tiếp tục đồng bộ.',
     },
   },
 })

@@ -124,7 +124,7 @@ function writeStash(stash: Stash): boolean {
   }
 }
 
-const emptyDoc = (): SyncDoc => ({ v: 1, state: emptyState() as unknown as Record<string, unknown>, stamps: {}, tombstones: {} })
+const emptyDoc = (): SyncDoc => ({ v: 2, state: emptyState() as unknown as Record<string, unknown>, stamps: {}, tombstones: {} })
 const EMPTY_STATE = canon(toDoc(emptyState()).state)
 const hasData = (d: SyncDoc) => Object.keys(d.stamps).length > 0 || Object.keys(d.tombstones).length > 0 || canon(d.state) !== EMPTY_STATE
 
@@ -146,7 +146,7 @@ function stashAndClean(owner: Owner | undefined) {
 function toDoc(s: State = useStore.getState()): SyncDoc {
   const state: Record<string, unknown> = {}
   for (const k of DATA_KEYS) state[k] = s[k]
-  return { v: 1, state, stamps: s.syncMeta.stamps, tombstones: s.syncMeta.tombstones }
+  return { v: 2, state, stamps: s.syncMeta.stamps, tombstones: s.syncMeta.tombstones }
 }
 
 function applyDoc(doc: SyncDoc) {

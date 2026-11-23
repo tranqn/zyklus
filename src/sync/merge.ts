@@ -28,7 +28,11 @@ export type CollectionKey = keyof typeof COLLECTIONS
 export type Stamps = Record<string, number>
 
 export interface SyncDoc {
-  v: 1
+  /**
+   * 1: written by bundles without account binding. 2: written with the account binding; once the
+   * server holds a version 2 document it refuses version 1 uploads (426 client_outdated).
+   */
+  v: 1 | 2
   state: Record<string, unknown>
   /** `s:<key>` for scalars, `i:<collection>:<id>` for items: last change time */
   stamps: Stamps
@@ -131,7 +135,7 @@ export function merge(local: SyncDoc, remote: SyncDoc, opts: MergeOptions = {}):
     if (by) out.sort((x, y) => cmp(String(x[by]), String(y[by])) || cmp(itemId(key, x), itemId(key, y)))
     state[key] = out
   }
-  return { v: 1, state, stamps, tombstones }
+  return { v: 2, state, stamps, tombstones }
 }
 
 /** Same content, whatever the key order (canonical JSON). */
