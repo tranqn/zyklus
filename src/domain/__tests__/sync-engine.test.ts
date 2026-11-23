@@ -747,3 +747,28 @@ describe('sync engine: late session checks', () => {
     expect(d.engine.useSync.getState().user?.email).toBe('a@example.test')
   })
 })
+
+describe('sync engine: the stash', () => {
+  it('two tabs of X both stash on the switch: the stash keeps the unsynced edits of both', async () => {
+    const x = server.add('x@example.test')
+    const y = server.add('y@example.test')
+    server.docs.set(y.id, { rev: 1, data: docWith('Y-Essen') })
+    const storage = new MemStorage()
+    const tab1 = await device(storage)
+    await tab1.engine.login('x@example.test', 'pw')
+    await tab1.sync()
+    const tab2 = await device(storage)
+    server.online = false
+    tab1.s.addFood(meal('Eins'))
+    tab2.s.addFood(meal('Zwei'))
+    await vi.advanceTimersByTimeAsync(2000)
+    server.online = true
+    // a third tab signs in as Y; both X tabs find out and switch
+    server.session = y.id
+    await tab2.engine.checkSession()
+    await tab1.engine.checkSession()
+    const stash = stashOf(storage)!
+    expect(stash.owner).toEqual({ origin: ORIGIN, id: x.id, createdAt: x.createdAt })
+    expect(names(stash.doc.state.foods as never).sort()).toEqual(['Eins', 'Zwei'])
+  })
+})

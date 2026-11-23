@@ -4,6 +4,7 @@ import { DATA_KEYS, emptyState, useStore, type DataOwner, type State } from '../
 import { api, ApiError, apiMessage, configureApi, type PublicUser } from './api'
 import { tk } from '../i18n'
 import { canon, merge, sameDoc as same, track, type SyncDoc } from './merge'
+import { putStash } from './stash'
 
 type Status = 'idle' | 'pending' | 'syncing' | 'ok' | 'offline' | 'error'
 
@@ -88,51 +89,7 @@ function recheckSession() {
   void checkSession()
 }
 
-/*
- * Local stash: when the data on this device cannot be shown to belong to the account that signs
- * in, it is kept here (latest only) before the device starts clean, and the settings offer to
- * restore it. Captured once, so every copy of the engine keeps using the storage it started with.
- */
-const STASH = 'zyklus-stash'
-export interface Stash {
-  savedAt: number
-  owner?: Owner
-  doc: SyncDoc
-}
-const stashStorage: Storage | undefined = (() => {
-  try {
-    return globalThis.localStorage ?? undefined
-  } catch {
-    return undefined
-  }
-})()
-
-export function readStash(): Stash | undefined {
-  try {
-    const v = JSON.parse(stashStorage?.getItem(STASH) ?? 'null') as Stash | null
-    return v && typeof v === 'object' && typeof v.savedAt === 'number' && v.doc && typeof v.doc === 'object' && v.doc.state && typeof v.doc.state === 'object' ? v : undefined
-  } catch {
-    return undefined
-  }
-}
-
-export function discardStash() {
-  try {
-    stashStorage?.removeItem(STASH)
-  } catch {
-    /* storage blocked */
-  }
-}
-
-function writeStash(stash: Stash): boolean {
-  try {
-    if (!stashStorage) return false
-    stashStorage.setItem(STASH, JSON.stringify(stash))
-    return true
-  } catch {
-    return false
-  }
-}
+export { discardStash, readStash, type Stash } from './stash'
 
 const emptyDoc = (): SyncDoc => ({ v: 2, state: emptyState() as unknown as Record<string, unknown>, stamps: {}, tombstones: {} })
 const EMPTY_STATE = canon(toDoc(emptyState()).state)
@@ -143,10 +100,10 @@ const hasData = (d: SyncDoc) => Object.keys(d.stamps).length > 0 || Object.keys(
  * the room in localStorage the stash needs. If it still cannot be written the data goes back
  * and the switch is refused: losing it silently is worse than not switching accounts.
  */
-function stashAndClean(owner: Owner | undefined) {
+function stashAndClean(owner: Owner | undefined, ownerId: number | undefined) {
   const doc = toDoc()
   applyDoc(emptyDoc())
-  if (hasData(doc) && !writeStash({ savedAt: Date.now(), owner, doc })) {
+  if (hasData(doc) && !putStash({ savedAt: Date.now(), owner, ownerId: owner ? undefined : ownerId, doc })) {
     applyDoc(doc)
     throw new Error('stash_failed')
   }
@@ -310,7 +267,7 @@ async function adopt(user: PublicUser) {
     const legacySame = !owner && s.ownerId === user.id && !!cached && cached.id === user.id && cached.createdAt === user.createdAt
     const unbound = !owner && s.ownerId == null
     window.clearTimeout(pushTimer)
-    if (!legacySame && !unbound) stashAndClean(owner)
+    if (!legacySame && !unbound) stashAndClean(owner, s.ownerId)
     setOwner(ownerOf(user))
   }
   useSync.setState({ user, ownerId: user.id })
