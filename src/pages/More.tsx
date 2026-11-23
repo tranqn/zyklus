@@ -15,6 +15,7 @@ import type { Equipment, Goal, Level } from '../domain/types'
 import { fmt, formatDate, nowMs, today } from '../domain/util'
 import { Icon, Segmented, Sheet, Stepper } from '../ui/kit'
 import { confirmAction, toast } from '../ui/notify'
+import { restoreBackup } from '../sync/restore'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -520,12 +521,7 @@ export function SettingsPage() {
           onChange={async (e) => {
             const f = e.target.files?.[0]
             if (!f) return
-            try {
-              s.importData(await f.text())
-              toast(tr('more.settings.restored'))
-            } catch {
-              toast(tr('more.settings.badBackup'))
-            }
+            restoreBackup(await f.text())
           }}
         />
         <Button variant="destructive" onClick={() => confirmAction(tr('more.settings.wipeConfirm')) && s.reset()}>

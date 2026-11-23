@@ -520,3 +520,61 @@ describe('sync engine: a planned meal is booked as a unit', () => {
     expect(names(stored)).toEqual(['Reis', 'Huhn'])
   })
 })
+
+describe('sync engine: restoring a backup', () => {
+  /** the backup file, as SettingsPage exportData writes it */
+  const backupOf = (d: Awaited<ReturnType<typeof device>>) => JSON.stringify(Object.fromEntries(Object.entries(d.store.getState()).filter(([, v]) => typeof v !== 'function')))
+
+  it('an invalid file shows an error and writes nothing, so nothing is uploaded', async () => {
+    server.add('a@example.test')
+    const d = await device()
+    await d.engine.login('a@example.test', 'pw')
+    d.s.addFood(meal('Apfel'))
+    await d.sync()
+    const { restoreBackup } = await import('../../sync/restore')
+    const { onToast } = await import('../../ui/notify')
+    const { t } = await import('../../i18n')
+    const toasts: string[] = []
+    const off = onToast((m) => toasts.push(m))
+    const before = canon(d.doc())
+    const puts = server.puts().length
+    expect(restoreBackup('{"sessions": []}')).toBe(false)
+    expect(restoreBackup('kein json')).toBe(false)
+    off()
+    await d.sync()
+    expect(toasts).toEqual([t('more.settings.badBackup'), t('more.settings.badBackup')])
+    expect(canon(d.doc())).toBe(before)
+    expect(server.puts().length).toBe(puts)
+  })
+
+  it('delete, restore an older backup, an old offline device syncs: nothing deleted after the backup comes back', async () => {
+    server.add('a@example.test')
+    const old = await device()
+    await old.engine.login('a@example.test', 'pw')
+    // created last, so the restore module imported below belongs to this device
+    const a = await device()
+    await a.engine.login('a@example.test', 'pw')
+    a.s.addFood(meal('Im Backup'))
+    await a.sync()
+    const backup = backupOf(a)
+    // after the backup: one entry is added and deleted again, the backed-up one is deleted too
+    a.s.addFood(meal('Danach'))
+    await a.sync()
+    await old.sync()
+    expect(names(old.s.foods)).toEqual(['Im Backup', 'Danach'])
+    server.online = false // the old device goes offline holding both
+    await vi.advanceTimersByTimeAsync(60_000)
+    server.online = true
+    a.s.removeFood(a.s.foods.find((f) => f.name === 'Danach')!.id)
+    a.s.removeFood(a.s.foods.find((f) => f.name === 'Im Backup')!.id)
+    await a.sync()
+    const { restoreBackup } = await import('../../sync/restore')
+    expect(restoreBackup(backup)).toBe(true)
+    await a.sync()
+    // the old device comes back online
+    await old.sync()
+    await a.sync()
+    for (const d of [a, old]) expect(names(d.s.foods)).toEqual(['Im Backup'])
+    expect(names(server.doc(server.accounts[0])!.data.state.foods as never)).toEqual(['Im Backup'])
+  })
+})

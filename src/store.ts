@@ -25,6 +25,7 @@ import type {
 import type { PlannedMeal } from './domain/meals'
 import { addDays, daysBetween, nowMs, sessionEndMs, startOfWeek, today, uid } from './domain/util'
 import { defaultWeeklyGoal, withWeeklyGoal } from './domain/motivation'
+import { COLLECTIONS } from './sync/merge'
 
 export interface State {
   version: number
@@ -482,9 +483,15 @@ export const useStore = create<State & Actions>()(
       },
 
       importData(json) {
-        const data = JSON.parse(json) as Partial<State>
-        if (typeof data !== 'object' || !data || !('sessions' in data)) throw new Error('Keine gültige Zyklus-Sicherung')
-        set({ ...initial, ...data, settings: { ...initial.settings, ...(data.settings ?? {}) } })
+        const data = parseBackup(json)
+        // Only the data keys the file has: what an older backup does not know yet (the meal plan,
+        // say) keeps its current value. syncMeta is never taken from a file: the current stamps
+        // and tombstones stay, and the sync tracker stamps the restored values as a normal local
+        // change, so they win on other devices while nothing deleted after the backup comes back.
+        const patch: Record<string, unknown> = {}
+        for (const k of DATA_KEYS) if (k in data) patch[k] = data[k]
+        if (data.settings) patch.settings = { ...initial.settings, ...data.settings }
+        set(patch as Partial<State>)
       },
 
       reset() {
@@ -505,6 +512,36 @@ export const useStore = create<State & Actions>()(
     },
   ),
 )
+
+const isObject = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
+/** Keys every backup has had since the first release (5f9a617), with their types. */
+const BACKUP_LISTS = ['pastMesos', 'sessions', 'checkIns', 'foods', 'customFoods', 'customExercises', 'weights', 'cardio', 'mobility', 'frozenDays'] as const
+
+/**
+ * Parse and check a backup file before anything is written: the core keys of the oldest backup
+ * format with the right types, every collection present a list of objects with their id field,
+ * objects where objects belong. Partial files such as `{"sessions": []}` are rejected.
+ */
+export function parseBackup(json: string): Partial<State> {
+  const invalid = () => new Error('Keine gültige Zyklus-Sicherung')
+  let data: unknown
+  try {
+    data = JSON.parse(json)
+  } catch {
+    throw invalid()
+  }
+  if (!isObject(data)) throw invalid()
+  if (typeof data.version !== 'number' || typeof data.kcalAdjustment !== 'number' || !isObject(data.settings)) throw invalid()
+  for (const k of BACKUP_LISTS) if (!Array.isArray(data[k])) throw invalid()
+  for (const [coll, field] of Object.entries(COLLECTIONS)) {
+    if (!(coll in data)) continue
+    const list = data[coll]
+    if (!Array.isArray(list) || !list.every((it) => isObject(it) && (typeof it[field] === 'string' || typeof it[field] === 'number'))) throw invalid()
+  }
+  for (const k of ['profile', 'meso', 'active', 'supplementLog']) if (k in data && !isObject(data[k])) throw invalid()
+  for (const k of ['frozenDays', 'shoppingChecked']) if (k in data && !(Array.isArray(data[k]) && (data[k] as unknown[]).every((x) => typeof x === 'string'))) throw invalid()
+  return data as Partial<State>
+}
 
 /** Keys that make up the user's data (everything persisted except sync bookkeeping). */
 export const DATA_KEYS = [...Object.keys(initial).filter((k) => k !== 'syncMeta'), 'profile', 'meso', 'active'] as (keyof State)[]

@@ -74,3 +74,78 @@ describe('store: planned meals', () => {
     expect(useStore.getState().foods.map((f) => [f.date, f.name])).toEqual([['2026-11-03', 'Reis'], ['2026-11-02', 'Nudeln']])
   })
 })
+
+/*
+ * Backups are the whole persisted store as JSON (SettingsPage exportData). The fixtures follow
+ * the store shapes in git history: the first release (5f9a617), + recipes, supplements and
+ * measurements (3606278), + syncMeta (faba81c), + meal planner (7f2ccd0).
+ */
+describe('store: restoring a backup', () => {
+  const settings = { restTimerSound: false, restTimerVibrate: true, warmupSets: true, excludedExercises: [], mode: 'normal' }
+  const firstRelease = {
+    version: 1,
+    profile: { name: 'Alt', sex: 'm', age: 30, heightCm: 180, weightKg: 80, activity: 1.4, goal: 'muskelaufbau', level: 'anfaenger', location: 'gym', equipment: [], daysPerWeek: 3, sessionMinutes: 60, trainingDays: [0, 2, 4], createdAt: '2026-10-14' },
+    pastMesos: [],
+    sessions: [{ id: 's1', date: '2026-10-14', startedAt: '2026-10-14T10:00:00.000Z', finishedAt: '2026-10-14T11:00:00.000Z', mesoId: 'm1', exercises: [] }],
+    checkIns: [{ date: '2026-10-14', energy: 3 }],
+    foods: [{ id: 'f1', date: '2026-10-14', meal: 'mittag', name: 'Reis', grams: 200, per100 }],
+    customFoods: [],
+    customExercises: [],
+    weights: [{ date: '2026-10-14', kg: 80 }],
+    cardio: [],
+    mobility: [],
+    kcalAdjustment: 0,
+    settings,
+    frozenDays: [],
+  }
+  const withExtras = { ...firstRelease, recipes: [{ id: 'r9', name: 'Alt-Rezept', servings: 1, items: [] }], supplements: [], supplementLog: {}, measurements: [] }
+  const withSync = { ...withExtras, syncMeta: { stamps: { 'i:foods:f1': 1 }, tombstones: {} } }
+  const withPlanner = { ...withSync, mealPlan: [], shoppingChecked: [] }
+
+  function current() {
+    useStore.getState().reset()
+    useStore.setState({
+      mealPlan: [{ id: '2026-11-02|mittag|0', date: '2026-11-02', meal: 'mittag', dishId: 'd', factor: 1 }],
+      recipes: [{ id: 'r1', name: 'Neu', servings: 1, items: [] }],
+      syncMeta: { stamps: { 'i:recipes:r1': 50 }, tombstones: { 'foods:weg': 40 } },
+    })
+  }
+
+  it.each([
+    ['first release', firstRelease],
+    ['with recipes, supplements and measurements', withExtras],
+    ['with sync stamps', withSync],
+    ['with the meal planner', withPlanner],
+  ])('imports a historic backup (%s)', (_, backup) => {
+    current()
+    useStore.getState().importData(JSON.stringify(backup))
+    const s = useStore.getState()
+    expect(s.sessions.map((x) => x.id)).toEqual(['s1'])
+    expect(s.foods.map((x) => x.id)).toEqual(['f1'])
+    expect(s.profile?.name).toBe('Alt')
+    expect(s.settings.restTimerSound).toBe(false)
+    // keys an older backup does not know keep their current value
+    expect(s.mealPlan).toHaveLength('mealPlan' in backup ? 0 : 1)
+    expect(s.recipes.map((r) => r.id)).toEqual('recipes' in backup ? ['r9'] : ['r1'])
+    // stamps and tombstones are never taken from a backup
+    expect(s.syncMeta).toEqual({ stamps: { 'i:recipes:r1': 50 }, tombstones: { 'foods:weg': 40 } })
+  })
+
+  it.each([
+    ['a partial file', { sessions: [] }],
+    ['a list', [firstRelease]],
+    ['a collection that is no list', { ...firstRelease, foods: {} }],
+    ['an item without its id', { ...firstRelease, sessions: [{ date: '2026-10-14' }] }],
+    ['a date-keyed item without its date', { ...withPlanner, weights: [{ kg: 80 }] }],
+    ['an item that is no object', { ...firstRelease, foods: ['Reis'] }],
+    ['settings that are no object', { ...firstRelease, settings: 'x' }],
+    ['a profile that is no object', { ...firstRelease, profile: [] }],
+    ['the account export of the server', { exportedAt: '2026-11-01', account: {}, data: { v: 2, state: firstRelease } }],
+  ])('rejects %s without touching the store', (_, bad) => {
+    current()
+    const before = JSON.stringify(useStore.getState())
+    expect(() => useStore.getState().importData(JSON.stringify(bad))).toThrow()
+    expect(() => useStore.getState().importData('{kaputt')).toThrow()
+    expect(JSON.stringify(useStore.getState())).toBe(before)
+  })
+})
