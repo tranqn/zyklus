@@ -137,6 +137,11 @@ export function createApp({ db, cfg, mail, now = Date.now, sleep = (ms) => new P
       deleteCookie(c, COOKIE, { path: '/api' })
       return fail(c, 401, 'unauthenticated', 'Sitzung abgelaufen, bitte melde dich neu an.')
     }
+    // The client names the account its local data belongs to. Cookies are shared by all tabs,
+    // so after a sign-in as someone else in another tab this session is no longer that account:
+    // nothing may be read or written then, or one account's data would end up in the other.
+    const bound = c.req.header('x-zyklus-account')
+    if (bound !== undefined && bound !== `${row.id}:${row.created_at}`) return fail(c, 409, 'account_mismatch', 'Diese Sitzung gehört zu einem anderen Konto.')
     // sliding expiry, written at most once a day
     if (row.s_expires - now() < SESSION_TTL - DAY) q.touchSession.run(now() + SESSION_TTL, hash)
     c.set('user', row)

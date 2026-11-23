@@ -25,9 +25,10 @@ beforeEach(() => {
 
 type Res = { status: number; body: Record<string, unknown>; cookie?: string }
 
-async function call(method: string, path: string, opts: { body?: unknown; cookie?: string; origin?: string | null; ip?: string } = {}): Promise<Res> {
+async function call(method: string, path: string, opts: { body?: unknown; cookie?: string; origin?: string | null; ip?: string; account?: string } = {}): Promise<Res> {
   const headers: Record<string, string> = { 'x-forwarded-for': opts.ip ?? '203.0.113.7' }
   if (opts.body !== undefined) headers['content-type'] = 'application/json'
+  if (opts.account !== undefined) headers['x-zyklus-account'] = opts.account
   if (opts.origin !== null) headers.origin = opts.origin ?? ORIGIN
   if (opts.cookie) headers.cookie = opts.cookie
   const res = await app.request(`/api${path}`, { method, headers, body: opts.body === undefined ? undefined : JSON.stringify(opts.body) })
@@ -312,6 +313,61 @@ describe('state sync', () => {
     const { cookie } = await register()
     expect((await call('PUT', '/state', { cookie, body: { rev: 0, data: { v: 2 } } })).status).toBe(400)
     expect((await call('PUT', '/state', { cookie, body: { rev: -1, data: doc(1) } })).status).toBe(400)
+  })
+})
+
+describe('account binding', () => {
+  const doc = (n: number) => ({ v: 1, state: { n }, stamps: {}, tombstones: {} })
+  const me = async (cookie?: string) => (await call('GET', '/auth/me', { cookie })).body.user as { id: number; createdAt: number }
+  const stored = (id: number) => db.prepare('SELECT rev, data FROM states WHERE user_id = ?').get(id) as { rev: number; data: string } | undefined
+
+  it('accepts a request whose account header matches the session', async () => {
+    const { cookie } = await register()
+    const u = await me(cookie)
+    const account = `${u.id}:${u.createdAt}`
+    expect((await call('PUT', '/state', { cookie, account, body: { rev: 0, data: doc(1) } })).status).toBe(200)
+    expect((await call('GET', '/state', { cookie, account })).body.data).toEqual(doc(1))
+  })
+
+  it('refuses GET and PUT /state for another account with 409 and touches nothing', async () => {
+    const { cookie } = await register()
+    const u = await me(cookie)
+    await call('PUT', '/state', { cookie, body: { rev: 0, data: doc(1) } })
+    const get = await call('GET', '/state', { cookie, account: `${u.id + 1}:${u.createdAt}` })
+    expect(get.status).toBe(409)
+    expect(get.body).toMatchObject({ error: 'account_mismatch' })
+    expect(get.body.data).toBeUndefined()
+    // same id, other creation time: an account that was deleted and re-created with a reused id
+    const put = await call('PUT', '/state', { cookie, account: `${u.id}:${u.createdAt + 1}`, body: { rev: 1, data: doc(2) } })
+    expect(put.status).toBe(409)
+    expect(put.body).toMatchObject({ error: 'account_mismatch' })
+    expect(stored(u.id)).toMatchObject({ rev: 1, data: JSON.stringify(doc(1)) })
+  })
+
+  it('two tabs: the cookie switched to Y while a tab is still bound to X leaks nothing into Y', async () => {
+    const x = await register('x@example.test')
+    const xu = await me(x.cookie)
+    await call('PUT', '/state', { cookie: x.cookie, body: { rev: 0, data: doc(1) } })
+    // the other tab signs in as Y: the browser now sends Y's cookie from every tab
+    const y = await register('y@example.test')
+    const yu = await me(y.cookie)
+    await call('PUT', '/state', { cookie: y.cookie, body: { rev: 0, data: doc(7) } })
+    const asX = `${xu.id}:${xu.createdAt}`
+
+    const pull = await call('GET', '/state', { cookie: y.cookie, account: asX })
+    expect(pull.status).toBe(409)
+    expect(JSON.stringify(pull.body)).not.toContain('"n":7')
+    const push = await call('PUT', '/state', { cookie: y.cookie, account: asX, body: { rev: 1, data: doc(1) } })
+    expect(push.status).toBe(409)
+    expect((await call('PUT', '/state', { cookie: y.cookie, account: asX, body: { rev: 0, data: doc(1) } })).status).toBe(409)
+    // other account routes are covered by the same check
+    expect((await call('POST', '/account/locale', { cookie: y.cookie, account: asX, body: { locale: 'en' } })).status).toBe(409)
+    expect((await call('POST', '/social/invite/rotate', { cookie: y.cookie, account: asX, body: {} })).status).toBe(409)
+
+    expect(stored(yu.id)).toMatchObject({ rev: 1, data: JSON.stringify(doc(7)) })
+    expect(stored(xu.id)).toMatchObject({ rev: 1, data: JSON.stringify(doc(1)) })
+    expect((await me(y.cookie)) as unknown).toMatchObject({ locale: 'de' })
+    expect(db.prepare('SELECT COUNT(*) AS n FROM invites').get()).toEqual({ n: 0 })
   })
 })
 
