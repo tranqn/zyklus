@@ -61,7 +61,7 @@ const DOCS: Record<Lang, { impressum: Doc; datenschutz: Doc }> = {
             'Zwei Punkte, die du wissen solltest: Wer mit dir befreundet ist, kann dich in eine gemeinsame Challenge aufnehmen, ohne dass du vorher zustimmst. Dein Name und dein Beitrag zu dieser Challenge sind dann auch für die anderen Mitglieder sichtbar, selbst wenn du mit denen nicht befreundet bist. Und wer den Beitritts-Code einer Challenge hat, sieht deren Mitglieder samt Werten, auch schon vor dem Beitritt. Du kannst eine Challenge jederzeit verlassen, dann verschwinden deine Werte dort.',
           ],
         },
-        { title: '5. Cookies und lokaler Speicher', body: ['Wir setzen ausschließlich ein technisch notwendiges Sitzungs-Cookie (zyk_session, httpOnly, 30 Tage) für die Anmeldung, sowie den localStorage deines Browsers für deine App-Daten und deine Spracheinstellung. Eine Einwilligung ist dafür nach § 25 Abs. 2 TDDDG nicht erforderlich.'] },
+        { title: '5. Cookies und lokaler Speicher', body: ['Wir setzen ausschließlich ein technisch notwendiges Sitzungs-Cookie (zyk_session, httpOnly) für die Anmeldung, das dein Browser bis zu 400 Tage aufbewahrt; die Sitzung selbst endet 30 Tage nach der letzten Nutzung, danach ist das Cookie wertlos, sowie den localStorage deines Browsers für deine App-Daten und deine Spracheinstellung. Eine Einwilligung ist dafür nach § 25 Abs. 2 TDDDG nicht erforderlich.'] },
         { title: '6. Hosting', body: ['Server und Datenbank betreiben wir auf einem Server der Hetzner Online GmbH, Industriestr. 25, 91710 Gunzenhausen, in einem Rechenzentrum in der EU. Mit Hetzner besteht ein Vertrag zur Auftragsverarbeitung nach Art. 28 DSGVO. Beim Aufruf der Seite verarbeitet der Webserver deine IP-Adresse kurzzeitig, um die Verbindung herzustellen und Missbrauch (z. B. massenhafte Anmeldeversuche) zu begrenzen.'] },
         { title: '7. E-Mail-Versand', body: ['Bestätigungs- und Passwort-E-Mails versenden wir über den SMTP-Dienst von Google (Gmail), Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland. Dabei werden deine E-Mail-Adresse und der Inhalt der E-Mail an Google übermittelt. Eine Übermittlung in die USA ist möglich; Google ist nach dem EU-US Data Privacy Framework zertifiziert.'] },
         {
@@ -77,7 +77,7 @@ const DOCS: Record<Lang, { impressum: Doc; datenschutz: Doc }> = {
             [
               'Kontodaten und App-Daten: bis du dein Konto löschst.',
               'Nicht bestätigte Konten: werden nach 7 Tagen automatisch gelöscht.',
-              'Sitzungen: 30 Tage nach der letzten Nutzung.',
+              'Sitzungen: 30 Tage nach der letzten Nutzung, danach ist das Sitzungs-Cookie wertlos (der Browser bewahrt es bis zu 400 Tage auf).',
               'Sicherungskopien der Datenbank: rollierend 14 Tage; gelöschte Konten verschwinden spätestens dann auch aus den Sicherungen.',
             ],
           ],
@@ -128,7 +128,7 @@ const DOCS: Record<Lang, { impressum: Doc; datenschutz: Doc }> = {
             'Two things worth knowing: anyone who is your friend can add you to a shared challenge without asking you first. Your name and your contribution to that challenge are then visible to the other members too, even to those you are not friends with. And anyone holding a challenge join code can see its members and their values, even before joining. You can leave a challenge at any time, which removes your values from it.',
           ],
         },
-        { title: '5. Cookies and local storage', body: ['We only use one technically necessary session cookie (zyk_session, httpOnly, 30 days) for signing in, plus your browser’s localStorage for your app data and language setting. No consent is required for this under § 25 (2) TDDDG.'] },
+        { title: '5. Cookies and local storage', body: ['We only use one technically necessary session cookie (zyk_session, httpOnly) for signing in, which your browser keeps for up to 400 days; the session itself ends 30 days after the last use, after which the cookie is useless, plus your browser’s localStorage for your app data and language setting. No consent is required for this under § 25 (2) TDDDG.'] },
         { title: '6. Hosting', body: ['We run the server and database on a server of Hetzner Online GmbH, Industriestr. 25, 91710 Gunzenhausen, Germany, in a data centre in the EU. A data processing agreement under Art. 28 GDPR is in place with Hetzner. When you open the site, the web server briefly processes your IP address to establish the connection and to limit abuse (e.g. mass sign-in attempts).'] },
         { title: '7. Sending emails', body: ['We send confirmation and password emails via Google’s SMTP service (Gmail), Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Ireland. Your email address and the content of the email are transmitted to Google. A transfer to the USA is possible; Google is certified under the EU-US Data Privacy Framework.'] },
         {
@@ -144,7 +144,7 @@ const DOCS: Record<Lang, { impressum: Doc; datenschutz: Doc }> = {
             [
               'Account data and app data: until you delete your account.',
               'Unconfirmed accounts: deleted automatically after 7 days.',
-              'Sessions: 30 days after the last use.',
+              'Sessions: 30 days after the last use; after that the session cookie is useless (the browser keeps it for up to 400 days).',
               'Database backups: rolling 14 days; deleted accounts disappear from the backups at the latest by then.',
             ],
           ],
@@ -195,7 +195,7 @@ const DOCS: Record<Lang, { impressum: Doc; datenschutz: Doc }> = {
             'Hai điều bạn nên biết: người đã là bạn của bạn có thể thêm bạn vào một thử thách chung mà không hỏi trước. Khi đó tên bạn và phần đóng góp của bạn trong thử thách cũng hiển thị với các thành viên khác, kể cả những người bạn không kết bạn. Ngoài ra, ai có mã tham gia của một thử thách đều thấy danh sách thành viên và số liệu của họ, ngay cả trước khi tham gia. Bạn có thể rời thử thách bất cứ lúc nào, số liệu của bạn ở đó sẽ biến mất.',
           ],
         },
-        { title: '5. Cookie và bộ nhớ cục bộ', body: ['Chúng tôi chỉ dùng một cookie phiên cần thiết về mặt kỹ thuật (zyk_session, httpOnly, 30 ngày) để đăng nhập, cùng với localStorage của trình duyệt cho dữ liệu ứng dụng và cài đặt ngôn ngữ. Theo § 25 khoản 2 TDDDG, việc này không cần sự đồng ý.'] },
+        { title: '5. Cookie và bộ nhớ cục bộ', body: ['Chúng tôi chỉ dùng một cookie phiên cần thiết về mặt kỹ thuật (zyk_session, httpOnly) để đăng nhập, được trình duyệt lưu tối đa 400 ngày; bản thân phiên đăng nhập kết thúc 30 ngày sau lần sử dụng cuối, sau đó cookie không còn tác dụng, cùng với localStorage của trình duyệt cho dữ liệu ứng dụng và cài đặt ngôn ngữ. Theo § 25 khoản 2 TDDDG, việc này không cần sự đồng ý.'] },
         { title: '6. Lưu trữ máy chủ', body: ['Máy chủ và cơ sở dữ liệu được vận hành trên máy chủ của Hetzner Online GmbH, Industriestr. 25, 91710 Gunzenhausen, Đức, tại trung tâm dữ liệu trong EU. Chúng tôi có hợp đồng xử lý dữ liệu theo Điều 28 GDPR với Hetzner. Khi bạn truy cập trang, máy chủ web xử lý địa chỉ IP của bạn trong thời gian ngắn để thiết lập kết nối và hạn chế lạm dụng (ví dụ: đăng nhập hàng loạt).'] },
         { title: '7. Gửi email', body: ['Email xác nhận và email mật khẩu được gửi qua dịch vụ SMTP của Google (Gmail), Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Ireland. Địa chỉ email và nội dung email của bạn được chuyển đến Google. Dữ liệu có thể được chuyển sang Hoa Kỳ; Google được chứng nhận theo Khung bảo mật dữ liệu EU - Hoa Kỳ (Data Privacy Framework).'] },
         {
@@ -211,7 +211,7 @@ const DOCS: Record<Lang, { impressum: Doc; datenschutz: Doc }> = {
             [
               'Dữ liệu tài khoản và dữ liệu ứng dụng: cho đến khi bạn xóa tài khoản.',
               'Tài khoản chưa xác nhận: tự động xóa sau 7 ngày.',
-              'Phiên đăng nhập: 30 ngày sau lần sử dụng cuối.',
+              'Phiên đăng nhập: 30 ngày sau lần sử dụng cuối, sau đó cookie phiên không còn tác dụng (trình duyệt lưu nó tối đa 400 ngày).',
               'Bản sao lưu cơ sở dữ liệu: luân phiên 14 ngày; tài khoản đã xóa cũng biến mất khỏi bản sao lưu chậm nhất sau thời gian này.',
             ],
           ],
