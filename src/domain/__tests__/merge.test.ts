@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { merge, track, type SyncDoc } from '../../sync/merge'
+import { canon, merge, track, type SyncDoc } from '../../sync/merge'
 
 const doc = (state: Record<string, unknown>, stamps = {}, tombstones = {}): SyncDoc => ({ v: 1, state, stamps, tombstones })
 const food = (id: string, grams = 100) => ({ id, name: id, grams, date: '2026-10-15' })
@@ -8,7 +8,8 @@ describe('merge', () => {
   it('unions items added on two devices', () => {
     const a = doc({ foods: [food('a')] }, { 'i:foods:a': 1 })
     const b = doc({ foods: [food('b')] }, { 'i:foods:b': 2 })
-    expect((merge(a, b).state.foods as { id: string }[]).map((f) => f.id)).toEqual(['a', 'b'])
+    // remote (server) order first, then what only the local side has
+    expect((merge(a, b).state.foods as { id: string }[]).map((f) => f.id)).toEqual(['b', 'a'])
   })
 
   it('keeps the newer edit of the same item', () => {
@@ -31,12 +32,11 @@ describe('merge', () => {
     expect(merge(b, a).state.weights).toEqual([{ date: '2026-10-15', kg: 80 }])
   })
 
-  it('picks scalars by stamp, local on ties or missing stamps', () => {
-    const a = doc({ profile: { name: 'alt' }, kcalAdjustment: 0 }, { 's:profile': 1 })
-    const b = doc({ profile: { name: 'neu' }, kcalAdjustment: 100 }, { 's:profile': 2 })
-    const m = merge(a, b)
-    expect(m.state.profile).toEqual({ name: 'neu' })
-    expect(m.state.kcalAdjustment).toBe(0)
+  it('picks scalars by stamp', () => {
+    const a = doc({ profile: { name: 'alt' }, kcalAdjustment: 100 }, { 's:profile': 1, 's:kcalAdjustment': 5 })
+    const b = doc({ profile: { name: 'neu' }, kcalAdjustment: 0 }, { 's:profile': 2, 's:kcalAdjustment': 4 })
+    expect(merge(a, b).state).toEqual({ profile: { name: 'neu' }, kcalAdjustment: 100 })
+    expect(merge(b, a).state).toEqual({ profile: { name: 'neu' }, kcalAdjustment: 100 })
   })
 
   it('keeps the account profile but adds local items when anonymous data joins an account', () => {
@@ -58,6 +58,53 @@ describe('merge', () => {
     const b = doc({ foods: [food('b')], kcalAdjustment: 7 }, { 'i:foods:b': 2, 's:kcalAdjustment': 2 })
     const once = merge(a, b)
     expect(merge(once, b)).toEqual(once)
+  })
+})
+
+describe('merge: deterministic on every device', () => {
+  const both = (a: SyncDoc, b: SyncDoc) => [canon(merge(a, b)), canon(merge(b, a))]
+
+  it('breaks a tie of equal stamps the same way, whichever side is local', () => {
+    const a = doc({ profile: { name: 'A', age: 30 }, foods: [food('x', 100)] }, { 's:profile': 7, 'i:foods:x': 7 })
+    const b = doc({ profile: { age: 30, name: 'B' }, foods: [food('x', 250)] }, { 's:profile': 7, 'i:foods:x': 7 })
+    const [ab, ba] = both(a, b)
+    expect(ab).toBe(ba)
+    // the larger canonical JSON wins
+    expect(merge(a, b).state.profile).toEqual({ name: 'B', age: 30 })
+    expect((merge(a, b).state.foods as { grams: number }[])[0].grams).toBe(250)
+  })
+
+  it('unstamped values: a defined value beats undefined, otherwise the canonical tie-break', () => {
+    const a = doc({ kcalAdjustment: 0, settings: { mode: 'normal' } })
+    const b = doc({ kcalAdjustment: 100, profile: { name: 'Konto' } })
+    const [ab, ba] = both(a, b)
+    expect(ab).toBe(ba)
+    expect(merge(a, b).state).toEqual({ kcalAdjustment: 100, settings: { mode: 'normal' }, profile: { name: 'Konto' } })
+  })
+
+  it('a newer clear (undefined) still beats an older value', () => {
+    const a = doc({ active: { id: 's1' } }, { 's:active': 1 })
+    const b = doc({ active: undefined }, { 's:active': 2 })
+    expect(merge(b, a).state.active).toBeUndefined()
+  })
+
+  it('orders items as the server copy does, then what only this device has', () => {
+    const local = doc({ foods: [food('l1'), food('s2'), food('l2'), food('s1')] }, { 'i:foods:l1': 1, 'i:foods:l2': 1, 'i:foods:s1': 1, 'i:foods:s2': 1 })
+    const remote = doc({ foods: [food('s1'), food('s2')] }, { 'i:foods:s1': 1, 'i:foods:s2': 1 })
+    expect((merge(local, remote).state.foods as { id: string }[]).map((f) => f.id)).toEqual(['s1', 's2', 'l1', 'l2'])
+  })
+
+  it('keeps sorted collections sorted, ties broken by id', () => {
+    const s = (id: string, startedAt: string) => ({ id, startedAt })
+    const local = doc({ sessions: [s('b', '2026-10-02T10:00'), s('a', '2026-10-02T10:00')] }, { 'i:sessions:a': 1, 'i:sessions:b': 1 })
+    const remote = doc({ sessions: [s('c', '2026-10-01T09:00')] }, { 'i:sessions:c': 1 })
+    expect((merge(local, remote).state.sessions as { id: string }[]).map((x) => x.id)).toEqual(['c', 'a', 'b'])
+    expect(canon(merge(local, remote))).toBe(canon(merge(remote, local)))
+  })
+
+  it('canonical JSON ignores key order and drops undefined members', () => {
+    expect(canon({ b: 1, a: [1, undefined, { d: 1, c: 2 }], u: undefined })).toBe('{"a":[1,null,{"c":2,"d":1}],"b":1}')
+    expect(canon(undefined)).toBeUndefined()
   })
 })
 

@@ -1,7 +1,10 @@
 /**
  * Sync document merge: last-writer-wins per scalar and per collection item, with tombstones
  * so deletions survive a merge. Stamps are written locally whenever a value changes
- * (see tracker.ts); the server only stores documents and enforces revisions.
+ * (see track below); the server only stores documents and enforces revisions.
+ *
+ * The result must not depend on which side is local: every device has to compute the same
+ * document from the same two inputs, or two devices upload their own variant in turn forever.
  */
 
 /** Collections and the field that identifies an item. */
@@ -35,10 +38,30 @@ export interface SyncDoc {
 
 type Item = Record<string, unknown>
 
+/**
+ * Canonical JSON: object keys sorted (by UTF-16 code units, as Array.prototype.sort does),
+ * undefined members dropped and undefined array slots written as null, like JSON.stringify.
+ * The same content gives the same string on every device, whatever the key order.
+ */
+export function canon(v: unknown): string | undefined {
+  if (v === undefined || typeof v === 'function') return undefined
+  if (v === null || typeof v !== 'object') return JSON.stringify(v)
+  if (Array.isArray(v)) return `[${v.map((x) => canon(x) ?? 'null').join(',')}]`
+  const parts: string[] = []
+  for (const k of Object.keys(v).sort()) {
+    const c = canon((v as Record<string, unknown>)[k])
+    if (c !== undefined) parts.push(`${JSON.stringify(k)}:${c}`)
+  }
+  return `{${parts.join(',')}}`
+}
+
 export const isCollection = (k: string): k is CollectionKey => k in COLLECTIONS
 export const itemId = (coll: CollectionKey, item: Item): string => String(item[COLLECTIONS[coll]])
 
 const SORT: Partial<Record<CollectionKey, string>> = { sessions: 'startedAt', checkIns: 'date', weights: 'date', measurements: 'date' }
+
+/** Plain code-unit order: the same on every device and in every language, unlike localeCompare. */
+const cmp = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0)
 
 function mergeStamps(a: Stamps, b: Stamps): Stamps {
   const out: Stamps = { ...a }
@@ -46,26 +69,47 @@ function mergeStamps(a: Stamps, b: Stamps): Stamps {
   return out
 }
 
-/** Merge two documents. On equal stamps `local` wins, so merging is stable for the device. */
-export function merge(local: SyncDoc, remote: SyncDoc): SyncDoc {
+export interface MergeOptions {
+  /**
+   * First sync of this device with the account: on equal zero stamps the account's value wins,
+   * so the defaults of a fresh device never replace values that were simply never stamped.
+   */
+  preferRemote?: boolean
+}
+
+/**
+ * Does the remote value win? The higher stamp wins. Equal stamps are broken canonically: a defined
+ * value beats undefined, otherwise the larger canonical JSON wins (string comparison by UTF-16
+ * code units). Equal zero stamps go to the remote side when `preferRemote` is set and it has a value.
+ */
+function remoteWins(ls: number, rs: number, l: unknown, r: unknown, preferRemote: boolean): boolean {
+  if (rs !== ls) return rs > ls
+  const cr = canon(r)
+  if (cr === undefined) return false
+  if (ls === 0 && preferRemote) return true
+  const cl = canon(l)
+  return cl === undefined || cr > cl
+}
+
+/** Merge two documents. Deterministic: swapping `local` and `remote` gives the same content. */
+export function merge(local: SyncDoc, remote: SyncDoc, opts: MergeOptions = {}): SyncDoc {
+  const preferRemote = opts.preferRemote === true
   const stamps = mergeStamps(local.stamps, remote.stamps)
   const tombstones = mergeStamps(local.tombstones, remote.tombstones)
   const state: Record<string, unknown> = {}
-  const keys = new Set([...Object.keys(local.state), ...Object.keys(remote.state)])
+  const keys = new Set([...Object.keys(remote.state), ...Object.keys(local.state)])
 
   for (const key of keys) {
     if (!isCollection(key)) {
       const ls = local.stamps[`s:${key}`] ?? 0
       const rs = remote.stamps[`s:${key}`] ?? 0
-      // a cleared value (undefined, dropped by JSON) is a real value with its own stamp;
-      // only a key the local side has never seen falls back to the remote one
-      const useRemote = rs > ls || (ls === 0 && !(key in local.state))
-      state[key] = useRemote ? remote.state[key] : local.state[key]
+      // a cleared value (undefined, dropped by JSON) is a real value with its own stamp
+      state[key] = remoteWins(ls, rs, local.state[key], remote.state[key], preferRemote) ? remote.state[key] : local.state[key]
       continue
     }
     const la = (local.state[key] as Item[] | undefined) ?? []
     const ra = (remote.state[key] as Item[] | undefined) ?? []
-    const remoteById = new Map(ra.map((it) => [itemId(key, it), it]))
+    const localById = new Map(la.map((it) => [itemId(key, it), it]))
     const seen = new Set<string>()
     const out: Item[] = []
     const pick = (id: string, l: Item | undefined, r: Item | undefined) => {
@@ -73,20 +117,25 @@ export function merge(local: SyncDoc, remote: SyncDoc): SyncDoc {
       seen.add(id)
       const ls = local.stamps[`i:${key}:${id}`] ?? 0
       const rs = remote.stamps[`i:${key}:${id}`] ?? 0
-      const winner = l && r ? (rs > ls ? r : l) : (l ?? r)!
+      const winner = l && r ? (remoteWins(ls, rs, l, r, preferRemote) ? r : l) : (l ?? r)!
       const born = Math.max(l ? ls : 0, r ? rs : 0)
       const dead = tombstones[`${key}:${id}`]
       if (dead != null && dead >= born) return
       out.push(winner)
     }
-    for (const l of la) pick(itemId(key, l), l, remoteById.get(itemId(key, l)))
-    for (const r of ra) pick(itemId(key, r), undefined, r)
+    // The server copy is the shared reference, so its order comes first and what only this
+    // device has follows. Local order first would make two devices reorder the list in turn.
+    for (const r of ra) pick(itemId(key, r), localById.get(itemId(key, r)), r)
+    for (const l of la) pick(itemId(key, l), l, undefined)
     const by = SORT[key]
-    if (by) out.sort((x, y) => String(x[by]).localeCompare(String(y[by])))
+    if (by) out.sort((x, y) => cmp(String(x[by]), String(y[by])) || cmp(itemId(key, x), itemId(key, y)))
     state[key] = out
   }
   return { v: 1, state, stamps, tombstones }
 }
+
+/** Same content, whatever the key order (canonical JSON). */
+export const sameDoc = (a: SyncDoc, b: SyncDoc) => canon(a) === canon(b)
 
 /** Record which values changed between two states (called on every local store change). */
 export function track(prev: Record<string, unknown>, next: Record<string, unknown>, meta: { stamps: Stamps; tombstones: Stamps }, now: number, skip: string[] = []): { stamps: Stamps; tombstones: Stamps } | null {

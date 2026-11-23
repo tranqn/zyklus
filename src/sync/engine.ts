@@ -3,7 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware'
 import { DATA_KEYS, emptyState, useStore, type State } from '../store'
 import { api, ApiError, apiMessage, type PublicUser } from './api'
 import { tk } from '../i18n'
-import { merge, track, type SyncDoc } from './merge'
+import { merge, sameDoc as same, track, type SyncDoc } from './merge'
 
 type Status = 'idle' | 'pending' | 'syncing' | 'ok' | 'offline' | 'error'
 
@@ -48,8 +48,6 @@ function applyDoc(doc: SyncDoc) {
     applyingRemote = false
   }
 }
-
-const same = (a: SyncDoc, b: SyncDoc) => JSON.stringify(a) === JSON.stringify(b)
 
 /** Serialise all network work so two syncs never interleave. */
 function enqueue(fn: () => Promise<void>): Promise<void> {
