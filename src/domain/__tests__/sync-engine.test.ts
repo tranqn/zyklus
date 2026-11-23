@@ -911,6 +911,46 @@ describe('sync engine: late session checks', () => {
   })
 })
 
+describe('sync engine: a deleted account and the one that got its id', () => {
+  const DAY = 86_400_000
+  /** an older install bound to account 1 (cached user optional); account 1 was deleted and re-created */
+  async function reusedId(cachedUser: boolean, stampedAt: (createdAt: number) => number) {
+    const oldCreatedAt = Date.UTC(2025, 0, 1)
+    const neu = server.add('neu@example.test', Date.UTC(2026, 5, 1))
+    server.session = neu.id
+    const storage = new MemStorage()
+    const cached = cachedUser ? { user: { id: neu.id, email: 'alt@example.test', verified: true, createdAt: oldCreatedAt, locale: 'de' } } : {}
+    storage.setItem('zyklus-sync', JSON.stringify({ state: { ownerId: neu.id, ...cached }, version: 0 }))
+    storage.setItem('zyklus-v1', JSON.stringify({ state: { foods: [{ id: 'a1', ...meal('Altes Konto') }], syncMeta: { stamps: { 'i:foods:a1': stampedAt(neu.createdAt) }, tombstones: {} } }, version: 1 }))
+    const d = await device(storage)
+    await d.engine.checkSession()
+    await d.sync()
+    return { d, neu, oldCreatedAt }
+  }
+
+  it('stashes with the full identity of the cached user, so the new account cannot restore it', async () => {
+    const { d, neu, oldCreatedAt } = await reusedId(true, () => Date.UTC(2025, 2, 1))
+    expect(d.s.foods).toEqual([])
+    expect(stashOf(d.storage)).toMatchObject({ owner: { id: neu.id, createdAt: oldCreatedAt } })
+    expect(d.engine.canRestoreStash()).toBe(false)
+    const { restoreStash } = await import('../../sync/restore')
+    expect(await restoreStash()).toBe(false)
+    await d.sync()
+    expect(names(server.doc(neu)?.data.state.foods as never)).toEqual([])
+  })
+
+  it('an id-only stash is restorable only if everything in it was written during this account\'s life', async () => {
+    const before = await reusedId(false, (createdAt) => createdAt - DAY)
+    expect(stashOf(before.d.storage)).toMatchObject({ ownerId: before.neu.id })
+    expect(before.d.engine.canRestoreStash()).toBe(false)
+  })
+
+  it('an id-only stash written after the account was created can be restored', async () => {
+    const after = await reusedId(false, (createdAt) => createdAt + DAY)
+    expect(after.d.engine.canRestoreStash()).toBe(true)
+  })
+})
+
 describe('sync engine: one stash per account', () => {
   it('X to Y and back to X: switching back keeps X\'s stash, so X can still restore it', async () => {
     const x = server.add('x@example.test')

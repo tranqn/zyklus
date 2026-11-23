@@ -3,7 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware'
 import { DATA_KEYS, emptyState, parseBackup, useStore, type DataOwner, type State } from '../store'
 import { api, ApiError, apiMessage, configureApi, LocalError, type PublicUser } from './api'
 import { tk } from '../i18n'
-import { canon, merge, sameDoc as same, track, type SyncDoc } from './merge'
+import { canon, isCollection, itemId, merge, sameDoc as same, track, type SyncDoc } from './merge'
 import { discardStash, putStash, rawStash, readStash, readStashes, removeStash, stashKey, writeRawStash, type Stash } from './stash'
 import { toast } from '../ui/notify'
 
@@ -138,7 +138,24 @@ export function canRestoreStash(stash?: Stash): boolean {
   if (!stash) return readStashes().some((s) => canRestoreStash(s))
   const user = useSync.getState().user
   if (!user || !bound()) return false
-  return stash.owner ? sameOwner(stash.owner, user) : stash.ownerId === user.id
+  if (stash.owner) return sameOwner(stash.owner, user)
+  // an id-only entry may stem from a deleted account whose id was handed on: only when all of it
+  // was written during this account's life is it this account's data
+  return stash.ownerId === user.id && writtenSince(stash.doc, user.createdAt)
+}
+
+/** Every stamp and tombstone at or after `since`, and nothing that differs from a fresh state unstamped. */
+function writtenSince(doc: SyncDoc, since: number): boolean {
+  const stamps = Object.values(doc.stamps ?? {})
+  const tombs = Object.values(doc.tombstones ?? {})
+  if ([...stamps, ...tombs].some((t) => !(t >= since))) return false
+  const fresh = emptyState() as unknown as Record<string, unknown>
+  for (const [k, v] of Object.entries(doc.state)) {
+    if (isCollection(k)) {
+      for (const it of Array.isArray(v) ? (v as Record<string, unknown>[]) : []) if (!(doc.stamps[`i:${k}:${itemId(k, it)}`] >= since)) return false
+    } else if (canon(v) !== canon(fresh[k]) && !(doc.stamps[`s:${k}`] >= since)) return false
+  }
+  return true
 }
 
 const isStamps = (v: unknown) => !!v && typeof v === 'object' && !Array.isArray(v) && Object.values(v).every((x) => typeof x === 'number')
@@ -389,7 +406,10 @@ async function adopt(user: PublicUser) {
     const legacySame = legacy && s.ownerId === user.id && !!cached && cached.id === user.id && cached.createdAt === user.createdAt
     const unbound = legacy && s.ownerId == null
     window.clearTimeout(pushTimer)
-    if (!legacySame && !unbound) stashAndClean(owner, legacy ? s.ownerId : undefined, user)
+    // the identity of what gets stashed: the owner, or for a legacy binding the cached user that
+    // came with it (id and createdAt); only without one is it known by id alone
+    const identity = owner ?? (legacy && cached && cached.id === s.ownerId ? ownerOf(cached) : undefined)
+    if (!legacySame && !unbound) stashAndClean(identity, legacy && !identity ? s.ownerId : undefined, user)
     // data kept from an older version: its revision is read once from zyklus-sync
     else if (useStore.getState().rev === undefined) setBinding({ rev: s.rev ?? 0 })
     setBinding({ owner: ownerOf(user) })
