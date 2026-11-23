@@ -342,6 +342,31 @@ test('account: register, data syncs to a second device, logout clears it', async
   await expect(laptop.getByRole('dialog').getByText(/Schau im Spam-Ordner/)).toBeVisible()
 })
 
+test('settings: data from before an account switch can be restored or discarded', async ({ page }) => {
+  await onboard(page)
+  // what the sync engine stashes when the device starts clean for another account
+  const stash = () =>
+    page.evaluate(() => {
+      const { syncMeta: _, ...state } = JSON.parse(localStorage.getItem('zyklus-v1')!).state
+      localStorage.setItem('zyklus-stash', JSON.stringify({ savedAt: Date.UTC(2026, 10, 20, 12), doc: { v: 2, state: { ...state, kcalAdjustment: 123 }, stamps: {}, tombstones: {} } }))
+    })
+  const restore = page.getByRole('button', { name: 'Vorherige Gerätedaten vom 20. November 2026 wiederherstellen' })
+  await stash()
+  await page.goto('/#/einstellungen')
+  await restore.click()
+  await expect(page.getByText('Sicherung wiederhergestellt')).toBeVisible()
+  await expect(restore).toHaveCount(0)
+  expect(await page.evaluate(() => [localStorage.getItem('zyklus-stash'), JSON.parse(localStorage.getItem('zyklus-v1')!).state.kcalAdjustment])).toEqual([null, 123])
+
+  await stash()
+  await page.goto('/#/')
+  await page.goto('/#/einstellungen')
+  page.once('dialog', (d) => d.accept())
+  await page.getByRole('button', { name: 'Verwerfen' }).click()
+  await expect(restore).toHaveCount(0)
+  expect(await page.evaluate(() => localStorage.getItem('zyklus-stash'))).toBeNull()
+})
+
 test('pages load on demand and still open offline', async ({ page, context }) => {
   await onboard(page)
   // the service worker controls the page and the idle prefetch has cached the lazy page chunks

@@ -578,3 +578,46 @@ describe('sync engine: restoring a backup', () => {
     expect(names(server.doc(server.accounts[0])!.data.state.foods as never)).toEqual(['Im Backup'])
   })
 })
+
+describe('sync engine: restoring the stash', () => {
+  async function switched() {
+    server.add('x@example.test')
+    const y = server.add('y@example.test')
+    server.docs.set(y.id, { rev: 1, data: docWith('Y-Essen') })
+    const d = await device()
+    await d.engine.login('x@example.test', 'pw')
+    d.s.addFood(meal('X-Essen'))
+    await d.sync()
+    await d.engine.logout(false)
+    await d.engine.login('y@example.test', 'pw')
+    await d.sync()
+    return { d, y }
+  }
+
+  it('restores the previous device data through the backup path and removes the stash', async () => {
+    const { d, y } = await switched()
+    expect(d.engine.readStash()?.savedAt).toBe(Date.now() - 2000)
+    const { restoreStash } = await import('../../sync/restore')
+    expect(restoreStash()).toBe(true)
+    await d.sync()
+    expect(names(d.s.foods)).toEqual(['X-Essen'])
+    // restored as a local change: it reaches the signed-in account
+    expect(names(server.doc(y)!.data.state.foods as never)).toEqual(['X-Essen'])
+    expect(d.engine.readStash()).toBeUndefined()
+    expect(d.storage.getItem('zyklus-stash')).toBeNull()
+  })
+
+  it('discards the stash on request, and keeps a stash that does not pass the backup check', async () => {
+    const { d } = await switched()
+    const { restoreStash } = await import('../../sync/restore')
+    d.storage.setItem('zyklus-stash', JSON.stringify({ savedAt: 1, doc: { v: 2, state: { sessions: [] }, stamps: {}, tombstones: {} } }))
+    const before = canon(d.doc())
+    expect(restoreStash()).toBe(false)
+    expect(canon(d.doc())).toBe(before)
+    expect(d.engine.readStash()).toBeDefined()
+    d.engine.discardStash()
+    expect(d.engine.readStash()).toBeUndefined()
+    d.storage.setItem('zyklus-stash', 'kaputt')
+    expect(d.engine.readStash()).toBeUndefined()
+  })
+})

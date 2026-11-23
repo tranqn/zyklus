@@ -4,7 +4,7 @@ import { CARDIO, cardioKcal, MOBILITY, routineSeconds, type MobilityRoutine } fr
 import { MOBILITY_ANIMATION } from '../domain/animations'
 import { ExerciseAnimation } from '../ui/ExerciseAnimation'
 import { allExercises, useStore } from '../store'
-import { useSync } from '../sync/engine'
+import { discardStash, readStash, useSync } from '../sync/engine'
 import { t as tr, tk as tkr, tx, useT, weekdaysShort } from '../i18n'
 import { exerciseName } from '../i18n/content/exercises'
 import { LanguagePicker } from '../ui/LanguagePicker'
@@ -15,7 +15,8 @@ import type { Equipment, Goal, Level } from '../domain/types'
 import { fmt, formatDate, nowMs, today } from '../domain/util'
 import { Icon, Segmented, Sheet, Stepper } from '../ui/kit'
 import { confirmAction, toast } from '../ui/notify'
-import { restoreBackup } from '../sync/restore'
+import { restoreBackup, restoreStash } from '../sync/restore'
+import { getLocale } from '../i18n/lang'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -297,6 +298,8 @@ export function SettingsPage() {
   const p = s.profile!
   const [regen, setRegen] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+  // data the device held before it started clean for another account (see sync/engine.ts)
+  const [stash, setStash] = useState(() => readStash())
   const goal = targets(p, s.settings.kcalOverride, s.kcalAdjustment)
   const upd = (patch: Parameters<typeof s.updateProfile>[0], planRelevant = true) => {
     s.updateProfile(patch)
@@ -513,6 +516,16 @@ export function SettingsPage() {
         <Button variant="secondary" onClick={() => fileRef.current?.click()}>
           {tr('more.settings.restore')}
         </Button>
+        {stash && (
+          <>
+            <Button variant="secondary" className="h-auto whitespace-normal py-2.5 text-center leading-tight" onClick={() => restoreStash() && setStash(undefined)}>
+              {tr('more.settings.stashRestore', { date: new Date(stash.savedAt).toLocaleDateString(getLocale(), { day: 'numeric', month: 'long', year: 'numeric' }) })}
+            </Button>
+            <Button variant="outline" onClick={() => confirmAction(tr('more.settings.stashDiscardConfirm')) && (discardStash(), setStash(undefined))}>
+              {tr('more.settings.stashDiscard')}
+            </Button>
+          </>
+        )}
         <input
           ref={fileRef}
           type="file"
