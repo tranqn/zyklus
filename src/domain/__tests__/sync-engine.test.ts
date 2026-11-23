@@ -105,7 +105,7 @@ class FakeServer {
     if (v === 2 && account === undefined) return [400, { error: 'account' }]
     if (v === 1 && cur && JSON.parse(cur.data).v === 2) return [426, { error: 'client_outdated' }]
     if (body?.rev !== (cur?.rev ?? 0)) {
-      if (!cur) return [500, { error: 'server' }]
+      if (!cur) return [409, { error: 'conflict', rev: 0, data: null }]
       return [409, { error: 'conflict', rev: cur.rev, data: JSON.parse(cur.data) }]
     }
     const rev = (cur?.rev ?? 0) + 1
@@ -631,5 +631,24 @@ describe('sync engine: error texts', () => {
         expect(translate(lang, key), `${lang} ${code}`).not.toBe(key)
       }
     }
+  })
+})
+
+describe('sync engine: the server lost the document', () => {
+  it('a conflict without a server copy (rev 0, data null) uploads this device as the first copy', async () => {
+    const a = server.add('a@example.test')
+    const d = await device()
+    await d.engine.login('a@example.test', 'pw')
+    d.s.addFood(meal('Apfel'))
+    await d.sync()
+    expect(d.engine.useSync.getState().rev).toBeGreaterThan(0)
+    server.docs.clear()
+    d.s.addFood(meal('Birne'))
+    // the upload alone, no pull in between
+    await vi.advanceTimersByTimeAsync(2000)
+    await settle()
+    expect(names(server.doc(a)?.data.state.foods as never)).toEqual(['Apfel', 'Birne'])
+    expect(server.puts().at(-2)).toMatchObject({ status: 409 })
+    expect(d.engine.useSync.getState()).toMatchObject({ status: 'ok', rev: server.doc(a)!.rev })
   })
 })

@@ -302,6 +302,14 @@ describe('state sync', () => {
     expect(again.status).toBe(409)
   })
 
+  it('answers an upload with a revision but no stored document as a conflict with rev 0', async () => {
+    const { cookie } = await register()
+    const res = await call('PUT', '/state', { cookie, body: { rev: 3, data: doc(1) } })
+    expect(res.status).toBe(409)
+    expect(res.body).toMatchObject({ error: 'conflict', rev: 0, data: null })
+    expect((await call('PUT', '/state', { cookie, body: { rev: 0, data: doc(1) } })).body.rev).toBe(1)
+  })
+
   it('keeps users apart', async () => {
     const a = await register('a@example.test')
     const b = await register('b@example.test')

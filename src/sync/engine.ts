@@ -197,7 +197,13 @@ async function pushNow(): Promise<void> {
     } catch (e) {
       if (gen !== generation) return
       if (!(e instanceof ApiError && e.status === 409 && e.code === 'conflict')) return handleError(e)
-      const remote = e.body.data as SyncDoc
+      const remote = e.body.data as SyncDoc | null
+      if (!remote) {
+        // the server has no document (any more): upload this copy as the first one
+        local = toDoc()
+        rev = 0
+        continue
+      }
       // rev 0: this device has never synced with the account (see pullNow)
       local = merge(toDoc(), remote, { preferRemote: rev === 0 })
       applyDoc(local)

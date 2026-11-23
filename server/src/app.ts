@@ -375,7 +375,9 @@ export function createApp({ db, cfg, mail, now = Date.now, sleep = (ms) => new P
   )
 
   function conflict(c: Context, userId: number) {
-    const row = q.getState.get(userId) as { rev: number; data: string; updated_at: number }
+    const row = q.getState.get(userId) as { rev: number; data: string; updated_at: number } | undefined
+    // no stored document (any more): rev 0 tells the client to upload its copy as the first one
+    if (!row) return c.json({ error: 'conflict', rev: 0, data: null, updatedAt: null }, 409)
     return c.json({ error: 'conflict', rev: row.rev, data: JSON.parse(row.data), updatedAt: row.updated_at }, 409)
   }
 
