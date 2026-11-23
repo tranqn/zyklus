@@ -690,3 +690,43 @@ describe('sync engine: binding and data are stored together', () => {
     expect(names(server.doc(x)!.data.state.foods as never)).toEqual(['X-Essen'])
   })
 })
+
+describe('sync engine: late session checks', () => {
+  it('a session check that answers after a logout adopts nobody', async () => {
+    const a = server.add('a@example.test')
+    const b = server.add('b@example.test')
+    server.docs.set(b.id, { rev: 1, data: docWith('B-Essen') })
+    const d = await device()
+    await d.engine.login('a@example.test', 'pw')
+    d.s.addFood(meal('A-Essen'))
+    await d.sync()
+    // another tab signs in as B: this tab's next sync gets 409 and checks the session
+    server.session = b.id
+    const release = server.gate('GET', '/auth/me')
+    await d.engine.syncNow()
+    await settle()
+    // the check is still on its way (it will say "B") when the user signs out here
+    await d.engine.logout(false)
+    release()
+    await settle()
+    await d.sync()
+    expect(d.s.owner).toEqual({ origin: ORIGIN, id: a.id, createdAt: a.createdAt })
+    expect(names(d.s.foods)).toEqual(['A-Essen'])
+    expect(d.storage.getItem('zyklus-stash')).toBeNull()
+    expect(d.engine.useSync.getState().user).toBeUndefined()
+  })
+
+  it('a session check that answers "nobody" after the same account signed in again does not sign it out', async () => {
+    server.add('a@example.test')
+    const d = await device()
+    await d.engine.login('a@example.test', 'pw')
+    await d.engine.logout(false)
+    const release = server.gate('GET', '/auth/me')
+    const check = d.engine.checkSession()
+    await settle()
+    await d.engine.login('a@example.test', 'pw')
+    release()
+    await check
+    expect(d.engine.useSync.getState().user?.email).toBe('a@example.test')
+  })
+})

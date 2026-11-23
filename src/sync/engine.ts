@@ -77,8 +77,11 @@ configureApi({
 })
 
 let lastRecheck = -Infinity
+/** Set while logout runs: its last upload may well hit another account's session. */
+let loggingOut = false
 /** The session belongs to another account (another tab signed in): find out whose it is and adopt it. */
 function recheckSession() {
+  if (loggingOut) return
   // at most every few seconds, so a server that keeps disagreeing cannot start a request loop
   if (Date.now() - lastRecheck < 5000) return
   lastRecheck = Date.now()
@@ -292,6 +295,8 @@ export function startSync(): () => void {
 async function adopt(user: PublicUser) {
   const s = useSync.getState()
   const owner = dataOwner()
+  // every sign-in counts: a session check or sync started before it must not apply its answer
+  generation++
   if (!sameOwner(owner, user)) {
     // Legacy binding: the cached user was issued by the server together with ownerId, so its id
     // and createdAt prove the account (no device clock involved). Without it (an old logout that
@@ -299,7 +304,6 @@ async function adopt(user: PublicUser) {
     const cached = s.user
     const legacySame = !owner && s.ownerId === user.id && !!cached && cached.id === user.id && cached.createdAt === user.createdAt
     const unbound = !owner && s.ownerId == null
-    generation++
     window.clearTimeout(pushTimer)
     if (!legacySame && !unbound) stashAndClean(owner)
     setOwner(ownerOf(user))
@@ -309,11 +313,16 @@ async function adopt(user: PublicUser) {
 }
 
 export async function checkSession(): Promise<void> {
+  // A login, logout or account switch while /auth/me is on its way decides instead: an answer
+  // from before it (say, from the account_mismatch recheck) must not adopt anyone afterwards.
+  const gen = generation
   try {
     const { user } = await api<{ user: PublicUser | null }>('GET', '/auth/me')
+    if (gen !== generation) return
     if (user) await adopt(user)
     else useSync.setState({ user: undefined })
   } catch (e) {
+    if (gen !== generation) return
     // offline: keep the cached user so the app still opens
     if (!(e instanceof ApiError && e.status === 0)) useSync.setState({ user: undefined })
   } finally {
@@ -354,17 +363,24 @@ export async function refreshUser() {
 
 /** Sign out; optionally wipe this device's copy (recommended on shared devices). */
 export async function logout(clearDevice: boolean) {
-  window.clearTimeout(pushTimer)
-  await enqueue(pushNow).catch(() => undefined)
-  await api('POST', '/auth/logout', {}).catch(() => undefined)
+  loggingOut = true
+  // a session check still on its way must not adopt anyone from here on
   generation++
-  if (clearDevice) {
-    applyDoc(emptyDoc())
-    setOwner(undefined)
-    useSync.setState({ ownerId: undefined, rev: 0 })
+  try {
+    window.clearTimeout(pushTimer)
+    await enqueue(pushNow).catch(() => undefined)
+    await api('POST', '/auth/logout', {}).catch(() => undefined)
+    generation++
+    if (clearDevice) {
+      applyDoc(emptyDoc())
+      setOwner(undefined)
+      useSync.setState({ ownerId: undefined, rev: 0 })
+    }
+    // otherwise the binding stays, so the same account signing in again keeps the data
+    useSync.setState({ user: undefined, status: 'idle', lastSyncedAt: undefined })
+  } finally {
+    loggingOut = false
   }
-  // otherwise the binding stays, so the same account signing in again keeps the data
-  useSync.setState({ user: undefined, status: 'idle', lastSyncedAt: undefined })
 }
 
 /** Tell the server which language to use for e-mails (best effort, retried on next change). */
