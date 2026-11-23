@@ -344,26 +344,30 @@ test('account: register, data syncs to a second device, logout clears it', async
 
 test('settings: data from before an account switch can be restored or discarded', async ({ page }) => {
   await onboard(page)
-  // what the sync engine stashes when the device starts clean for another account
-  const stash = () =>
-    page.evaluate(() => {
-      const { syncMeta: _, ...state } = JSON.parse(localStorage.getItem('zyklus-v1')!).state
-      localStorage.setItem('zyklus-stash', JSON.stringify({ savedAt: Date.UTC(2026, 10, 20, 12), doc: { v: 2, state: { ...state, kcalAdjustment: 123 }, stamps: {}, tombstones: {} } }))
-    })
+  // what the sync engine stashes when the device starts clean; `foreign` = another account's data
+  const stash = (foreign: boolean) =>
+    page.evaluate((foreign) => {
+      const { syncMeta: _, owner, ...state } = JSON.parse(localStorage.getItem('zyklus-v1')!).state
+      const from = foreign ? { ...owner, createdAt: owner.createdAt - 1 } : owner
+      localStorage.setItem('zyklus-stash', JSON.stringify({ savedAt: Date.UTC(2026, 10, 20, 12), owner: from, doc: { v: 2, state: { ...state, kcalAdjustment: 123 }, stamps: { 's:kcalAdjustment': Date.now() }, tombstones: {} } }))
+    }, foreign)
   const restore = page.getByRole('button', { name: 'Vorherige Gerätedaten vom 20. November 2026 wiederherstellen' })
-  await stash()
+  await stash(false)
   await page.goto('/#/einstellungen')
   await restore.click()
   await expect(page.getByText('Sicherung wiederhergestellt')).toBeVisible()
   await expect(restore).toHaveCount(0)
   expect(await page.evaluate(() => [localStorage.getItem('zyklus-stash'), JSON.parse(localStorage.getItem('zyklus-v1')!).state.kcalAdjustment])).toEqual([null, 123])
 
-  await stash()
+  // another account's data: no restore, only discard
+  await stash(true)
   await page.goto('/#/')
   await page.goto('/#/einstellungen')
+  await expect(page.getByText('Vom 20. November 2026 liegen noch Gerätedaten eines anderen Kontos auf diesem Gerät.')).toBeVisible()
+  await expect(restore).toHaveCount(0)
   page.once('dialog', (d) => d.accept())
   await page.getByRole('button', { name: 'Verwerfen' }).click()
-  await expect(restore).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Verwerfen' })).toHaveCount(0)
   expect(await page.evaluate(() => localStorage.getItem('zyklus-stash'))).toBeNull()
 })
 

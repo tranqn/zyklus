@@ -4,7 +4,7 @@ import { DATA_KEYS, emptyState, useStore, type DataOwner, type State } from '../
 import { api, ApiError, apiMessage, configureApi, type PublicUser } from './api'
 import { tk } from '../i18n'
 import { canon, merge, sameDoc as same, track, type SyncDoc } from './merge'
-import { putStash } from './stash'
+import { discardStash, putStash, readStash, type Stash } from './stash'
 
 type Status = 'idle' | 'pending' | 'syncing' | 'ok' | 'offline' | 'error'
 
@@ -89,7 +89,17 @@ function recheckSession() {
   void checkSession()
 }
 
-export { discardStash, readStash, type Stash } from './stash'
+export { discardStash, readStash, type Stash }
+
+/**
+ * Only a stash of the signed-in account may be restored: the same id and createdAt, or for a
+ * stash of a legacy binding the same id. Another account's stash can only be discarded.
+ */
+export function canRestoreStash(stash: Stash | undefined = readStash()): boolean {
+  const user = useSync.getState().user
+  if (!stash || !user || !bound()) return false
+  return stash.owner ? sameOwner(stash.owner, user) : stash.ownerId === user.id
+}
 
 const emptyDoc = (): SyncDoc => ({ v: 2, state: emptyState() as unknown as Record<string, unknown>, stamps: {}, tombstones: {} })
 const EMPTY_STATE = canon(toDoc(emptyState()).state)
@@ -336,6 +346,7 @@ export async function logout(clearDevice: boolean) {
     if (clearDevice) {
       applyDoc(emptyDoc())
       setOwner(undefined)
+      discardStash()
       useSync.setState({ ownerId: undefined, rev: 0 })
     }
     // otherwise the binding stays, so the same account signing in again keeps the data
@@ -357,5 +368,6 @@ export function forgetAccount() {
   window.clearTimeout(pushTimer)
   applyDoc(emptyDoc())
   setOwner(undefined)
+  discardStash()
   useSync.setState({ user: undefined, ownerId: undefined, rev: 0, status: 'idle', lastSyncedAt: undefined })
 }

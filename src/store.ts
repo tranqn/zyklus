@@ -26,6 +26,7 @@ import type { PlannedMeal } from './domain/meals'
 import { addDays, daysBetween, nowMs, sessionEndMs, startOfWeek, today, uid } from './domain/util'
 import { defaultWeeklyGoal, withWeeklyGoal } from './domain/motivation'
 import { COLLECTIONS } from './sync/merge'
+import { discardStash } from './sync/stash'
 
 /** The account a device's data belongs to (see sync/engine.ts). */
 export interface DataOwner {
@@ -513,6 +514,8 @@ export const useStore = create<State & Actions>()(
       },
 
       reset() {
+        // "delete all data" includes data kept from before an account switch
+        discardStash()
         set({ ...initial })
       },
     }),

@@ -4,7 +4,7 @@ import { CARDIO, cardioKcal, MOBILITY, routineSeconds, type MobilityRoutine } fr
 import { MOBILITY_ANIMATION } from '../domain/animations'
 import { ExerciseAnimation } from '../ui/ExerciseAnimation'
 import { allExercises, backupOf, useStore } from '../store'
-import { discardStash, readStash, useSync } from '../sync/engine'
+import { canRestoreStash, discardStash, readStash, useSync } from '../sync/engine'
 import { t as tr, tk as tkr, tx, useT, weekdaysShort } from '../i18n'
 import { exerciseName } from '../i18n/content/exercises'
 import { LanguagePicker } from '../ui/LanguagePicker'
@@ -300,6 +300,10 @@ export function SettingsPage() {
   const fileRef = useRef<HTMLInputElement>(null)
   // data the device held before it started clean for another account (see sync/engine.ts)
   const [stash, setStash] = useState(() => readStash())
+  const user = useSync((x) => x.user)
+  // only the account it came from may restore it; anyone may discard it
+  const stashMine = !!user && canRestoreStash(stash)
+  const stashDate = stash && new Date(stash.savedAt).toLocaleDateString(getLocale(), { day: 'numeric', month: 'long', year: 'numeric' })
   const goal = targets(p, s.settings.kcalOverride, s.kcalAdjustment)
   const upd = (patch: Parameters<typeof s.updateProfile>[0], planRelevant = true) => {
     s.updateProfile(patch)
@@ -517,9 +521,13 @@ export function SettingsPage() {
         </Button>
         {stash && (
           <>
-            <Button variant="secondary" className="h-auto whitespace-normal py-2.5 text-center leading-tight" onClick={() => restoreStash() && setStash(undefined)}>
-              {tr('more.settings.stashRestore', { date: new Date(stash.savedAt).toLocaleDateString(getLocale(), { day: 'numeric', month: 'long', year: 'numeric' }) })}
-            </Button>
+            {stashMine ? (
+              <Button variant="secondary" className="h-auto whitespace-normal py-2.5 text-center leading-tight" onClick={() => restoreStash() && setStash(undefined)}>
+                {tr('more.settings.stashRestore', { date: stashDate! })}
+              </Button>
+            ) : (
+              <p className="text-[0.85rem] text-muted-foreground">{tr('more.settings.stashForeign', { date: stashDate! })}</p>
+            )}
             <Button variant="outline" onClick={() => confirmAction(tr('more.settings.stashDiscardConfirm')) && (discardStash(), setStash(undefined))}>
               {tr('more.settings.stashDiscard')}
             </Button>

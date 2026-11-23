@@ -605,8 +605,9 @@ describe('sync engine: restoring a backup', () => {
 })
 
 describe('sync engine: restoring the stash', () => {
+  /** X signs in as Y on this device: X's data goes into the stash */
   async function switched() {
-    server.add('x@example.test')
+    const x = server.add('x@example.test')
     const y = server.add('y@example.test')
     server.docs.set(y.id, { rev: 1, data: docWith('Y-Essen') })
     const d = await device()
@@ -616,32 +617,69 @@ describe('sync engine: restoring the stash', () => {
     await d.engine.logout(false)
     await d.engine.login('y@example.test', 'pw')
     await d.sync()
-    return { d, y }
+    return { d, x, y }
+  }
+  /** an old install of the same user that cannot prove its binding: stashed, then signed in as X */
+  async function ambiguous() {
+    const x = server.add('x@example.test')
+    server.docs.set(x.id, { rev: 1, data: docWith('Konto') })
+    server.session = x.id
+    const storage = new MemStorage()
+    storage.setItem('zyklus-sync', JSON.stringify({ state: { ownerId: x.id, rev: 1 }, version: 0 }))
+    storage.setItem('zyklus-v1', JSON.stringify({ state: { foods: [{ id: 'l1', ...meal('Lokal') }], syncMeta: { stamps: { 'i:foods:l1': T0 - 5000 }, tombstones: {} } }, version: 1 }))
+    const d = await device(storage)
+    await d.engine.checkSession()
+    await d.sync()
+    expect(stashOf(storage)).toMatchObject({ ownerId: x.id })
+    return { d, x }
   }
 
-  it('restores the previous device data through the backup path and removes the stash', async () => {
-    const { d, y } = await switched()
-    expect(d.engine.readStash()?.savedAt).toBe(Date.now() - 2000)
+  it('restores a stash of the signed-in account and removes it', async () => {
+    const { d, x } = await ambiguous()
+    expect(d.engine.canRestoreStash()).toBe(true)
     const { restoreStash } = await import('../../sync/restore')
     expect(restoreStash()).toBe(true)
     await d.sync()
-    expect(names(d.s.foods)).toEqual(['X-Essen'])
-    // restored as a local change: it reaches the signed-in account
-    expect(names(server.doc(y)!.data.state.foods as never)).toEqual(['X-Essen'])
+    expect(names(d.s.foods)).toContain('Lokal')
+    expect(names(server.doc(x)!.data.state.foods as never)).toContain('Lokal')
     expect(d.engine.readStash()).toBeUndefined()
-    expect(d.storage.getItem('zyklus-stash')).toBeNull()
   })
 
-  it('discards the stash on request, and keeps a stash that does not pass the backup check', async () => {
-    const { d } = await switched()
+  it("never restores another account's stash into the signed-in one; it can only be discarded", async () => {
+    const { d, y } = await switched()
+    expect(d.engine.readStash()).toBeDefined()
     const { restoreStash } = await import('../../sync/restore')
-    d.storage.setItem('zyklus-stash', JSON.stringify({ savedAt: 1, doc: { v: 2, state: { sessions: [] }, stamps: {}, tombstones: {} } }))
+    const before = canon(d.doc())
+    restoreStash()
+    await d.sync()
+    expect(names(server.doc(y)!.data.state.foods as never)).toEqual(['Y-Essen'])
+    expect(canon(d.doc())).toBe(before)
+    expect(restoreStash()).toBe(false)
+    expect(d.engine.canRestoreStash()).toBe(false)
+    expect(d.engine.readStash()).toBeDefined()
+    d.engine.discardStash()
+    expect(d.engine.readStash()).toBeUndefined()
+  })
+
+  it('logout with "remove data", "delete all data" and a deleted account remove the stash', async () => {
+    const { d } = await switched()
+    await d.engine.logout(true)
+    expect(d.storage.getItem('zyklus-stash')).toBeNull()
+    for (const wipe of [() => d.s.reset(), () => d.engine.forgetAccount()]) {
+      d.storage.setItem('zyklus-stash', JSON.stringify({ savedAt: 1, owner: { origin: ORIGIN, id: 1, createdAt: 1 }, doc: { v: 2, state: {}, stamps: {}, tombstones: {} } }))
+      wipe()
+      expect(d.storage.getItem('zyklus-stash')).toBeNull()
+    }
+  })
+
+  it('keeps a stash that does not pass the backup check, and ignores a broken one', async () => {
+    const { d, x } = await ambiguous()
+    const { restoreStash } = await import('../../sync/restore')
+    d.storage.setItem('zyklus-stash', JSON.stringify({ savedAt: 1, ownerId: x.id, doc: { v: 2, state: { sessions: [] }, stamps: {}, tombstones: {} } }))
     const before = canon(d.doc())
     expect(restoreStash()).toBe(false)
     expect(canon(d.doc())).toBe(before)
     expect(d.engine.readStash()).toBeDefined()
-    d.engine.discardStash()
-    expect(d.engine.readStash()).toBeUndefined()
     d.storage.setItem('zyklus-stash', 'kaputt')
     expect(d.engine.readStash()).toBeUndefined()
   })
