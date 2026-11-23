@@ -979,6 +979,22 @@ describe('sync engine: one stash per account', () => {
     expect(names(d.engine.readStashes().find((st) => st.owner?.id === y.id)?.doc.state.foods as never)).toEqual(['Y-Essen'])
   })
 
+  it('a malformed entry of the same account neither breaks the switch nor costs the local data', async () => {
+    const x = server.add('x@example.test')
+    server.add('y@example.test')
+    const d = await device()
+    await d.engine.login('x@example.test', 'pw')
+    d.s.addFood(meal('X-Essen'))
+    await d.sync()
+    // looks like a stash entry of X, but its foods are no list: merging into it would throw
+    d.storage.setItem('zyklus-stash', oneStash({ savedAt: 1, owner: { origin: ORIGIN, id: x.id, createdAt: x.createdAt }, doc: { v: 2, state: { foods: 'kaputt' } as never, stamps: {}, tombstones: {} } }))
+    await d.engine.logout(false)
+    await d.engine.login('y@example.test', 'pw')
+    expect(d.engine.useSync.getState().user?.email).toBe('y@example.test')
+    expect(names(stashOf(d.storage)!.doc.state.foods as never)).toEqual(['X-Essen'])
+    expect(d.engine.readStashes()).toHaveLength(1)
+  })
+
   it('keeps at most three entries, dropping the oldest but never the incoming account\'s', async () => {
     await device()
     const { putStash, readStashes } = await import('../../sync/stash')

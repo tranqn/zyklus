@@ -236,7 +236,14 @@ function stashAndClean(owner: Owner | undefined, ownerId: number | undefined, in
   applyDoc(emptyDoc(), { rev: 0 })
   // the entries of the account signing in survive, whatever else has to go
   const keep = [stashKey({ owner: ownerOf(incoming), savedAt: 0 }), stashKey({ ownerId: incoming.id, savedAt: 0 })]
-  if (hasData(doc) && !putStash({ savedAt: Date.now(), owner, ownerId: owner ? undefined : ownerId, doc }, keep)) {
+  let kept: boolean
+  try {
+    kept = !hasData(doc) || putStash({ savedAt: Date.now(), owner, ownerId: owner ? undefined : ownerId, doc }, keep)
+  } catch {
+    // whatever went wrong, the data must not stay cleared
+    kept = false
+  }
+  if (!kept) {
     applyDoc(doc, { rev })
     throw new LocalError('switch_refused', 'Kontowechsel abgebrochen: nicht genug Speicher für die bisherigen Daten.')
   }

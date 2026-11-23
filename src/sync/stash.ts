@@ -1,5 +1,5 @@
 import type { DataOwner } from '../store'
-import { merge, type SyncDoc } from './merge'
+import { COLLECTIONS, merge, type SyncDoc } from './merge'
 
 /*
  * Local stash: when the data on this device cannot be shown to belong to the account that signs
@@ -33,9 +33,23 @@ const storage: Storage | undefined = (() => {
   }
 })()
 
+const isObject = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
+const isStamps = (v: unknown) => isObject(v) && Object.values(v).every((x) => typeof x === 'number' && Number.isFinite(x))
+
+/** A whole entry, checked as far as merge relies on it: a broken one is ignored, never merged into. */
 function valid(v: unknown): v is Stash {
-  const s = v as Stash
-  return !!s && typeof s === 'object' && typeof s.savedAt === 'number' && !!s.doc && typeof s.doc === 'object' && !!s.doc.state && typeof s.doc.state === 'object'
+  if (!isObject(v) || typeof v.savedAt !== 'number' || !Number.isFinite(v.savedAt)) return false
+  const o = v.owner
+  if (o !== undefined && !(isObject(o) && typeof o.origin === 'string' && typeof o.id === 'number' && typeof o.createdAt === 'number')) return false
+  if (v.ownerId !== undefined && typeof v.ownerId !== 'number') return false
+  const doc = v.doc
+  if (!isObject(doc) || !isObject(doc.state) || !isStamps(doc.stamps) || !isStamps(doc.tombstones)) return false
+  for (const [coll, field] of Object.entries(COLLECTIONS)) {
+    const list = doc.state[coll]
+    if (list === undefined) continue
+    if (!Array.isArray(list) || !list.every((it) => isObject(it) && (typeof it[field] === 'string' || typeof it[field] === 'number'))) return false
+  }
+  return true
 }
 
 /** All entries, newest first. */
