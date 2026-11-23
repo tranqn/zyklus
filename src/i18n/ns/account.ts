@@ -85,6 +85,7 @@ export const account = ns({
       conflict: 'Synchronisierung kollidiert wiederholt. Versuch es gleich nochmal.',
       client_outdated: 'Diese App-Version ist veraltet. Bitte lade die App neu, damit sie weiter synchronisiert.',
       account_mismatch: 'Du wurdest in einem anderen Tab mit einem anderen Konto angemeldet. Die App wechselt zu diesem Konto.',
+      switch_refused: 'Kontowechsel abgebrochen: Auf diesem Gerät ist nicht genug Speicher frei, um die bisherigen Daten zwischenzuspeichern. Sie sind unverändert auf dem Gerät.',
     },
   },
   en: {
@@ -170,6 +171,7 @@ export const account = ns({
       conflict: 'Sync keeps colliding. Please try again in a moment.',
       client_outdated: 'This version of the app is out of date. Please reload the app to keep syncing.',
       account_mismatch: 'Another account was signed in in a different tab. The app is switching to that account.',
+      switch_refused: 'Switching accounts was refused: this device does not have enough free storage to keep the previous data aside. That data is unchanged on the device.',
     },
   },
   vi: {
@@ -255,6 +257,7 @@ export const account = ns({
       conflict: 'Đồng bộ liên tục bị xung đột. Vui lòng thử lại sau giây lát.',
       client_outdated: 'Phiên bản ứng dụng này đã cũ. Vui lòng tải lại ứng dụng để tiếp tục đồng bộ.',
       account_mismatch: 'Một tài khoản khác đã được đăng nhập trong một tab khác. Ứng dụng đang chuyển sang tài khoản đó.',
+      switch_refused: 'Đã từ chối chuyển tài khoản: thiết bị không còn đủ bộ nhớ để lưu tạm dữ liệu trước đó. Dữ liệu đó vẫn còn nguyên trên thiết bị.',
     },
   },
 })

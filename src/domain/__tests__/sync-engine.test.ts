@@ -341,7 +341,13 @@ describe('sync engine: account binding', () => {
     await d.sync()
     await d.engine.logout(false)
     d.storage.full = true
-    await expect(d.engine.login('y@example.test', 'pw')).rejects.toThrow()
+    const err = await d.engine.login('y@example.test', 'pw').catch((e: unknown) => e)
+    // the sign-in form shows plainly that the switch was refused
+    const { apiMessage } = await import('../../sync/api')
+    const { tk } = await import('../../i18n')
+    expect(err).toBeInstanceOf(Error)
+    expect(apiMessage(err)).toBe(tk('account.apiError.switch_refused'))
+    expect(apiMessage(err)).not.toBe(tk('account.apiError.generic'))
     await d.sync()
     expect(names(d.s.foods)).toEqual(['X-Essen'])
     expect(d.s.owner).toEqual({ origin: ORIGIN, id: x.id, createdAt: x.createdAt })

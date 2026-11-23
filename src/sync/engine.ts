@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { DATA_KEYS, emptyState, parseBackup, useStore, type DataOwner, type State } from '../store'
-import { api, ApiError, apiMessage, configureApi, type PublicUser } from './api'
+import { api, ApiError, apiMessage, configureApi, LocalError, type PublicUser } from './api'
 import { tk } from '../i18n'
 import { canon, merge, sameDoc as same, track, type SyncDoc } from './merge'
 import { discardStash, putStash, rawStash, readStash, writeRawStash, type Stash } from './stash'
@@ -178,7 +178,7 @@ function stashAndClean(owner: Owner | undefined, ownerId: number | undefined) {
   applyDoc(emptyDoc())
   if (hasData(doc) && !putStash({ savedAt: Date.now(), owner, ownerId: owner ? undefined : ownerId, doc })) {
     applyDoc(doc)
-    throw new Error('stash_failed')
+    throw new LocalError('switch_refused', 'Kontowechsel abgebrochen: nicht genug Speicher für die bisherigen Daten.')
   }
   useSync.setState({ rev: 0, lastSyncedAt: undefined })
 }

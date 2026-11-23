@@ -20,6 +20,15 @@ export class ApiError extends Error {
   }
 }
 
+/** An error on this device rather than on the server; `code` has a text under account.apiError. */
+export class LocalError extends Error {
+  code: string
+  constructor(code: string, message: string) {
+    super(message)
+    this.code = code
+  }
+}
+
 interface Binding {
   /** `<id>:<createdAt>` of the account the local data belongs to, if any */
   account: () => string | undefined
@@ -63,6 +72,7 @@ export async function api<T>(method: 'GET' | 'POST' | 'PUT', path: string, body?
  * `context` picks a more specific text (e.g. credentials_current on the change-password form).
  */
 export function apiMessage(e: unknown, context?: string): string {
+  if (e instanceof LocalError) return tk(`account.apiError.${e.code}`, undefined, tk('account.apiError.generic'))
   if (!(e instanceof ApiError)) return tk('account.apiError.generic')
   const code = e.status === 0 ? 'offline' : e.status >= 500 ? 'server' : e.code
   const specific = context ? tk(`account.apiError.${code}_${context}`, undefined, '') : ''
