@@ -157,7 +157,7 @@ async function device(storage = new MemStorage()) {
     doc(): SyncDoc {
       const st = useStore.getState() as unknown as Record<string, unknown>
       const state: Record<string, unknown> = {}
-      for (const k of Object.keys(st)) if (typeof st[k] !== 'function' && k !== 'syncMeta') state[k] = st[k]
+      for (const k of Object.keys(st)) if (typeof st[k] !== 'function' && k !== 'syncMeta' && k !== 'owner') state[k] = st[k]
       return { v: 1, state, stamps: useStore.getState().syncMeta.stamps, tombstones: useStore.getState().syncMeta.tombstones }
     },
     /** let pending uploads go out, then pull */
@@ -269,7 +269,7 @@ describe('sync engine: account binding', () => {
     const after = server.log.slice(server.log.findIndex((r) => r.path === '/auth/login') + 1)
     expect(after.length).toBeGreaterThan(1)
     for (const r of after) expect(r.account, `${r.method} ${r.path}`).toBe(`${a.id}:${a.createdAt}`)
-    expect(d.engine.useSync.getState().owner).toEqual({ origin: ORIGIN, id: a.id, createdAt: a.createdAt })
+    expect(d.s.owner).toEqual({ origin: ORIGIN, id: a.id, createdAt: a.createdAt })
   })
 
   it('the same account signing in again keeps the local data, including edits made while signed out', async () => {
@@ -279,7 +279,7 @@ describe('sync engine: account binding', () => {
     d.s.addFood(meal('Apfel'))
     await d.sync()
     await d.engine.logout(false)
-    expect(d.engine.useSync.getState().owner).toBeDefined()
+    expect(d.s.owner).toBeDefined()
     d.s.addFood(meal('Offline'))
     await d.engine.login('a@example.test', 'pw')
     await d.sync()
@@ -336,7 +336,7 @@ describe('sync engine: account binding', () => {
     await expect(d.engine.login('y@example.test', 'pw')).rejects.toThrow()
     await d.sync()
     expect(names(d.s.foods)).toEqual(['X-Essen'])
-    expect(d.engine.useSync.getState().owner).toEqual({ origin: ORIGIN, id: x.id, createdAt: x.createdAt })
+    expect(d.s.owner).toEqual({ origin: ORIGIN, id: x.id, createdAt: x.createdAt })
     expect(d.engine.useSync.getState().user).toBeUndefined()
     expect(server.doc(y)!.rev).toBe(1)
   })
@@ -367,7 +367,7 @@ describe('sync engine: account binding', () => {
     // X keeps what it had; X-Neu never reached it and waits in the stash
     expect(names(server.doc(x)!.data.state.foods as never)).toEqual(['X-Essen'])
     expect(names(tab1.s.foods)).toEqual(['Y-Essen'])
-    expect(tab1.engine.useSync.getState().owner).toEqual({ origin: ORIGIN, id: y.id, createdAt: y.createdAt })
+    expect(tab1.s.owner).toEqual({ origin: ORIGIN, id: y.id, createdAt: y.createdAt })
     const stash = stashOf(storage)!
     expect(stash.owner).toEqual({ origin: ORIGIN, id: x.id, createdAt: x.createdAt })
     expect(names(stash.doc.state.foods as never)).toEqual(['X-Essen', 'X-Neu'])
@@ -433,7 +433,7 @@ describe('sync engine: legacy binding (ownerId only, written by older bundles)',
     await d.engine.checkSession()
     await d.sync()
     expect(names(d.s.foods).sort()).toEqual(['Konto', 'Lokal'])
-    expect(d.engine.useSync.getState().owner).toEqual({ origin: ORIGIN, id: x.id, createdAt: x.createdAt })
+    expect(d.s.owner).toEqual({ origin: ORIGIN, id: x.id, createdAt: x.createdAt })
     expect(d.storage.getItem('zyklus-stash')).toBeNull()
   })
 
@@ -523,7 +523,7 @@ describe('sync engine: a planned meal is booked as a unit', () => {
 
 describe('sync engine: restoring a backup', () => {
   /** the backup file, as SettingsPage exportData writes it */
-  const backupOf = (d: Awaited<ReturnType<typeof device>>) => JSON.stringify(Object.fromEntries(Object.entries(d.store.getState()).filter(([, v]) => typeof v !== 'function')))
+  const backupOf = async (d: Awaited<ReturnType<typeof device>>) => JSON.stringify((await import('../../store')).backupOf(d.store.getState()))
 
   it('an invalid file shows an error and writes nothing, so nothing is uploaded', async () => {
     server.add('a@example.test')
@@ -556,7 +556,7 @@ describe('sync engine: restoring a backup', () => {
     await a.engine.login('a@example.test', 'pw')
     a.s.addFood(meal('Im Backup'))
     await a.sync()
-    const backup = backupOf(a)
+    const backup = await backupOf(a)
     // after the backup: one entry is added and deleted again, the backed-up one is deleted too
     a.s.addFood(meal('Danach'))
     await a.sync()
@@ -650,5 +650,35 @@ describe('sync engine: the server lost the document', () => {
     expect(names(server.doc(a)?.data.state.foods as never)).toEqual(['Apfel', 'Birne'])
     expect(server.puts().at(-2)).toMatchObject({ status: 409 })
     expect(d.engine.useSync.getState()).toMatchObject({ status: 'ok', rev: server.doc(a)!.rev })
+  })
+})
+
+describe('sync engine: binding and data are stored together', () => {
+  it('a tab opened between a stale tab writing X data and the Y tab writing its binding uploads nothing into Y', async () => {
+    const x = server.add('x@example.test')
+    const y = server.add('y@example.test')
+    server.docs.set(y.id, { rev: 1, data: docWith('Y-Essen') })
+    const storage = new MemStorage()
+    const tab1 = await device(storage)
+    await tab1.engine.login('x@example.test', 'pw')
+    tab1.s.addFood(meal('X-Essen'))
+    await tab1.sync()
+    const tab2 = await device(storage)
+    await tab2.engine.logout(false)
+    await tab2.engine.login('y@example.test', 'pw')
+    await tab2.sync()
+    // the stale X tab writes its data (zyklus-v1) ...
+    tab1.s.addFood(meal('X-Neu'))
+    // ... then the Y tab writes its sync state (zyklus-sync) again, without touching the data
+    await tab2.engine.syncNow()
+    // a new tab opens right now
+    const tab3 = await device(storage)
+    await tab3.engine.syncNow()
+    expect(names(server.doc(y)!.data.state.foods as never)).toEqual(['Y-Essen'])
+    await tab3.engine.checkSession()
+    await tab3.sync()
+    expect(names(server.doc(y)!.data.state.foods as never)).toEqual(['Y-Essen'])
+    expect(names(tab3.s.foods)).toEqual(['Y-Essen'])
+    expect(names(server.doc(x)!.data.state.foods as never)).toEqual(['X-Essen'])
   })
 })

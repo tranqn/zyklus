@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
-import { DATA_KEYS, emptyState, useStore, type State } from '../store'
+import { DATA_KEYS, emptyState, useStore, type DataOwner, type State } from '../store'
 import { api, ApiError, apiMessage, configureApi, type PublicUser } from './api'
 import { tk } from '../i18n'
 import { canon, merge, sameDoc as same, track, type SyncDoc } from './merge'
@@ -8,20 +8,15 @@ import { canon, merge, sameDoc as same, track, type SyncDoc } from './merge'
 type Status = 'idle' | 'pending' | 'syncing' | 'ok' | 'offline' | 'error'
 
 /**
- * The account the local data belongs to. `createdAt` tells a re-created account apart that got
- * the id of a deleted one (SQLite may reuse it); `origin` keeps apps on other hosts apart.
+ * The account the local data belongs to: `useStore.owner`, stored with the data itself.
+ * `createdAt` tells a re-created account apart that got the id of a deleted one (SQLite may reuse
+ * it); `origin` keeps apps on other hosts apart.
  */
-export interface Owner {
-  origin: string
-  id: number
-  createdAt: number
-}
+export type Owner = DataOwner
 
 interface SyncState {
   /** Signed-in user (cached so the app opens offline). */
   user?: PublicUser
-  /** The account the local data belongs to. */
-  owner?: Owner
   /**
    * Legacy binding by id only. Still read once for the migration to `owner`, and still written,
    * so an older cached bundle running on this device keeps its own guard against mixing accounts.
@@ -39,7 +34,7 @@ export const useSync = create<SyncState>()(
   persist((): SyncState => ({ rev: 0, status: 'idle', checked: false }), {
     name: 'zyklus-sync',
     storage: createJSONStorage(() => localStorage),
-    partialize: (s) => ({ user: s.user, owner: s.owner, ownerId: s.ownerId, rev: s.rev, lastSyncedAt: s.lastSyncedAt }),
+    partialize: (s) => ({ user: s.user, ownerId: s.ownerId, rev: s.rev, lastSyncedAt: s.lastSyncedAt }),
   }),
 )
 
@@ -55,15 +50,27 @@ let generation = 0
 
 const ownerOf = (u: PublicUser): Owner => ({ origin: location.origin, id: u.id, createdAt: u.createdAt })
 const sameOwner = (o: Owner | undefined, u: PublicUser) => !!o && o.origin === location.origin && o.id === u.id && o.createdAt === u.createdAt
+/** The binding is read from the store: it is persisted in the same entry as the data. */
+const dataOwner = () => useStore.getState().owner
 /** Local data is synced only while it is bound to the signed-in account. */
 function bound(): boolean {
-  const s = useSync.getState()
-  return !!s.user && sameOwner(s.owner, s.user)
+  const user = useSync.getState().user
+  return !!user && sameOwner(dataOwner(), user)
+}
+
+/** Change the binding without it counting as a change of the user's data. */
+function setOwner(owner: Owner | undefined) {
+  applyingRemote = true
+  try {
+    useStore.setState({ owner })
+  } finally {
+    applyingRemote = false
+  }
 }
 
 configureApi({
   account: () => {
-    const o = useSync.getState().owner
+    const o = dataOwner()
     return o ? `${o.id}:${o.createdAt}` : undefined
   },
   onAccountMismatch: () => recheckSession(),
@@ -253,7 +260,7 @@ function schedulePush() {
 export function startSync(): () => void {
   const unsub = useStore.subscribe((next, prev) => {
     if (applyingRemote) return
-    const meta = track(prev as unknown as Record<string, unknown>, next as unknown as Record<string, unknown>, next.syncMeta, Date.now(), ['syncMeta'])
+    const meta = track(prev as unknown as Record<string, unknown>, next as unknown as Record<string, unknown>, next.syncMeta, Date.now(), ['syncMeta', 'owner'])
     if (!meta) return
     useStore.setState({ syncMeta: meta })
     schedulePush()
@@ -284,14 +291,16 @@ export function startSync(): () => void {
  */
 async function adopt(user: PublicUser) {
   const s = useSync.getState()
-  if (!sameOwner(s.owner, user)) {
-    const legacySame = !s.owner && s.ownerId === user.id && s.lastSyncedAt != null && s.lastSyncedAt >= user.createdAt
-    const unbound = !s.owner && s.ownerId == null
+  const owner = dataOwner()
+  if (!sameOwner(owner, user)) {
+    const legacySame = !owner && s.ownerId === user.id && s.lastSyncedAt != null && s.lastSyncedAt >= user.createdAt
+    const unbound = !owner && s.ownerId == null
     generation++
     window.clearTimeout(pushTimer)
-    if (!legacySame && !unbound) stashAndClean(s.owner)
+    if (!legacySame && !unbound) stashAndClean(owner)
+    setOwner(ownerOf(user))
   }
-  useSync.setState({ user, owner: ownerOf(user), ownerId: user.id })
+  useSync.setState({ user, ownerId: user.id })
   await syncNow()
 }
 
@@ -335,7 +344,7 @@ export async function resetPassword(token: string, password: string) {
 export async function refreshUser() {
   const { user } = await api<{ user: PublicUser | null }>('GET', '/auth/me')
   // the session may have changed hands in another tab: that goes through adopt
-  if (user && !sameOwner(useSync.getState().owner, user)) return adopt(user)
+  if (user && !sameOwner(dataOwner(), user)) return adopt(user)
   useSync.setState({ user: user ?? undefined })
 }
 
@@ -347,7 +356,8 @@ export async function logout(clearDevice: boolean) {
   generation++
   if (clearDevice) {
     applyDoc(emptyDoc())
-    useSync.setState({ owner: undefined, ownerId: undefined, rev: 0 })
+    setOwner(undefined)
+    useSync.setState({ ownerId: undefined, rev: 0 })
   }
   // otherwise the binding stays, so the same account signing in again keeps the data
   useSync.setState({ user: undefined, status: 'idle', lastSyncedAt: undefined })
@@ -364,5 +374,6 @@ export function forgetAccount() {
   generation++
   window.clearTimeout(pushTimer)
   applyDoc(emptyDoc())
-  useSync.setState({ user: undefined, owner: undefined, ownerId: undefined, rev: 0, status: 'idle', lastSyncedAt: undefined })
+  setOwner(undefined)
+  useSync.setState({ user: undefined, ownerId: undefined, rev: 0, status: 'idle', lastSyncedAt: undefined })
 }

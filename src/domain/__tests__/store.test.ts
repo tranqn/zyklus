@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { useStore } from '../../store'
+import { backupOf, useStore } from '../../store'
 import { flamesOf } from '../motivation'
 import { addDays, today } from '../util'
 
@@ -145,6 +145,15 @@ describe('store: restoring a backup', () => {
     expect(s.recipes.map((r) => r.id)).toEqual('recipes' in backup ? ['r9'] : ['r1'])
     // stamps and tombstones are never taken from a backup
     expect(s.syncMeta).toEqual({ stamps: { 'i:recipes:r1': 50 }, tombstones: { 'foods:weg': 40 } })
+  })
+
+  it('the account binding is neither written into a backup nor taken from one', () => {
+    current()
+    const owner = { origin: 'https://mci.example.test', id: 7, createdAt: 1 }
+    useStore.setState({ owner })
+    expect(backupOf(useStore.getState())).not.toHaveProperty('owner')
+    useStore.getState().importData(JSON.stringify({ ...withPlanner, owner: { origin: 'x', id: 9, createdAt: 2 } }))
+    expect(useStore.getState().owner).toEqual(owner)
   })
 
   it.each([

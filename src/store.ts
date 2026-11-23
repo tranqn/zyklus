@@ -27,6 +27,14 @@ import { addDays, daysBetween, nowMs, sessionEndMs, startOfWeek, today, uid } fr
 import { defaultWeeklyGoal, withWeeklyGoal } from './domain/motivation'
 import { COLLECTIONS } from './sync/merge'
 
+/** The account a device's data belongs to (see sync/engine.ts). */
+export interface DataOwner {
+  origin: string
+  id: number
+  /** tells a re-created account apart that got the id of a deleted one */
+  createdAt: number
+}
+
 export interface State {
   version: number
   profile?: Profile
@@ -56,6 +64,12 @@ export interface State {
   frozenDays: string[]
   /** Change stamps and tombstones for account sync (see sync/merge.ts). */
   syncMeta: { stamps: Record<string, number>; tombstones: Record<string, number> }
+  /**
+   * The account this data belongs to. Saved in the same localStorage entry as the data, so a tab
+   * can never pair one account's data with another account's binding. Not user data: never
+   * synced, never in a backup, not changed by reset or a restore.
+   */
+  owner?: DataOwner
 }
 
 interface Actions {
@@ -508,7 +522,7 @@ export const useStore = create<State & Actions>()(
       version: 1,
       partialize: (s) => {
         const out: Partial<State> = {}
-        for (const k of Object.keys(initial).concat(['profile', 'meso', 'active']) as (keyof State)[]) {
+        for (const k of Object.keys(initial).concat(['profile', 'meso', 'active', 'owner']) as (keyof State)[]) {
           ;(out as Record<string, unknown>)[k] = s[k]
         }
         return out as State
@@ -549,6 +563,11 @@ export function parseBackup(json: string): Partial<State> {
 
 /** Keys that make up the user's data (everything persisted except sync bookkeeping). */
 export const DATA_KEYS = [...Object.keys(initial).filter((k) => k !== 'syncMeta'), 'profile', 'meso', 'active'] as (keyof State)[]
+
+/** The backup file: the persisted store without functions and without the account binding. */
+export function backupOf(s: State): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(s).filter(([k, v]) => typeof v !== 'function' && k !== 'owner'))
+}
 
 /** A fresh, empty state (used when switching accounts). */
 export function emptyState(): State {

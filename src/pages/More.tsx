@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { CARDIO, cardioKcal, MOBILITY, routineSeconds, type MobilityRoutine } from '../domain/activities'
 import { MOBILITY_ANIMATION } from '../domain/animations'
 import { ExerciseAnimation } from '../ui/ExerciseAnimation'
-import { allExercises, useStore } from '../store'
+import { allExercises, backupOf, useStore } from '../store'
 import { discardStash, readStash, useSync } from '../sync/engine'
 import { t as tr, tk as tkr, tx, useT, weekdaysShort } from '../i18n'
 import { exerciseName } from '../i18n/content/exercises'
@@ -306,8 +306,7 @@ export function SettingsPage() {
     if (planRelevant) setRegen(true)
   }
   const exportData = () => {
-    const state = useStore.getState()
-    const data = Object.fromEntries(Object.entries(state).filter(([, v]) => typeof v !== 'function'))
+    const data = backupOf(useStore.getState())
     const blob = new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' })
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
