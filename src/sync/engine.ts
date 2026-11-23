@@ -43,9 +43,9 @@ let applyingRemote = false
 let pushTimer: number | undefined
 let chain: Promise<void> = Promise.resolve()
 /**
- * Bumped whenever the local data stops belonging to the account a running sync started for
- * (account change, logout, account deleted). A sync that finds it changed after an await drops
- * its result instead of writing another account's data into the store.
+ * Bumped on every sign-in (adopt), at the start and end of logout and when the account is deleted.
+ * A sync or session check that finds it changed after an await drops its result instead of
+ * writing another account's data into the store or adopting a session that is already over.
  */
 let generation = 0
 
