@@ -10,28 +10,77 @@ import { canon, type SyncDoc } from '../../sync/merge'
 const ORIGIN = 'https://mci.example.test'
 const T0 = Date.UTC(2026, 10, 2, 12)
 
-class MemStorage {
-  private m = new Map<string, string>()
-  /** simulates a full localStorage for the stash */
+type StorageListener = (e: { key: string | null; oldValue: string | null; newValue: string | null }) => void
+
+/** What all tabs of one browser share: the entries, the limits, and who gets storage events. */
+class Backend {
+  m = new Map<string, string>()
   full = false
-  /** total characters (keys and values) it holds at most, like the browser's localStorage quota */
   quota = Infinity
-  /** per entry: largest value it accepts (a quota that only bites for one key) */
   maxItem: Record<string, number> = {}
-  used = () => [...this.m].reduce((n, [k, v]) => n + k.length + v.length, 0)
-  getItem = (k: string) => this.m.get(k) ?? null
+  tabs = new Set<MemStorage>()
+}
+
+/**
+ * localStorage of one tab. tab() gives another tab of the same browser: same entries, and like
+ * the browser it tells every other tab about a write (a storage event, asynchronously).
+ */
+class MemStorage {
+  private b: Backend
+  constructor(backend = new Backend()) {
+    this.b = backend
+  }
+  /** this tab's storage event listeners */
+  listeners: StorageListener[] = []
+  inUse = false
+  tab = () => new MemStorage(this.b)
+  /** simulates a full localStorage for the stash */
+  get full() {
+    return this.b.full
+  }
+  set full(v: boolean) {
+    this.b.full = v
+  }
+  /** total characters (keys and values) it holds at most, like the browser's localStorage quota */
+  get quota() {
+    return this.b.quota
+  }
+  set quota(v: number) {
+    this.b.quota = v
+  }
+  /** per entry: largest value it accepts (a quota that only bites for one key) */
+  get maxItem() {
+    return this.b.maxItem
+  }
+  join() {
+    this.b.tabs.add(this)
+  }
+  leave() {
+    this.b.tabs.delete(this)
+    this.listeners = []
+  }
+  private notify(key: string, oldValue: string | null, newValue: string | null) {
+    for (const t of this.b.tabs) if (t !== this) queueMicrotask(() => t.listeners.forEach((fn) => fn({ key, oldValue, newValue })))
+  }
+  used = () => [...this.b.m].reduce((n, [k, v]) => n + k.length + v.length, 0)
+  getItem = (k: string) => this.b.m.get(k) ?? null
   setItem = (k: string, v: string) => {
     if (this.full && k === 'zyklus-stash') throw new Error('QuotaExceededError')
     if (String(v).length > (this.maxItem[k] ?? Infinity)) throw new Error('QuotaExceededError')
-    const old = this.m.get(k)
+    const old = this.b.m.get(k)
     if (this.used() - (old == null ? 0 : k.length + old.length) + k.length + String(v).length > this.quota) throw new Error('QuotaExceededError')
-    this.m.set(k, String(v))
+    this.b.m.set(k, String(v))
+    this.notify(k, old ?? null, String(v))
   }
-  removeItem = (k: string) => void this.m.delete(k)
-  clear = () => this.m.clear()
-  key = (i: number) => [...this.m.keys()][i] ?? null
+  removeItem = (k: string) => {
+    const old = this.b.m.get(k)
+    this.b.m.delete(k)
+    if (old != null) this.notify(k, old, null)
+  }
+  clear = () => this.b.m.clear()
+  key = (i: number) => [...this.b.m.keys()][i] ?? null
   get length() {
-    return this.m.size
+    return this.b.m.size
   }
 }
 
@@ -127,10 +176,13 @@ class FakeServer {
 
 let server: FakeServer
 const stops: (() => void)[] = []
+/** listeners the engines register on the (shared) window stub */
+let windowListeners: { type: string; fn: StorageListener }[] = []
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'], now: T0 })
   server = new FakeServer()
+  windowListeners = []
   vi.stubGlobal('fetch', server.fetch)
   vi.stubGlobal('location', { origin: ORIGIN })
   vi.stubGlobal('document', { visibilityState: 'hidden', addEventListener() {}, removeEventListener() {} })
@@ -139,8 +191,11 @@ beforeEach(() => {
     clearTimeout: (id: number) => globalThis.clearTimeout(id),
     setInterval: (fn: () => void, ms: number) => globalThis.setInterval(fn, ms),
     clearInterval: (id: number) => globalThis.clearInterval(id),
-    addEventListener() {},
-    removeEventListener() {},
+    addEventListener: (type: string, fn: StorageListener) => windowListeners.push({ type, fn }),
+    removeEventListener: (type: string, fn: StorageListener) => {
+      const i = windowListeners.findIndex((l) => l.type === type && l.fn === fn)
+      if (i >= 0) windowListeners.splice(i, 1)
+    },
   })
 })
 
@@ -151,14 +206,27 @@ afterEach(() => {
 })
 
 /** A device (or tab) with its own copy of store and engine; `storage` lets two tabs share localStorage. */
-async function device(storage = new MemStorage()) {
+async function device(shared = new MemStorage()) {
+  // a second device on the same storage is another tab of the same browser
+  const storage = shared.inUse ? shared.tab() : shared
+  storage.inUse = true
+  storage.join()
   vi.resetModules()
   vi.stubGlobal('localStorage', storage)
   const { useStore } = await import('../../store')
   const engine = await import('../../sync/engine')
-  stops.push(engine.startSync())
+  const before = windowListeners.length
+  const stop = engine.startSync()
+  stops.push(stop)
+  // the storage events of this tab go to the listeners its engine registered
+  storage.listeners.push(...windowListeners.slice(before).filter((l) => l.type === 'storage').map((l) => l.fn))
   const d = {
     storage,
+    /** the tab is closed: no more events, no more tracking */
+    close() {
+      stop()
+      storage.leave()
+    },
     store: useStore,
     engine,
     get s() {
@@ -1072,6 +1140,11 @@ describe('sync engine: the revision is stored with the data', () => {
     await tab1.engine.login('a@example.test', 'pw')
     await tab1.sync()
     const tab2 = await device(storage)
+    // Both tabs miss each other's storage events here (frozen background tabs). Otherwise they
+    // would merge each other's writes (see "tabs of the same account"), and this test is about
+    // the revision being stored with the data when that does not happen.
+    tab1.storage.listeners = []
+    tab2.storage.listeners = []
     // another device adds something; only tab 2 pulls it
     other.s.addFood(meal('Fremd'))
     await other.sync()
@@ -1164,5 +1237,46 @@ describe('sync engine: after the migration', () => {
     expect(stash.owner).toBeUndefined()
     expect(stash.ownerId).toBeUndefined()
     expect(tab2.engine.canRestoreStash()).toBe(false)
+  })
+})
+
+describe('sync engine: tabs of the same account', () => {
+  it("tab B edits and closes before its upload; tab A's next write and ack keep B's edit, and A's next push uploads it", async () => {
+    const acc = server.add('a@example.test')
+    const storage = new MemStorage()
+    const a = await device(storage)
+    await a.engine.login('a@example.test', 'pw')
+    await a.sync()
+    const b = await device(storage)
+    await b.sync()
+    server.online = false
+    b.s.addFood(meal('B-Edit'))
+    // B's upload fails, then the tab is closed
+    await vi.advanceTimersByTimeAsync(2000)
+    b.close()
+    server.online = true
+    a.s.addFood(meal('A-Edit'))
+    await vi.advanceTimersByTimeAsync(2000)
+    await settle()
+    expect(names(JSON.parse(storage.getItem('zyklus-v1')!).state.foods).sort()).toEqual(['A-Edit', 'B-Edit'])
+    expect(names(server.doc(acc)!.data.state.foods as never).sort()).toEqual(['A-Edit', 'B-Edit'])
+  })
+
+  it("never merges a write of another account's tab", async () => {
+    server.add('x@example.test')
+    const y = server.add('y@example.test')
+    server.docs.set(y.id, { rev: 1, data: docWith('Y-Essen') })
+    const storage = new MemStorage()
+    const tab1 = await device(storage)
+    await tab1.engine.login('x@example.test', 'pw')
+    tab1.s.addFood(meal('X-Essen'))
+    await tab1.sync()
+    const tab2 = await device(storage)
+    await tab2.engine.logout(false)
+    await tab2.engine.login('y@example.test', 'pw')
+    await tab2.sync()
+    await settle()
+    expect(names(tab1.s.foods)).toEqual(['X-Essen'])
+    expect(names(tab2.s.foods)).toEqual(['Y-Essen'])
   })
 })

@@ -370,6 +370,50 @@ function schedulePush() {
   pushTimer = window.setTimeout(() => enqueue(pushNow), 1500)
 }
 
+/** Content of a document with collections in id order: tabs may hold the same items in another order. */
+function sameContent(a: SyncDoc, b: SyncDoc): boolean {
+  const byId = (d: SyncDoc) => ({
+    ...d,
+    state: Object.fromEntries(
+      Object.entries(d.state).map(([k, v]) => [k, isCollection(k) && Array.isArray(v) ? [...(v as Record<string, unknown>[])].sort((x, y) => (itemId(k, x) < itemId(k, y) ? -1 : itemId(k, x) > itemId(k, y) ? 1 : 0)) : v]),
+    ),
+  })
+  return canon(byId(a)) === canon(byId(b))
+}
+
+/**
+ * Another tab of this browser wrote the store. Every tab persists its whole snapshot, so without
+ * this the next write here (an edit, or just the ack of an upload, since rev lives in the store)
+ * would drop that tab's newer edits, lost for good if the tab closed before uploading them. Same
+ * account only: its data is merged in like a pull (no tracking, no upload of its own), keeping the
+ * larger revision. Only a change of content is written back, so two tabs settle after one round.
+ */
+function mergeOtherTab(raw: string) {
+  let incoming: Partial<State> | undefined
+  try {
+    incoming = (JSON.parse(raw) as { state?: Partial<State> }).state
+  } catch {
+    return
+  }
+  const owner = dataOwner()
+  const theirs = incoming?.owner
+  if (!incoming || !owner || !theirs || theirs.origin !== owner.origin || theirs.id !== owner.id || theirs.createdAt !== owner.createdAt) return
+  const meta = incoming.syncMeta
+  if (!meta || !isStamps(meta.stamps) || !isStamps(meta.tombstones)) return
+  const state: Record<string, unknown> = {}
+  for (const k of DATA_KEYS) if (k in incoming) state[k] = incoming[k]
+  const local = toDoc()
+  let merged: SyncDoc
+  try {
+    merged = merge(local, { v: 2, state, stamps: meta.stamps, tombstones: meta.tombstones })
+  } catch {
+    return
+  }
+  const rev = Math.max(storeRev(), typeof incoming.rev === 'number' ? incoming.rev : 0)
+  if (!sameContent(merged, local)) applyDoc(merged, { rev })
+  else if (rev !== storeRev()) setBinding({ rev })
+}
+
 /** Record changes for merging and upload them shortly after. Call once at startup. */
 export function startSync(): () => void {
   const unsub = useStore.subscribe((next, prev) => {
@@ -381,13 +425,17 @@ export function startSync(): () => void {
   })
   const onVisible = () => document.visibilityState === 'visible' && syncNow()
   const onOnline = () => syncNow()
+  const storeKey = useStore.persist.getOptions().name
+  const onStorage = (e: StorageEvent) => e.key === storeKey && e.newValue && mergeOtherTab(e.newValue)
   document.addEventListener('visibilitychange', onVisible)
   window.addEventListener('online', onOnline)
+  window.addEventListener('storage', onStorage)
   const interval = window.setInterval(() => document.visibilityState === 'visible' && syncNow(), 60_000)
   return () => {
     unsub()
     document.removeEventListener('visibilitychange', onVisible)
     window.removeEventListener('online', onOnline)
+    window.removeEventListener('storage', onStorage)
     window.clearInterval(interval)
   }
 }
