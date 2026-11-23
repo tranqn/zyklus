@@ -12,8 +12,13 @@ const T0 = Date.UTC(2026, 10, 2, 12)
 
 class MemStorage {
   private m = new Map<string, string>()
+  /** simulates a full localStorage for the stash */
+  full = false
   getItem = (k: string) => this.m.get(k) ?? null
-  setItem = (k: string, v: string) => void this.m.set(k, String(v))
+  setItem = (k: string, v: string) => {
+    if (this.full && k === 'zyklus-stash') throw new Error('QuotaExceededError')
+    this.m.set(k, String(v))
+  }
   removeItem = (k: string) => void this.m.delete(k)
   clear = () => this.m.clear()
   key = (i: number) => [...this.m.keys()][i] ?? null
@@ -54,6 +59,13 @@ class FakeServer {
     return d && { rev: d.rev, data: JSON.parse(d.data) }
   }
   puts = () => this.log.filter((r) => r.method === 'PUT')
+  private gates: { method: string; path: string; wait: Promise<void> }[] = []
+  /** Hold back the answer to the next such request (computed when it arrives) until released. */
+  gate(method: string, path: string): () => void {
+    let release!: () => void
+    this.gates.push({ method, path, wait: new Promise<void>((r) => (release = r)) })
+    return release
+  }
 
   fetch = async (input: string, init: RequestInit = {}): Promise<Response> => {
     if (!this.online) throw new TypeError('Failed to fetch')
@@ -63,6 +75,8 @@ class FakeServer {
     const body = init.body ? JSON.parse(String(init.body)) : undefined
     const [status, out] = this.handle(method, path, account, body)
     this.log.push({ method, path, account, status, body })
+    const g = this.gates.findIndex((x) => x.method === method && x.path === path)
+    if (g >= 0) await this.gates.splice(g, 1)[0].wait
     return new Response(JSON.stringify(out), { status, headers: { 'content-type': 'application/json' } })
   }
 
@@ -235,5 +249,204 @@ describe('sync engine: first sync of a device', () => {
     const up = server.doc(acc)!.data.state
     expect(up.settings).toEqual(settings)
     expect(up.kcalAdjustment).toBe(200)
+  })
+})
+
+const names = (foods: { name: string }[] | undefined) => (foods ?? []).map((f) => f.name)
+const docWith = (...foods: string[]) =>
+  JSON.stringify({ v: 1, state: { foods: foods.map((name, i) => ({ id: `${name}-${i}`, ...meal(name) })) }, stamps: Object.fromEntries(foods.map((name, i) => [`i:foods:${name}-${i}`, T0 - 1000])), tombstones: {} })
+const stashOf = (storage: MemStorage) => JSON.parse(storage.getItem('zyklus-stash') ?? 'null') as { savedAt: number; owner?: unknown; doc: SyncDoc } | null
+/** let a session check that api() started in the background run to its end */
+const settle = () => vi.advanceTimersByTimeAsync(10)
+
+describe('sync engine: account binding', () => {
+  it('names the bound account on every request', async () => {
+    const a = server.add('a@example.test')
+    const d = await device()
+    await d.engine.login('a@example.test', 'pw')
+    d.s.addFood(meal('Apfel'))
+    await d.sync()
+    const after = server.log.slice(server.log.findIndex((r) => r.path === '/auth/login') + 1)
+    expect(after.length).toBeGreaterThan(1)
+    for (const r of after) expect(r.account, `${r.method} ${r.path}`).toBe(`${a.id}:${a.createdAt}`)
+    expect(d.engine.useSync.getState().owner).toEqual({ origin: ORIGIN, id: a.id, createdAt: a.createdAt })
+  })
+
+  it('the same account signing in again keeps the local data, including edits made while signed out', async () => {
+    server.add('a@example.test')
+    const d = await device()
+    await d.engine.login('a@example.test', 'pw')
+    d.s.addFood(meal('Apfel'))
+    await d.sync()
+    await d.engine.logout(false)
+    expect(d.engine.useSync.getState().owner).toBeDefined()
+    d.s.addFood(meal('Offline'))
+    await d.engine.login('a@example.test', 'pw')
+    await d.sync()
+    expect(names(d.s.foods)).toEqual(['Apfel', 'Offline'])
+    expect(names(server.doc(server.accounts[0])!.data.state.foods as never)).toEqual(['Apfel', 'Offline'])
+    expect(d.storage.getItem('zyklus-stash')).toBeNull()
+  })
+
+  it('signing in as another account stashes the local data and starts clean', async () => {
+    const x = server.add('x@example.test')
+    const y = server.add('y@example.test')
+    server.docs.set(y.id, { rev: 1, data: docWith('Y-Essen') })
+    const d = await device()
+    await d.engine.login('x@example.test', 'pw')
+    d.s.addFood(meal('X-Essen'))
+    await d.sync()
+    await d.engine.logout(false)
+    await d.engine.login('y@example.test', 'pw')
+    await d.sync()
+    expect(names(d.s.foods)).toEqual(['Y-Essen'])
+    expect(names(server.doc(y)!.data.state.foods as never)).toEqual(['Y-Essen'])
+    const stash = stashOf(d.storage)!
+    expect(stash.owner).toEqual({ origin: ORIGIN, id: x.id, createdAt: x.createdAt })
+    expect(names(stash.doc.state.foods as never)).toEqual(['X-Essen'])
+  })
+
+  it('a re-created account that got the same id counts as another account', async () => {
+    const x = server.add('x@example.test')
+    const d = await device()
+    await d.engine.login('x@example.test', 'pw')
+    d.s.addFood(meal('Alt'))
+    await d.sync()
+    await d.engine.logout(false)
+    // deleted elsewhere; SQLite hands the id to the next sign-up
+    server.accounts = [{ id: x.id, email: 'neu@example.test', createdAt: x.createdAt + 86_400_000 }]
+    server.docs.clear()
+    await d.engine.login('neu@example.test', 'pw')
+    await d.sync()
+    expect(d.s.foods).toEqual([])
+    expect(names(server.doc(server.accounts[0])?.data.state.foods as never)).toEqual([])
+    expect(names(stashOf(d.storage)!.doc.state.foods as never)).toEqual(['Alt'])
+  })
+
+  it('refuses to switch accounts when the local data cannot be stashed, and loses nothing', async () => {
+    const x = server.add('x@example.test')
+    const y = server.add('y@example.test')
+    server.docs.set(y.id, { rev: 1, data: docWith('Y-Essen') })
+    const d = await device()
+    await d.engine.login('x@example.test', 'pw')
+    d.s.addFood(meal('X-Essen'))
+    await d.sync()
+    await d.engine.logout(false)
+    d.storage.full = true
+    await expect(d.engine.login('y@example.test', 'pw')).rejects.toThrow()
+    await d.sync()
+    expect(names(d.s.foods)).toEqual(['X-Essen'])
+    expect(d.engine.useSync.getState().owner).toEqual({ origin: ORIGIN, id: x.id, createdAt: x.createdAt })
+    expect(d.engine.useSync.getState().user).toBeUndefined()
+    expect(server.doc(y)!.rev).toBe(1)
+  })
+
+  it('two tabs: after the other tab signed in as Y, this tab stashes X, switches to Y and leaks nothing', async () => {
+    const x = server.add('x@example.test')
+    const y = server.add('y@example.test')
+    server.docs.set(y.id, { rev: 1, data: docWith('Y-Essen') })
+    const storage = new MemStorage()
+    const tab1 = await device(storage)
+    await tab1.engine.login('x@example.test', 'pw')
+    tab1.s.addFood(meal('X-Essen'))
+    await tab1.sync()
+    // a second tab of the same browser: same localStorage, same cookie
+    const tab2 = await device(storage)
+    await tab2.engine.logout(false)
+    await tab2.engine.login('y@example.test', 'pw')
+    // tab 1 still holds X's data in memory
+    tab1.s.addFood(meal('X-Neu'))
+    await tab1.sync()
+    await settle()
+    await tab1.sync()
+    // tab 1's upload as X was refused once the session was Y's
+    const switchedAt = server.log.findLastIndex((r) => r.path === '/auth/login')
+    const asX = server.log.slice(switchedAt + 1).filter((r) => r.path === '/state' && r.account === `${x.id}:${x.createdAt}`)
+    expect(asX.map((r) => r.status)).toEqual([409])
+    expect(names(server.doc(y)!.data.state.foods as never)).toEqual(['Y-Essen'])
+    // X keeps what it had; X-Neu never reached it and waits in the stash
+    expect(names(server.doc(x)!.data.state.foods as never)).toEqual(['X-Essen'])
+    expect(names(tab1.s.foods)).toEqual(['Y-Essen'])
+    expect(tab1.engine.useSync.getState().owner).toEqual({ origin: ORIGIN, id: y.id, createdAt: y.createdAt })
+    const stash = stashOf(storage)!
+    expect(stash.owner).toEqual({ origin: ORIGIN, id: x.id, createdAt: x.createdAt })
+    expect(names(stash.doc.state.foods as never)).toEqual(['X-Essen', 'X-Neu'])
+  })
+
+  it('drops a pull that answers after the account was forgotten', async () => {
+    server.add('a@example.test')
+    const d = await device()
+    await d.engine.login('a@example.test', 'pw')
+    d.s.addFood(meal('Apfel'))
+    await d.sync()
+    const release = server.gate('GET', '/state')
+    const pending = d.engine.syncNow()
+    await settle()
+    d.engine.forgetAccount()
+    release()
+    await pending
+    await d.sync()
+    expect(d.s.foods).toEqual([])
+    expect(d.engine.useSync.getState().rev).toBe(0)
+  })
+
+  it('drops a pull for X that answers after the device switched to Y', async () => {
+    server.add('x@example.test')
+    const y = server.add('y@example.test')
+    server.docs.set(y.id, { rev: 1, data: docWith('Y-Essen') })
+    const d = await device()
+    await d.engine.login('x@example.test', 'pw')
+    d.s.addFood(meal('X-Essen'))
+    await d.sync()
+    const release = server.gate('GET', '/state')
+    const pending = d.engine.syncNow()
+    await settle()
+    // another tab signs in as Y while X's data is on its way back
+    server.session = y.id
+    const switched = d.engine.checkSession()
+    await settle()
+    release()
+    await pending
+    await switched
+    await d.sync()
+    expect(names(d.s.foods)).toEqual(['Y-Essen'])
+    expect(names(server.doc(y)!.data.state.foods as never)).toEqual(['Y-Essen'])
+  })
+})
+
+describe('sync engine: legacy binding (ownerId only, written by older bundles)', () => {
+  const DAY = 86_400_000
+  function legacyDevice(x: Account, sync: { lastSyncedAt?: number }) {
+    const storage = new MemStorage()
+    const pub = { id: x.id, email: x.email, verified: true, createdAt: x.createdAt, locale: 'de' }
+    storage.setItem('zyklus-sync', JSON.stringify({ state: { user: pub, ownerId: x.id, rev: 1, ...sync }, version: 0 }))
+    const food = { id: 'l1', ...meal('Lokal') }
+    storage.setItem('zyklus-v1', JSON.stringify({ state: { foods: [food], syncMeta: { stamps: { 'i:foods:l1': x.createdAt + DAY }, tombstones: {} } }, version: 1 }))
+    return storage
+  }
+
+  it('upgrades the binding silently when the device synced after the account was created', async () => {
+    const x = server.add('x@example.test')
+    server.docs.set(x.id, { rev: 1, data: docWith('Konto') })
+    server.session = x.id
+    const d = await device(legacyDevice(x, { lastSyncedAt: x.createdAt + DAY }))
+    await d.engine.checkSession()
+    await d.sync()
+    expect(names(d.s.foods).sort()).toEqual(['Konto', 'Lokal'])
+    expect(d.engine.useSync.getState().owner).toEqual({ origin: ORIGIN, id: x.id, createdAt: x.createdAt })
+    expect(d.storage.getItem('zyklus-stash')).toBeNull()
+  })
+
+  it('stashes the data and starts clean when the binding cannot be proven', async () => {
+    const x = server.add('x@example.test')
+    server.docs.set(x.id, { rev: 1, data: docWith('Konto') })
+    server.session = x.id
+    // an old bundle's logout clears lastSyncedAt
+    const d = await device(legacyDevice(x, {}))
+    await d.engine.checkSession()
+    await d.sync()
+    expect(names(d.s.foods)).toEqual(['Konto'])
+    expect(names(stashOf(d.storage)!.doc.state.foods as never)).toEqual(['Lokal'])
+    expect(names(server.doc(x)!.data.state.foods as never)).toEqual(['Konto'])
   })
 })
