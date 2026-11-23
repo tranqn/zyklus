@@ -1,10 +1,10 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
-import { DATA_KEYS, emptyState, useStore, type DataOwner, type State } from '../store'
+import { DATA_KEYS, emptyState, parseBackup, useStore, type DataOwner, type State } from '../store'
 import { api, ApiError, apiMessage, configureApi, type PublicUser } from './api'
 import { tk } from '../i18n'
 import { canon, merge, sameDoc as same, track, type SyncDoc } from './merge'
-import { discardStash, putStash, readStash, type Stash } from './stash'
+import { discardStash, putStash, rawStash, readStash, writeRawStash, type Stash } from './stash'
 
 type Status = 'idle' | 'pending' | 'syncing' | 'ok' | 'offline' | 'error'
 
@@ -99,6 +99,44 @@ export function canRestoreStash(stash: Stash | undefined = readStash()): boolean
   const user = useSync.getState().user
   if (!stash || !user || !bound()) return false
   return stash.owner ? sameOwner(stash.owner, user) : stash.ownerId === user.id
+}
+
+const isStamps = (v: unknown) => !!v && typeof v === 'object' && !Array.isArray(v) && Object.values(v).every((x) => typeof x === 'number')
+
+/**
+ * Bring the stash of the signed-in account back by merging it into the current data: stamps and
+ * tombstones of both sides count, nothing the account has and the stash lacks is deleted. The
+ * result is uploaded like any local change.
+ *
+ * The stash is removed before the merged data is written, so localStorage needs room for one
+ * copy, not two. If even that fails, data and stash go back as they were.
+ */
+export function recoverStash(): 'ok' | 'none' | 'invalid' | 'storage' {
+  const stash = readStash()
+  if (!stash || !canRestoreStash(stash)) return 'none'
+  try {
+    parseBackup(JSON.stringify(stash.doc.state))
+  } catch {
+    return 'invalid'
+  }
+  if (!isStamps(stash.doc.stamps) || !isStamps(stash.doc.tombstones)) return 'invalid'
+  const before = toDoc()
+  const merged = merge(before, stash.doc)
+  const raw = rawStash()
+  discardStash()
+  try {
+    applyDoc(merged)
+  } catch {
+    try {
+      applyDoc(before)
+    } catch {
+      /* the previous data is still what localStorage holds */
+    }
+    if (raw) writeRawStash(raw)
+    return 'storage'
+  }
+  schedulePush()
+  return 'ok'
 }
 
 const emptyDoc = (): SyncDoc => ({ v: 2, state: emptyState() as unknown as Record<string, unknown>, stamps: {}, tombstones: {} })

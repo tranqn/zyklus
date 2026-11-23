@@ -355,7 +355,7 @@ test('settings: data from before an account switch can be restored or discarded'
   await stash(false)
   await page.goto('/#/einstellungen')
   await restore.click()
-  await expect(page.getByText('Sicherung wiederhergestellt')).toBeVisible()
+  await expect(page.getByText('Vorherige Gerätedaten übernommen')).toBeVisible()
   await expect(restore).toHaveCount(0)
   expect(await page.evaluate(() => [localStorage.getItem('zyklus-stash'), JSON.parse(localStorage.getItem('zyklus-v1')!).state.kcalAdjustment])).toEqual([null, 123])
 

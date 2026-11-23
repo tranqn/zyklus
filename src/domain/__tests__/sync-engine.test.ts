@@ -14,9 +14,17 @@ class MemStorage {
   private m = new Map<string, string>()
   /** simulates a full localStorage for the stash */
   full = false
+  /** total characters (keys and values) it holds at most, like the browser's localStorage quota */
+  quota = Infinity
+  /** per entry: largest value it accepts (a quota that only bites for one key) */
+  maxItem: Record<string, number> = {}
+  used = () => [...this.m].reduce((n, [k, v]) => n + k.length + v.length, 0)
   getItem = (k: string) => this.m.get(k) ?? null
   setItem = (k: string, v: string) => {
     if (this.full && k === 'zyklus-stash') throw new Error('QuotaExceededError')
+    if (String(v).length > (this.maxItem[k] ?? Infinity)) throw new Error('QuotaExceededError')
+    const old = this.m.get(k)
+    if (this.used() - (old == null ? 0 : k.length + old.length) + k.length + String(v).length > this.quota) throw new Error('QuotaExceededError')
     this.m.set(k, String(v))
   }
   removeItem = (k: string) => void this.m.delete(k)
@@ -670,6 +678,59 @@ describe('sync engine: restoring the stash', () => {
       wipe()
       expect(d.storage.getItem('zyklus-stash')).toBeNull()
     }
+  })
+
+  it('merges the stash in: what the account has and the stash lacks stays, and the result is uploaded', async () => {
+    const { d, x } = await ambiguous()
+    expect(names(d.s.foods)).toEqual(['Konto'])
+    const { restoreStash } = await import('../../sync/restore')
+    expect(restoreStash()).toBe(true)
+    expect(names(d.s.foods).sort()).toEqual(['Konto', 'Lokal'])
+    expect(Object.keys(d.s.syncMeta.tombstones)).toEqual([])
+    await vi.advanceTimersByTimeAsync(2000)
+    await settle()
+    expect(names(server.doc(x)!.data.state.foods as never).sort()).toEqual(['Konto', 'Lokal'])
+  })
+
+  /** a large stash: 300 entries */
+  async function bigAmbiguous() {
+    const x = server.add('x@example.test')
+    server.docs.set(x.id, { rev: 1, data: docWith('Konto') })
+    server.session = x.id
+    const storage = new MemStorage()
+    const foods = Array.from({ length: 300 }, (_, i) => ({ id: `l${i}`, ...meal(`Lokal ${i}`) }))
+    storage.setItem('zyklus-sync', JSON.stringify({ state: { ownerId: x.id, rev: 1 }, version: 0 }))
+    storage.setItem('zyklus-v1', JSON.stringify({ state: { foods, syncMeta: { stamps: Object.fromEntries(foods.map((f) => [`i:foods:${f.id}`, T0 - 5000])), tombstones: {} } }, version: 1 }))
+    const d = await device(storage)
+    await d.engine.checkSession()
+    await d.sync()
+    return { d, storage, stashLength: storage.getItem('zyklus-stash')!.length }
+  }
+
+  it('restores a large stash when localStorage has room for one copy of it, not two', async () => {
+    const { d, storage, stashLength } = await bigAmbiguous()
+    storage.quota = storage.used() + Math.round(stashLength * 0.5)
+    const { restoreStash } = await import('../../sync/restore')
+    expect(restoreStash()).toBe(true)
+    expect(d.s.foods).toHaveLength(301)
+    expect(storage.getItem('zyklus-stash')).toBeNull()
+  })
+
+  it('reports a full storage and changes nothing when even one copy does not fit', async () => {
+    const { d, storage } = await bigAmbiguous()
+    storage.maxItem['zyklus-v1'] = storage.getItem('zyklus-v1')!.length + 100
+    const before = canon(d.doc())
+    const raw = storage.getItem('zyklus-stash')
+    const { restoreStash } = await import('../../sync/restore')
+    const { onToast } = await import('../../ui/notify')
+    const { t } = await import('../../i18n')
+    const toasts: string[] = []
+    const off = onToast((m) => toasts.push(m))
+    expect(restoreStash()).toBe(false)
+    off()
+    expect(toasts).toEqual([t('more.settings.storageFull')])
+    expect(canon(d.doc())).toBe(before)
+    expect(storage.getItem('zyklus-stash')).toBe(raw)
   })
 
   it('keeps a stash that does not pass the backup check, and ignores a broken one', async () => {

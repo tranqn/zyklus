@@ -1,7 +1,7 @@
 import { useStore } from '../store'
 import { t } from '../i18n'
 import { toast } from '../ui/notify'
-import { canRestoreStash, discardStash, readStash } from './engine'
+import { recoverStash } from './engine'
 
 /**
  * Restore a backup file (the settings' "restore backup"). importData validates the whole file
@@ -18,10 +18,14 @@ export function restoreBackup(json: string): boolean {
   return true
 }
 
-/** Bring back the data the device held before it started clean for another account (see engine). */
+/**
+ * Bring back the data the device held before it started clean (see recoverStash): merged into
+ * the account's data, unlike a backup file, which replaces it.
+ */
 export function restoreStash(): boolean {
-  const stash = readStash()
-  if (!stash || !canRestoreStash(stash) || !restoreBackup(JSON.stringify(stash.doc.state))) return false
-  discardStash()
-  return true
+  const result = recoverStash()
+  if (result === 'ok') toast(t('more.settings.stashRestored'))
+  else if (result === 'invalid') toast(t('more.settings.badBackup'))
+  else if (result === 'storage') toast(t('more.settings.storageFull'))
+  return result === 'ok'
 }
