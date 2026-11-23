@@ -442,6 +442,23 @@ describe('sync engine: legacy binding (ownerId only, written by older bundles)',
     expect(d.storage.getItem('zyklus-stash')).toBeNull()
   })
 
+  it('opened offline first: the next sync checks the session, binds and syncs (no reload needed)', async () => {
+    const x = server.add('x@example.test')
+    server.session = x.id
+    server.online = false
+    const d = await device(legacyDevice(x, { user: pub(x) }))
+    await d.engine.checkSession()
+    expect(d.engine.useSync.getState().user).toBeDefined()
+    expect(d.s.owner).toBeUndefined()
+    server.online = true
+    // what the online event, a visible tab, the interval or "sync now" do
+    await d.engine.syncNow()
+    await settle()
+    await d.sync()
+    expect(d.s.owner).toEqual({ origin: ORIGIN, id: x.id, createdAt: x.createdAt })
+    expect(names(server.doc(x)?.data.state.foods as never)).toEqual(['Lokal'])
+  })
+
   it('stashes and starts clean when the cached user is a deleted account with the same id, whatever the clock says', async () => {
     const x = server.add('x@example.test')
     const d = await signIn(legacyDevice(x, { user: pub({ id: x.id, createdAt: x.createdAt - DAY }), lastSyncedAt: x.createdAt + DAY }), x)

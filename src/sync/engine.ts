@@ -225,7 +225,12 @@ async function pushNow(): Promise<void> {
 
 /** Fetch the server copy, merge it in, upload if this device had something new. */
 async function pullNow(): Promise<void> {
-  if (!bound()) return
+  if (!bound()) {
+    // A cached user without a matching binding (this version first opened offline, or data of
+    // another account in the store): ask the server whose session it is, then adopt.
+    if (useSync.getState().user) recheckSession()
+    return
+  }
   const gen = generation
   useSync.setState({ status: 'syncing' })
   try {
