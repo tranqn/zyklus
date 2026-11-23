@@ -4,7 +4,7 @@ import { DATA_KEYS, emptyState, parseBackup, useStore, type DataOwner, type Stat
 import { api, ApiError, apiMessage, configureApi, LocalError, type PublicUser } from './api'
 import { tk } from '../i18n'
 import { canon, isCollection, itemId, merge, sameDoc as same, track, type SyncDoc } from './merge'
-import { discardStash, putStash, rawStash, readStash, readStashes, removeStash, stashKey, writeRawStash, type Stash } from './stash'
+import { discardStash, putStashNow, rawStash, readStash, readStashes, removeStash, removeStashNow, stashKey, withStashLock, writeRawStash, type Stash } from './stash'
 import { toast } from '../ui/notify'
 
 type Status = 'idle' | 'pending' | 'syncing' | 'ok' | 'offline' | 'error'
@@ -193,32 +193,35 @@ export function importBackup(json: string): 'ok' | 'invalid' | 'storage' {
  * The stash is removed before the merged data is written, so localStorage needs room for one
  * copy, not two. If even that fails, data and stash go back as they were.
  */
-export function recoverStash(key?: string): 'ok' | 'none' | 'invalid' | 'storage' {
-  const stash = readStashes().find((s) => (key ? stashKey(s) === key : canRestoreStash(s)))
-  if (!stash || !canRestoreStash(stash)) return 'none'
-  try {
-    parseBackup(JSON.stringify(stash.doc.state))
-  } catch {
-    return 'invalid'
-  }
-  if (!isStamps(stash.doc.stamps) || !isStamps(stash.doc.tombstones)) return 'invalid'
-  const before = toDoc()
-  const merged = merge(before, stash.doc)
-  const raw = rawStash()
-  removeStash(stashKey(stash))
-  try {
-    applyDoc(merged)
-  } catch {
+export async function recoverStash(key?: string): Promise<'ok' | 'none' | 'invalid' | 'storage'> {
+  const result = await withStashLock(() => {
+    const stash = readStashes().find((s) => (key ? stashKey(s) === key : canRestoreStash(s)))
+    if (!stash || !canRestoreStash(stash)) return 'none'
     try {
-      applyDoc(before)
+      parseBackup(JSON.stringify(stash.doc.state))
     } catch {
-      /* the previous data is still what localStorage holds */
+      return 'invalid'
     }
-    if (raw) writeRawStash(raw)
-    return 'storage'
-  }
-  schedulePush()
-  return 'ok'
+    if (!isStamps(stash.doc.stamps) || !isStamps(stash.doc.tombstones)) return 'invalid'
+    const before = toDoc()
+    const merged = merge(before, stash.doc)
+    const raw = rawStash()
+    removeStashNow(stashKey(stash))
+    try {
+      applyDoc(merged)
+    } catch {
+      try {
+        applyDoc(before)
+      } catch {
+        /* the previous data is still what localStorage holds */
+      }
+      if (raw) writeRawStash(raw)
+      return 'storage'
+    }
+    return 'ok'
+  })
+  if (result === 'ok') schedulePush()
+  return result
 }
 
 const emptyDoc = (): SyncDoc => ({ v: 2, state: emptyState() as unknown as Record<string, unknown>, stamps: {}, tombstones: {} })
@@ -226,27 +229,30 @@ const EMPTY_STATE = canon(toDoc(emptyState()).state)
 const hasData = (d: SyncDoc) => Object.keys(d.stamps).length > 0 || Object.keys(d.tombstones).length > 0 || canon(d.state) !== EMPTY_STATE
 
 /**
- * Keep the local data in the stash, then start clean. The store is emptied first, which frees
- * the room in localStorage the stash needs. If it still cannot be written the data goes back
- * and the switch is refused: losing it silently is worse than not switching accounts.
+ * Keep the local data in the stash, then start clean for `incoming`, all in one synchronous step
+ * under the stash lock. The store is emptied first, which frees the room in localStorage the
+ * stash needs. If it still cannot be written the data goes back and the switch is refused:
+ * losing it silently is worse than not switching accounts.
  */
-function stashAndClean(owner: Owner | undefined, ownerId: number | undefined, incoming: PublicUser) {
-  const doc = toDoc()
-  const rev = useStore.getState().rev
-  applyDoc(emptyDoc(), { rev: 0 })
-  // the entries of the account signing in survive, whatever else has to go
-  const keep = [stashKey({ owner: ownerOf(incoming), savedAt: 0 }), stashKey({ ownerId: incoming.id, savedAt: 0 })]
-  let kept: boolean
-  try {
-    kept = !hasData(doc) || putStash({ savedAt: Date.now(), owner, ownerId: owner ? undefined : ownerId, doc }, keep)
-  } catch {
-    // whatever went wrong, the data must not stay cleared
-    kept = false
-  }
-  if (!kept) {
-    applyDoc(doc, { rev })
-    throw new LocalError('switch_refused', 'Kontowechsel abgebrochen: nicht genug Speicher für die bisherigen Daten.')
-  }
+async function stashAndClean(owner: Owner | undefined, ownerId: number | undefined, incoming: PublicUser) {
+  const kept = await withStashLock(() => {
+    // read now, not before waiting for the lock: the data may have changed meanwhile
+    const doc = toDoc()
+    const { rev, owner: previous } = useStore.getState()
+    applyDoc(emptyDoc(), { rev: 0, owner: ownerOf(incoming) })
+    // the entries of the account signing in survive, whatever else has to go
+    const keep = [stashKey({ owner: ownerOf(incoming), savedAt: 0 }), stashKey({ ownerId: incoming.id, savedAt: 0 })]
+    let ok: boolean
+    try {
+      ok = !hasData(doc) || putStashNow({ savedAt: Date.now(), owner, ownerId: owner ? undefined : ownerId, doc }, keep)
+    } catch {
+      // whatever went wrong, the data must not stay cleared
+      ok = false
+    }
+    if (!ok) applyDoc(doc, { rev, owner: previous })
+    return ok
+  })
+  if (!kept) throw new LocalError('switch_refused', 'Kontowechsel abgebrochen: nicht genug Speicher für die bisherigen Daten.')
   useSync.setState({ lastSyncedAt: undefined })
 }
 
@@ -403,7 +409,7 @@ async function adopt(user: PublicUser) {
   const s = useSync.getState()
   const owner = dataOwner()
   // every sign-in counts: a session check or sync started before it must not apply its answer
-  generation++
+  const gen = ++generation
   if (!sameOwner(owner, user)) {
     // Legacy binding: the cached user was issued by the server together with ownerId, so its id
     // and createdAt prove the account (no device clock involved). Without it (an old logout that
@@ -416,7 +422,11 @@ async function adopt(user: PublicUser) {
     // the identity of what gets stashed: the owner, or for a legacy binding the cached user that
     // came with it (id and createdAt); only without one is it known by id alone
     const identity = owner ?? (legacy && cached && cached.id === s.ownerId ? ownerOf(cached) : undefined)
-    if (!legacySame && !unbound) stashAndClean(identity, legacy && !identity ? s.ownerId : undefined, user)
+    if (!legacySame && !unbound) {
+      await stashAndClean(identity, legacy && !identity ? s.ownerId : undefined, user)
+      // a later sign-in overtook this one while it waited for the stash lock: that one decides
+      if (gen !== generation) return
+    }
     // data kept from an older version: its revision is read once from zyklus-sync
     else if (useStore.getState().rev === undefined) setBinding({ rev: s.rev ?? 0 })
     setBinding({ owner: ownerOf(user) })

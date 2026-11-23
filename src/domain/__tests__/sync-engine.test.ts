@@ -687,7 +687,7 @@ describe('sync engine: restoring the stash', () => {
     const { d, x } = await ambiguous()
     expect(d.engine.canRestoreStash()).toBe(true)
     const { restoreStash } = await import('../../sync/restore')
-    expect(restoreStash()).toBe(true)
+    expect(await restoreStash()).toBe(true)
     await d.sync()
     expect(names(d.s.foods)).toContain('Lokal')
     expect(names(server.doc(x)!.data.state.foods as never)).toContain('Lokal')
@@ -699,11 +699,11 @@ describe('sync engine: restoring the stash', () => {
     expect(d.engine.readStash()).toBeDefined()
     const { restoreStash } = await import('../../sync/restore')
     const before = canon(d.doc())
-    restoreStash()
+    await restoreStash()
     await d.sync()
     expect(names(server.doc(y)!.data.state.foods as never)).toEqual(['Y-Essen'])
     expect(canon(d.doc())).toBe(before)
-    expect(restoreStash()).toBe(false)
+    expect(await restoreStash()).toBe(false)
     expect(d.engine.canRestoreStash()).toBe(false)
     expect(d.engine.readStash()).toBeDefined()
     d.engine.discardStash()
@@ -725,7 +725,7 @@ describe('sync engine: restoring the stash', () => {
     const { d, x } = await ambiguous()
     expect(names(d.s.foods)).toEqual(['Konto'])
     const { restoreStash } = await import('../../sync/restore')
-    expect(restoreStash()).toBe(true)
+    expect(await restoreStash()).toBe(true)
     expect(names(d.s.foods).sort()).toEqual(['Konto', 'Lokal'])
     expect(Object.keys(d.s.syncMeta.tombstones)).toEqual([])
     await vi.advanceTimersByTimeAsync(2000)
@@ -752,7 +752,7 @@ describe('sync engine: restoring the stash', () => {
     const { d, storage, stashLength } = await bigAmbiguous()
     storage.quota = storage.used() + Math.round(stashLength * 0.5)
     const { restoreStash } = await import('../../sync/restore')
-    expect(restoreStash()).toBe(true)
+    expect(await restoreStash()).toBe(true)
     expect(d.s.foods).toHaveLength(301)
     expect(storage.getItem('zyklus-stash')).toBeNull()
   })
@@ -767,7 +767,7 @@ describe('sync engine: restoring the stash', () => {
     const { t } = await import('../../i18n')
     const toasts: string[] = []
     const off = onToast((m) => toasts.push(m))
-    expect(restoreStash()).toBe(false)
+    expect(await restoreStash()).toBe(false)
     off()
     expect(toasts).toEqual([t('more.settings.storageFull')])
     expect(canon(d.doc())).toBe(before)
@@ -779,7 +779,7 @@ describe('sync engine: restoring the stash', () => {
     const { restoreStash } = await import('../../sync/restore')
     d.storage.setItem('zyklus-stash', oneStash({ savedAt: 1, ownerId: x.id, doc: { v: 2, state: { sessions: [] }, stamps: {}, tombstones: {} } }))
     const before = canon(d.doc())
-    expect(restoreStash()).toBe(false)
+    expect(await restoreStash()).toBe(false)
     expect(canon(d.doc())).toBe(before)
     expect(d.engine.readStash()).toBeDefined()
     d.storage.setItem('zyklus-stash', 'kaputt')
@@ -993,6 +993,37 @@ describe('sync engine: one stash per account', () => {
     expect(d.engine.useSync.getState().user?.email).toBe('y@example.test')
     expect(names(stashOf(d.storage)!.doc.state.foods as never)).toEqual(['X-Essen'])
     expect(d.engine.readStashes()).toHaveLength(1)
+  })
+
+  it('reads, changes and writes the stash only while holding the browser-wide lock', async () => {
+    server.add('x@example.test')
+    const y = server.add('y@example.test')
+    const d = await device()
+    await d.engine.login('x@example.test', 'pw')
+    d.s.addFood(meal('X-Essen'))
+    await d.sync()
+    // Web Locks stand-in: every request waits until the test grants it, as if another tab held it
+    const requested: string[] = []
+    const grants: (() => void)[] = []
+    vi.stubGlobal('navigator', {
+      locks: {
+        request: (name: string, cb: () => unknown) => {
+          requested.push(name)
+          return new Promise((resolve, reject) => grants.push(() => Promise.resolve().then(cb).then(resolve, reject)))
+        },
+      },
+    })
+    server.session = y.id
+    const check = d.engine.checkSession()
+    await settle()
+    expect(requested).toEqual(['zyklus-stash'])
+    // while another tab holds the lock nothing is read, cleared or written
+    expect(d.storage.getItem('zyklus-stash')).toBeNull()
+    expect(names(d.s.foods)).toEqual(['X-Essen'])
+    grants.shift()!()
+    await check
+    expect(names(stashOf(d.storage)!.doc.state.foods as never)).toEqual(['X-Essen'])
+    expect(d.s.owner?.id).toBe(y.id)
   })
 
   it('keeps at most three entries, dropping the oldest but never the incoming account\'s', async () => {

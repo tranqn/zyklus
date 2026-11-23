@@ -95,17 +95,33 @@ export function writeRawStash(raw: string): boolean {
 
 const write = (entries: Stash[]) => (entries.length ? writeRawStash(JSON.stringify({ entries })) : (discardStash(), true))
 
-/** Remove one entry. */
-export function removeStash(key: string): boolean {
+/**
+ * Run `fn` while holding the browser-wide lock "zyklus-stash", so two tabs never interleave their
+ * read-modify-write of the stash. `fn` itself runs synchronously. Without the Web Locks API it
+ * runs right away, as before.
+ */
+export async function withStashLock<T>(fn: () => T): Promise<T> {
+  const locks = typeof navigator !== 'undefined' ? navigator.locks : undefined
+  if (!locks?.request) return fn()
+  return (await locks.request('zyklus-stash', () => fn())) as T
+}
+
+/** Remove one entry (call inside withStashLock). */
+export function removeStashNow(key: string): boolean {
   return write(readStashes().filter((s) => stashKey(s) !== key))
 }
 
+export const removeStash = (key: string) => withStashLock(() => removeStashNow(key))
+
+/** See putStashNow; under the lock. */
+export const putStash = (next: Stash, keep: string[] = []) => withStashLock(() => putStashNow(next, keep))
+
 /**
- * Keep `next` in the stash. An entry of the same account (two tabs that both switched away from
- * it) is merged in, so neither tab's unsynced edits are lost. Beyond three entries the oldest go,
- * but never those listed in `keep` (the account signing in).
+ * Keep `next` in the stash (call inside withStashLock). An entry of the same account (two tabs
+ * that both switched away from it) is merged in, so neither tab's unsynced edits are lost. Beyond
+ * three entries the oldest go, but never those listed in `keep` (the account signing in).
  */
-export function putStash(next: Stash, keep: string[] = []): boolean {
+export function putStashNow(next: Stash, keep: string[] = []): boolean {
   const key = stashKey(next)
   const all = readStashes()
   const prev = all.find((s) => stashKey(s) === key)

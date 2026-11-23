@@ -521,13 +521,13 @@ export function SettingsPage() {
         {stashes.map((st) => (
           <div key={stashKey(st)} className="flex flex-col gap-2">
             {canRestoreStash(st) ? (
-              <Button variant="secondary" className="h-auto whitespace-normal py-2.5 text-center leading-tight" onClick={() => restoreStash(stashKey(st)) && setStashes(readStashes())}>
+              <Button variant="secondary" className="h-auto whitespace-normal py-2.5 text-center leading-tight" onClick={() => restoreStash(stashKey(st)).then(() => setStashes(readStashes()))}>
                 {tr('more.settings.stashRestore', { date: stashDate(st.savedAt) })}
               </Button>
             ) : (
               <p className="text-[0.85rem] text-muted-foreground">{tr('more.settings.stashForeign', { date: stashDate(st.savedAt) })}</p>
             )}
-            <Button variant="outline" onClick={() => confirmAction(tr('more.settings.stashDiscardConfirm')) && (removeStash(stashKey(st)), setStashes(readStashes()))}>
+            <Button variant="outline" onClick={() => confirmAction(tr('more.settings.stashDiscardConfirm')) && removeStash(stashKey(st)).then(() => setStashes(readStashes()))}>
               {tr('more.settings.stashDiscard')}
             </Button>
           </div>
