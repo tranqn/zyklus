@@ -416,35 +416,43 @@ describe('sync engine: account binding', () => {
 
 describe('sync engine: legacy binding (ownerId only, written by older bundles)', () => {
   const DAY = 86_400_000
-  function legacyDevice(x: Account, sync: { lastSyncedAt?: number }) {
+  const pub = (a: { id: number; createdAt: number }) => ({ id: a.id, email: 'x@example.test', verified: true, createdAt: a.createdAt, locale: 'de' })
+  function legacyDevice(x: Account, sync: { user?: ReturnType<typeof pub>; lastSyncedAt?: number }) {
     const storage = new MemStorage()
-    const pub = { id: x.id, email: x.email, verified: true, createdAt: x.createdAt, locale: 'de' }
-    storage.setItem('zyklus-sync', JSON.stringify({ state: { user: pub, ownerId: x.id, rev: 1, ...sync }, version: 0 }))
+    storage.setItem('zyklus-sync', JSON.stringify({ state: { ownerId: x.id, rev: 1, ...sync }, version: 0 }))
     const food = { id: 'l1', ...meal('Lokal') }
     storage.setItem('zyklus-v1', JSON.stringify({ state: { foods: [food], syncMeta: { stamps: { 'i:foods:l1': x.createdAt + DAY }, tombstones: {} } }, version: 1 }))
     return storage
   }
-
-  it('upgrades the binding silently when the device synced after the account was created', async () => {
-    const x = server.add('x@example.test')
+  async function signIn(storage: MemStorage, x: Account) {
     server.docs.set(x.id, { rev: 1, data: docWith('Konto') })
     server.session = x.id
-    const d = await device(legacyDevice(x, { lastSyncedAt: x.createdAt + DAY }))
+    const d = await device(storage)
     await d.engine.checkSession()
     await d.sync()
+    return d
+  }
+
+  it('upgrades the binding silently when the cached user is the same account (id and createdAt)', async () => {
+    const x = server.add('x@example.test')
+    // no lastSyncedAt: the device clock is not consulted
+    const d = await signIn(legacyDevice(x, { user: pub(x) }), x)
     expect(names(d.s.foods).sort()).toEqual(['Konto', 'Lokal'])
     expect(d.s.owner).toEqual({ origin: ORIGIN, id: x.id, createdAt: x.createdAt })
     expect(d.storage.getItem('zyklus-stash')).toBeNull()
   })
 
-  it('stashes the data and starts clean when the binding cannot be proven', async () => {
+  it('stashes and starts clean when the cached user is a deleted account with the same id, whatever the clock says', async () => {
     const x = server.add('x@example.test')
-    server.docs.set(x.id, { rev: 1, data: docWith('Konto') })
-    server.session = x.id
-    // an old bundle's logout clears lastSyncedAt
-    const d = await device(legacyDevice(x, {}))
-    await d.engine.checkSession()
-    await d.sync()
+    const d = await signIn(legacyDevice(x, { user: pub({ id: x.id, createdAt: x.createdAt - DAY }), lastSyncedAt: x.createdAt + DAY }), x)
+    expect(names(d.s.foods)).toEqual(['Konto'])
+    expect(names(stashOf(d.storage)!.doc.state.foods as never)).toEqual(['Lokal'])
+    expect(names(server.doc(x)!.data.state.foods as never)).toEqual(['Konto'])
+  })
+
+  it('stashes and starts clean without a cached user (an old logout that kept the data)', async () => {
+    const x = server.add('x@example.test')
+    const d = await signIn(legacyDevice(x, { lastSyncedAt: x.createdAt + DAY }), x)
     expect(names(d.s.foods)).toEqual(['Konto'])
     expect(names(stashOf(d.storage)!.doc.state.foods as never)).toEqual(['Lokal'])
     expect(names(server.doc(x)!.data.state.foods as never)).toEqual(['Konto'])

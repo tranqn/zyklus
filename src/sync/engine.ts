@@ -284,16 +284,20 @@ export function startSync(): () => void {
  *
  * - bound to this account: keep it
  * - bound to another account: stash it and start clean
- * - legacy binding by id only: the same account only if the device synced after the account was
- *   created (an account re-created with the same id is younger); then the binding is upgraded,
- *   otherwise it is ambiguous: stash and start clean
+ * - legacy binding by id only: the same account only if the cached user matches in id and
+ *   createdAt (an account re-created with the same id has another createdAt); then the binding is
+ *   upgraded, otherwise it is ambiguous: stash and start clean
  * - not bound at all (used before signing in): the local data joins the account
  */
 async function adopt(user: PublicUser) {
   const s = useSync.getState()
   const owner = dataOwner()
   if (!sameOwner(owner, user)) {
-    const legacySame = !owner && s.ownerId === user.id && s.lastSyncedAt != null && s.lastSyncedAt >= user.createdAt
+    // Legacy binding: the cached user was issued by the server together with ownerId, so its id
+    // and createdAt prove the account (no device clock involved). Without it (an old logout that
+    // kept the data) the case is ambiguous.
+    const cached = s.user
+    const legacySame = !owner && s.ownerId === user.id && !!cached && cached.id === user.id && cached.createdAt === user.createdAt
     const unbound = !owner && s.ownerId == null
     generation++
     window.clearTimeout(pushTimer)
