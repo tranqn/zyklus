@@ -158,6 +158,13 @@ const initial: State = {
   syncMeta: { stamps: {}, tombstones: {} },
 }
 
+function unbooked(f: FoodEntry): FoodEntry {
+  const out = { ...f }
+  delete out.planSlot
+  delete out.booking
+  return out
+}
+
 function mapActive(s: State, exKey: string, fn: (sets: SetEntry[]) => SetEntry[]): Partial<State> {
   if (!s.active) return {}
   return {
@@ -354,9 +361,13 @@ export const useStore = create<State & Actions>()(
         set((s) => ({ mealPlan: s.mealPlan.map((p) => (p.id === id ? { ...p, ...patch } : p)) }))
       },
       logPlannedMeal(id, entries) {
+        // One booking per slot: a fresh booking id, entries with ids derived from it, and the
+        // slot's earlier entries removed. When two devices book the same slot, the merge keeps
+        // the entries of the booking whose plan item wins (see normalize in sync/merge.ts).
+        const booking = uid()
         set((s) => ({
-          foods: [...s.foods, ...entries.map((e) => ({ ...e, id: uid() }))],
-          mealPlan: s.mealPlan.map((p) => (p.id === id ? { ...p, logged: true } : p)),
+          foods: [...s.foods.filter((f) => f.planSlot !== id), ...entries.map((e, n) => ({ ...e, id: `mp:${id}:${booking}:${n}`, planSlot: id, booking }))],
+          mealPlan: s.mealPlan.map((p) => (p.id === id ? { ...p, logged: true, booking } : p)),
         }))
       },
       toggleShopping(key) {
@@ -419,7 +430,8 @@ export const useStore = create<State & Actions>()(
       },
       copyMeal(fromDate, toDate, meal) {
         const src = get().foods.filter((f) => f.date === fromDate && f.meal === meal)
-        set((s) => ({ foods: [...s.foods, ...src.map((f) => ({ ...f, id: uid(), date: toDate }))] }))
+        // a copy is an ordinary entry, not part of the planned meal's booking
+        set((s) => ({ foods: [...s.foods, ...src.map((f) => ({ ...unbooked(f), id: uid(), date: toDate }))] }))
         return src.length
       },
 

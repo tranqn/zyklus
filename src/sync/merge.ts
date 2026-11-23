@@ -135,7 +135,36 @@ export function merge(local: SyncDoc, remote: SyncDoc, opts: MergeOptions = {}):
     if (by) out.sort((x, y) => cmp(String(x[by]), String(y[by])) || cmp(itemId(key, x), itemId(key, y)))
     state[key] = out
   }
-  return { v: 2, state, stamps, tombstones }
+  const normal = normalize(state)
+  if (normal.foods !== state.foods) {
+    // Entries of a losing booking get a tombstone too, at least as new as both the entry and the
+    // winning plan slot: once the slot is pruned, a device still holding them must not revive them.
+    const kept = new Set((normal.foods as Item[]).map((f) => itemId('foods', f)))
+    for (const f of state.foods as Item[]) {
+      const id = itemId('foods', f)
+      if (kept.has(id)) continue
+      const slot = stamps[`i:mealPlan:${String(f.planSlot)}`] ?? 0
+      tombstones[`foods:${id}`] = Math.max(tombstones[`foods:${id}`] ?? 0, stamps[`i:foods:${id}`] ?? 0, slot)
+    }
+  }
+  return { v: 2, state: normal, stamps, tombstones }
+}
+
+/**
+ * A planned meal is booked as a unit (see logPlannedMeal): its diary entries carry `planSlot` and
+ * `booking`, the plan item the booking that counts. Two devices that booked the same slot offline
+ * both bring their entries; the plan item that won the merge decides, entries of any other booking
+ * of that slot are dropped. Pure and deterministic, run at the end of every merge.
+ */
+export function normalize(state: Record<string, unknown>): Record<string, unknown> {
+  const plan = state.mealPlan
+  const foods = state.foods
+  if (!Array.isArray(plan) || !Array.isArray(foods)) return state
+  const booked = new Map<string, unknown>()
+  for (const p of plan as Item[]) if (typeof p.booking === 'string') booked.set(String(p.id), p.booking)
+  if (!booked.size) return state
+  const kept = (foods as Item[]).filter((f) => typeof f.planSlot !== 'string' || !booked.has(f.planSlot) || booked.get(f.planSlot) === f.booking)
+  return kept.length === foods.length ? state : { ...state, foods: kept }
 }
 
 /** Same content, whatever the key order (canonical JSON). */

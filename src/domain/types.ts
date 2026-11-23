@@ -231,6 +231,10 @@ export interface FoodEntry {
   name: string
   grams: number
   per100: Macros
+  /** id of the planned meal this entry was booked from (see logPlannedMeal) */
+  planSlot?: string
+  /** the booking it belongs to; only entries of the slot's current booking count */
+  booking?: string
 }
 
 export interface WeightEntry {

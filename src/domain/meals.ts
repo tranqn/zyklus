@@ -171,6 +171,8 @@ export interface PlannedMeal {
   dishId: string
   factor: number
   logged?: boolean
+  /** the booking whose diary entries count for this slot (see logPlannedMeal) */
+  booking?: string
 }
 
 /** Small seeded PRNG (mulberry32): the same week and seed always give the same plan. */

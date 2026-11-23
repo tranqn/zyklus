@@ -481,3 +481,42 @@ describe('sync engine: document version', () => {
     expect(translate('de', 'account.apiError.client_outdated')).toMatch(/Bitte lade die App neu/)
   })
 })
+
+describe('sync engine: a planned meal is booked as a unit', () => {
+  it('two devices book different dishes for the same slot offline: the diary holds exactly the winning booking', async () => {
+    server.add('a@example.test')
+    const a = await device()
+    await a.engine.login('a@example.test', 'pw')
+    const b = await device()
+    await b.engine.login('a@example.test', 'pw')
+    const date = '2026-11-02'
+    const slot = { id: `${date}|mittag|0`, date, meal: 'mittag' as const, dishId: 'porridge', factor: 1 }
+    a.s.setMealPlan([date], [slot])
+    await a.sync()
+    await b.sync()
+    expect(b.s.mealPlan.map((p) => p.id)).toEqual([slot.id])
+
+    const items = (list: [string, number, number][]) => list.map(([name, grams, kcal]) => ({ date, meal: 'mittag' as const, name, grams, per100: { kcal, protein: 1, carbs: 1, fat: 1 } }))
+    server.online = false
+    a.s.logPlannedMeal(slot.id, items([['Hafer', 60, 370], ['Milch', 250, 64], ['Beeren', 80, 40]]))
+    await vi.advanceTimersByTimeAsync(1000)
+    // the other device swapped the dish first, then booked it a moment later
+    b.s.updatePlannedMeal(slot.id, { dishId: 'reis-huhn' })
+    b.s.logPlannedMeal(slot.id, items([['Reis', 150, 130], ['Huhn', 120, 110]]))
+    await a.sync()
+    await b.sync()
+    server.online = true
+    await a.sync()
+    await b.sync()
+    await a.sync()
+
+    for (const d of [a, b]) {
+      const diary = d.s.foods.filter((f) => f.date === date)
+      expect(names(diary)).toEqual(['Reis', 'Huhn'])
+      expect(diary.reduce((sum, f) => sum + (f.grams * f.per100.kcal) / 100, 0)).toBe(195 + 132)
+      expect(d.s.mealPlan[0]).toMatchObject({ dishId: 'reis-huhn', logged: true })
+    }
+    const stored = server.doc(server.accounts[0])!.data.state.foods as { name: string }[]
+    expect(names(stored)).toEqual(['Reis', 'Huhn'])
+  })
+})

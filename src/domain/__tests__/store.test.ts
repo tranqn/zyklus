@@ -41,3 +41,36 @@ describe('store: recipes, supplements, measurements', () => {
     expect(useStore.getState().measurements.map((m) => m.values.taille)).toEqual([84, 81.5])
   })
 })
+
+describe('store: planned meals', () => {
+  beforeEach(() => useStore.getState().reset())
+  const slot = { id: '2026-11-02|mittag|0', date: '2026-11-02', meal: 'mittag' as const, dishId: 'd', factor: 1 }
+  const entries = (...names: string[]) => names.map((name) => ({ date: slot.date, meal: slot.meal, name, grams: 100, per100 }))
+
+  it('books a planned meal as a unit with deterministic ids', () => {
+    useStore.getState().setMealPlan([slot.date], [slot])
+    useStore.getState().addFood({ date: slot.date, meal: 'mittag', name: 'Apfel', grams: 100, per100 })
+    useStore.getState().logPlannedMeal(slot.id, entries('Reis', 'Huhn'))
+    const s = useStore.getState()
+    const booking = s.mealPlan[0].booking!
+    expect(s.mealPlan[0]).toMatchObject({ logged: true, booking })
+    expect(s.foods.filter((f) => f.planSlot).map((f) => [f.id, f.booking])).toEqual([
+      [`mp:${slot.id}:${booking}:0`, booking],
+      [`mp:${slot.id}:${booking}:1`, booking],
+    ])
+    // booking the slot again replaces its entries, other entries stay
+    useStore.getState().logPlannedMeal(slot.id, entries('Nudeln'))
+    expect(useStore.getState().foods.map((f) => f.name)).toEqual(['Apfel', 'Nudeln'])
+  })
+
+  it('a copied planned meal is an ordinary entry, re-booking the slot keeps it', () => {
+    useStore.getState().setMealPlan([slot.date], [slot])
+    useStore.getState().logPlannedMeal(slot.id, entries('Reis'))
+    useStore.getState().copyMeal(slot.date, '2026-11-03', 'mittag')
+    const copy = useStore.getState().foods.find((f) => f.date === '2026-11-03')!
+    expect(copy.planSlot).toBeUndefined()
+    expect(copy.booking).toBeUndefined()
+    useStore.getState().logPlannedMeal(slot.id, entries('Nudeln'))
+    expect(useStore.getState().foods.map((f) => [f.date, f.name])).toEqual([['2026-11-03', 'Reis'], ['2026-11-02', 'Nudeln']])
+  })
+})

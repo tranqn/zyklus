@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canon, merge, track, type SyncDoc } from '../../sync/merge'
+import { canon, merge, normalize, track, type SyncDoc } from '../../sync/merge'
 
 const doc = (state: Record<string, unknown>, stamps = {}, tombstones = {}): SyncDoc => ({ v: 1, state, stamps, tombstones })
 const food = (id: string, grams = 100) => ({ id, name: id, grams, date: '2026-10-15' })
@@ -180,5 +180,31 @@ describe('merge: first sync (preferRemote)', () => {
     const fresh = doc({ kcalAdjustment: 200 }, { 's:kcalAdjustment': 10 })
     const account = doc({ kcalAdjustment: 50 }, { 's:kcalAdjustment': 5 })
     expect(merge(fresh, account, { preferRemote: true }).state.kcalAdjustment).toBe(200)
+  })
+})
+
+describe('normalize: one booking per planned meal', () => {
+  const slot = (booking?: string) => ({ id: 'd|mittag|0', date: 'd', meal: 'mittag', logged: !!booking, booking })
+  const entry = (id: string, booking: string) => ({ id, name: id, planSlot: 'd|mittag|0', booking })
+
+  it('drops diary entries of a slot that belong to another booking, and only those', () => {
+    const state = { mealPlan: [slot('b2')], foods: [entry('x1', 'b1'), entry('y1', 'b2'), food('frei'), entry('x2', 'b1'), entry('y2', 'b2')] }
+    const out = normalize(state)
+    expect((out.foods as { id: string }[]).map((f) => f.id)).toEqual(['y1', 'frei', 'y2'])
+    expect(normalize(out)).toEqual(out)
+    // a slot without a booking (not logged, or logged by an older version) keeps everything
+    expect(normalize({ mealPlan: [slot()], foods: state.foods })).toEqual({ mealPlan: [slot()], foods: state.foods })
+  })
+
+  it('merge applies it and tombstones the dropped entries, so they cannot come back later', () => {
+    const a = doc({ mealPlan: [slot('b1')], foods: [entry('x1', 'b1')] }, { 'i:mealPlan:d|mittag|0': 5, 'i:foods:x1': 5 })
+    const b = doc({ mealPlan: [slot('b2')], foods: [entry('y1', 'b2')] }, { 'i:mealPlan:d|mittag|0': 6, 'i:foods:y1': 6 })
+    const m = merge(a, b)
+    expect((m.state.foods as { id: string }[]).map((f) => f.id)).toEqual(['y1'])
+    expect(m.tombstones['foods:x1']).toBeGreaterThanOrEqual(5)
+    expect(canon(merge(b, a))).toBe(canon(m))
+    // even once the slot itself is gone, a device still holding the losing booking cannot bring it back
+    const pruned = doc({ mealPlan: [], foods: m.state.foods as never }, m.stamps, { ...m.tombstones, 'mealPlan:d|mittag|0': 9 })
+    expect((merge(a, pruned).state.foods as { id: string }[]).map((f) => f.id)).toEqual(['y1'])
   })
 })
