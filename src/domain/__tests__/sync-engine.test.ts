@@ -621,3 +621,15 @@ describe('sync engine: restoring the stash', () => {
     expect(d.engine.readStash()).toBeUndefined()
   })
 })
+
+describe('sync engine: error texts', () => {
+  it('every error code of the sync API has its own text in de, en and vi', async () => {
+    const { translate, LANGS } = await import('../../i18n')
+    for (const lang of LANGS) {
+      for (const code of ['account_mismatch', 'client_outdated', 'conflict']) {
+        const key = `account.apiError.${code}`
+        expect(translate(lang, key), `${lang} ${code}`).not.toBe(key)
+      }
+    }
+  })
+})

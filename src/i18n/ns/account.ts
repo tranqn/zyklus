@@ -84,6 +84,7 @@ export const account = ns({
       too_large: 'Deine Daten sind zu groß für die Synchronisierung.',
       conflict: 'Synchronisierung kollidiert wiederholt. Versuch es gleich nochmal.',
       client_outdated: 'Diese App-Version ist veraltet. Bitte lade die App neu, damit sie weiter synchronisiert.',
+      account_mismatch: 'Du wurdest in einem anderen Tab mit einem anderen Konto angemeldet. Die App wechselt zu diesem Konto.',
     },
   },
   en: {
@@ -168,6 +169,7 @@ export const account = ns({
       too_large: 'Your data is too large to sync.',
       conflict: 'Sync keeps colliding. Please try again in a moment.',
       client_outdated: 'This version of the app is out of date. Please reload the app to keep syncing.',
+      account_mismatch: 'Another account was signed in in a different tab. The app is switching to that account.',
     },
   },
   vi: {
@@ -252,6 +254,7 @@ export const account = ns({
       too_large: 'Dữ liệu của bạn quá lớn để đồng bộ.',
       conflict: 'Đồng bộ liên tục bị xung đột. Vui lòng thử lại sau giây lát.',
       client_outdated: 'Phiên bản ứng dụng này đã cũ. Vui lòng tải lại ứng dụng để tiếp tục đồng bộ.',
+      account_mismatch: 'Một tài khoản khác đã được đăng nhập trong một tab khác. Ứng dụng đang chuyển sang tài khoản đó.',
     },
   },
 })
