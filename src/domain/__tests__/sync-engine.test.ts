@@ -211,3 +211,29 @@ describe('sync engine: convergence', () => {
     expect(server.puts().length).toBe(before)
   })
 })
+
+describe('sync engine: first sync of a device', () => {
+  it('keeps the unstamped values of the account, while stamped local edits made before signing in still win', async () => {
+    const acc = server.add('a@example.test')
+    const DAY = 86_400_000
+    // written by a device from before stamps existed: profile and settings were never stamped
+    const settings = { restTimerSound: false, restTimerVibrate: true, warmupSets: true, excludedExercises: [], mode: 'normal' }
+    const profile = { name: 'Konto', daysPerWeek: 3, weightKg: 80 }
+    server.docs.set(acc.id, {
+      rev: 3,
+      data: JSON.stringify({ v: 1, state: { version: 1, profile, settings, kcalAdjustment: 50, foods: [{ id: 'x', ...meal('Alt') }] }, stamps: { 's:kcalAdjustment': T0 - DAY }, tombstones: {} }),
+    })
+    const fresh = await device()
+    // used before signing in: this edit is stamped and newer than the account's
+    fresh.s.setKcalAdjustment(200)
+    await fresh.engine.login('a@example.test', 'pw')
+    await fresh.sync()
+    expect(fresh.s.settings).toEqual(settings)
+    expect(fresh.s.profile).toEqual(profile)
+    expect(fresh.s.kcalAdjustment).toBe(200)
+    expect(fresh.s.foods.map((f) => f.id)).toEqual(['x'])
+    const up = server.doc(acc)!.data.state
+    expect(up.settings).toEqual(settings)
+    expect(up.kcalAdjustment).toBe(200)
+  })
+})

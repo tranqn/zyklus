@@ -79,7 +79,8 @@ async function pushNow(): Promise<void> {
     } catch (e) {
       if (!(e instanceof ApiError && e.status === 409)) return handleError(e)
       const remote = e.body.data as SyncDoc
-      local = merge(toDoc(), remote)
+      // rev 0: this device has never synced with the account (see pullNow)
+      local = merge(toDoc(), remote, { preferRemote: rev === 0 })
       applyDoc(local)
       rev = Number(e.body.rev)
     }
@@ -98,7 +99,9 @@ async function pullNow(): Promise<void> {
       return pushNow()
     }
     const local = toDoc()
-    const merged = merge(local, res.data)
+    // First sync of this device with the account (rev 0): on equal zero stamps the account's
+    // values win, so the defaults of a fresh device never replace values that were never stamped.
+    const merged = merge(local, res.data, { preferRemote: useSync.getState().rev === 0 })
     if (!same(merged, local)) applyDoc(merged)
     useSync.setState({ rev: res.rev })
     if (!same(merged, res.data)) return pushNow()

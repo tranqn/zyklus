@@ -157,3 +157,21 @@ describe('track', () => {
     expect(track(s, { ...s, syncMeta: { x: 1 } }, { stamps: {}, tombstones: {} }, 1, ['syncMeta'])).toBeNull()
   })
 })
+
+describe('merge: first sync (preferRemote)', () => {
+  it('lets unstamped account values beat the defaults of a fresh device', () => {
+    const fresh = doc({ settings: { warmupSets: true }, kcalAdjustment: 0, profile: undefined })
+    const account = doc({ settings: { warmupSets: false }, kcalAdjustment: 0 })
+    expect(merge(fresh, account).state.settings).toEqual({ warmupSets: true })
+    const m = merge(fresh, account, { preferRemote: true })
+    expect(m.state.settings).toEqual({ warmupSets: false })
+    // a value the account does not have is no reason to drop the local one
+    expect(merge(doc({ shoppingChecked: ['a'] }), doc({}), { preferRemote: true }).state.shoppingChecked).toEqual(['a'])
+  })
+
+  it('still lets a stamped local edit beat an older remote stamp', () => {
+    const fresh = doc({ kcalAdjustment: 200 }, { 's:kcalAdjustment': 10 })
+    const account = doc({ kcalAdjustment: 50 }, { 's:kcalAdjustment': 5 })
+    expect(merge(fresh, account, { preferRemote: true }).state.kcalAdjustment).toBe(200)
+  })
+})
