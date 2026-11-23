@@ -192,8 +192,21 @@ describe('normalize: one booking per planned meal', () => {
     const out = normalize(state)
     expect((out.foods as { id: string }[]).map((f) => f.id)).toEqual(['y1', 'frei', 'y2'])
     expect(normalize(out)).toEqual(out)
-    // a slot without a booking (not logged, or logged by an older version) keeps everything
-    expect(normalize({ mealPlan: [slot()], foods: state.foods })).toEqual({ mealPlan: [slot()], foods: state.foods })
+    // a slot without a booking keeps one booking too: here no stamps, so the larger booking id
+    expect((normalize({ mealPlan: [slot()], foods: state.foods }).foods as { id: string }[]).map((f) => f.id)).toEqual(['y1', 'frei', 'y2'])
+  })
+
+  it('keeps one booking per slot even after the slot was pruned: the newest, on a tie the larger booking id', () => {
+    const foods = [entry('x1', 'b1'), entry('y1', 'b2'), entry('x2', 'b1')]
+    const newest = normalize({ mealPlan: [], foods }, { 'i:foods:x1': 9, 'i:foods:y1': 7, 'i:foods:x2': 3 })
+    expect((newest.foods as { id: string }[]).map((f) => f.id)).toEqual(['x1', 'x2'])
+    const tie = normalize({ mealPlan: [], foods }, { 'i:foods:x1': 5, 'i:foods:y1': 5 })
+    expect((tie.foods as { id: string }[]).map((f) => f.id)).toEqual(['y1'])
+    // two devices that each kept their booking while the slot was pruned agree after the merge
+    const a = doc({ mealPlan: [], foods: [entry('x1', 'b1')] }, { 'i:foods:x1': 5 }, { 'mealPlan:d|mittag|0': 8 })
+    const b = doc({ mealPlan: [], foods: [entry('y1', 'b2')] }, { 'i:foods:y1': 6 }, { 'mealPlan:d|mittag|0': 8 })
+    expect((merge(a, b).state.foods as { id: string }[]).map((f) => f.id)).toEqual(['y1'])
+    expect(canon(merge(b, a))).toBe(canon(merge(a, b)))
   })
 
   it('merge applies it and tombstones the dropped entries, so they cannot come back later', () => {

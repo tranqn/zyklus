@@ -135,7 +135,7 @@ export function merge(local: SyncDoc, remote: SyncDoc, opts: MergeOptions = {}):
     if (by) out.sort((x, y) => cmp(String(x[by]), String(y[by])) || cmp(itemId(key, x), itemId(key, y)))
     state[key] = out
   }
-  const normal = normalize(state)
+  const normal = normalize(state, stamps)
   if (normal.foods !== state.foods) {
     // Entries of a losing booking get a tombstone too, at least as new as both the entry and the
     // winning plan slot: once the slot is pruned, a device still holding them must not revive them.
@@ -153,17 +153,34 @@ export function merge(local: SyncDoc, remote: SyncDoc, opts: MergeOptions = {}):
 /**
  * A planned meal is booked as a unit (see logPlannedMeal): its diary entries carry `planSlot` and
  * `booking`, the plan item the booking that counts. Two devices that booked the same slot offline
- * both bring their entries; the plan item that won the merge decides, entries of any other booking
- * of that slot are dropped. Pure and deterministic, run at the end of every merge.
+ * both bring their entries; only one booking per slot survives. If the plan item has a booking,
+ * that one. Otherwise (the slot was pruned after five weeks, or carries no booking) the booking
+ * whose entries have the newest stamp, on a tie the larger booking id. Pure and deterministic,
+ * run at the end of every merge.
  */
-export function normalize(state: Record<string, unknown>): Record<string, unknown> {
-  const plan = state.mealPlan
+export function normalize(state: Record<string, unknown>, stamps: Stamps = {}): Record<string, unknown> {
   const foods = state.foods
-  if (!Array.isArray(plan) || !Array.isArray(foods)) return state
-  const booked = new Map<string, unknown>()
-  for (const p of plan as Item[]) if (typeof p.booking === 'string') booked.set(String(p.id), p.booking)
-  if (!booked.size) return state
-  const kept = (foods as Item[]).filter((f) => typeof f.planSlot !== 'string' || !booked.has(f.planSlot) || booked.get(f.planSlot) === f.booking)
+  if (!Array.isArray(foods)) return state
+  const slotBooking = new Map<string, string>()
+  if (Array.isArray(state.mealPlan)) for (const p of state.mealPlan as Item[]) if (typeof p.booking === 'string') slotBooking.set(String(p.id), p.booking)
+  // per slot: every booking among the entries, with the newest stamp of its entries
+  const bookings = new Map<string, Map<string, number>>()
+  for (const f of foods as Item[]) {
+    if (typeof f.planSlot !== 'string' || typeof f.booking !== 'string') continue
+    const of = bookings.get(f.planSlot) ?? new Map<string, number>()
+    bookings.set(f.planSlot, of)
+    of.set(f.booking, Math.max(of.get(f.booking) ?? 0, stamps[`i:foods:${itemId('foods', f)}`] ?? 0))
+  }
+  const keep = new Map<string, string>()
+  for (const [slot, of] of bookings) {
+    let best = slotBooking.get(slot)
+    if (best === undefined) {
+      let bestStamp = -1
+      for (const [b, t] of of) if (t > bestStamp || (t === bestStamp && best !== undefined && b > best)) [best, bestStamp] = [b, t]
+    }
+    keep.set(slot, best!)
+  }
+  const kept = (foods as Item[]).filter((f) => typeof f.planSlot !== 'string' || !keep.has(f.planSlot) || keep.get(f.planSlot) === f.booking)
   return kept.length === foods.length ? state : { ...state, foods: kept }
 }
 
