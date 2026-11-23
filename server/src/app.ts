@@ -11,6 +11,12 @@ import { createSocial } from './social.ts'
 const COOKIE = 'zyk_session'
 const DAY = 86_400_000
 const SESSION_TTL = 30 * DAY
+/**
+ * The cookie outlives the session by far (400 days is the cap browsers allow): whether a session
+ * is still valid is decided here, 30 days sliding, and the cookie is never re-issued on refresh,
+ * since a late Set-Cookie from another tab's request could switch the account back.
+ */
+const COOKIE_MAX_AGE = 400 * DAY
 const VERIFY_TTL = 7 * DAY
 const RESET_TTL = 60 * 60 * 1000
 export const MAX_STATE_BYTES = 5 * 1024 * 1024
@@ -79,7 +85,7 @@ export function createApp({ db, cfg, mail, now = Date.now, sleep = (ms) => new P
     const token = newToken()
     const t = now()
     q.insertSession.run(sha256(token), userId, t, t + SESSION_TTL, (c.req.header('user-agent') ?? '').slice(0, 200))
-    setCookie(c, COOKIE, token, { httpOnly: true, secure: cfg.secureCookies, sameSite: 'Lax', path: '/api', maxAge: SESSION_TTL / 1000 })
+    setCookie(c, COOKIE, token, { httpOnly: true, secure: cfg.secureCookies, sameSite: 'Lax', path: '/api', maxAge: COOKIE_MAX_AGE / 1000 })
   }
 
   async function sendToken(user: UserRow, kind: 'verify' | 'reset') {

@@ -168,6 +168,59 @@ describe('registration and login', () => {
   })
 })
 
+describe('session lifetime', () => {
+  const DAY = 86_400_000
+  /** A browser-like cookie jar: it drops the cookie once its Max-Age has run out. */
+  function browser() {
+    let cookie: string | undefined
+    let expires = 0
+    return {
+      take(res: Response) {
+        const header = res.headers.get('set-cookie')
+        if (!header) return false
+        const maxAge = Number(/Max-Age=(\d+)/i.exec(header)?.[1] ?? 0)
+        cookie = header.split(';')[0]
+        expires = clock + maxAge * 1000
+        return true
+      },
+      get cookie() {
+        return cookie && clock < expires ? cookie : undefined
+      },
+      async request(method: string, path: string) {
+        const headers: Record<string, string> = { origin: ORIGIN }
+        if (this.cookie) headers.cookie = this.cookie
+        return app.request(`/api${path}`, { method, headers })
+      },
+    }
+  }
+
+  it('keeps a client that is active every day signed in past 30 days, without re-issuing the cookie', async () => {
+    await registerRaw()
+    const b = browser()
+    b.take(await app.request('/api/auth/verify', { method: 'POST', headers: { origin: ORIGIN, 'content-type': 'application/json' }, body: JSON.stringify({ token: tokenFrom(mails[0]) }) }))
+    for (let day = 1; day <= 31; day++) {
+      clock += DAY
+      const res = await b.request('GET', '/state')
+      expect(res.status, `day ${day}`).toBe(200)
+      // a late Set-Cookie from another tab's request could switch accounts back
+      expect(res.headers.get('set-cookie')).toBeNull()
+    }
+    expect(((await (await b.request('GET', '/auth/me')).json()) as { user: unknown }).user).not.toBeNull()
+  })
+
+  it('signs an inactive client out after 30 days, although the cookie lives 400 days', async () => {
+    await registerRaw()
+    const b = browser()
+    const res = await app.request('/api/auth/verify', { method: 'POST', headers: { origin: ORIGIN, 'content-type': 'application/json' }, body: JSON.stringify({ token: tokenFrom(mails[0]) }) })
+    expect(res.headers.get('set-cookie')).toMatch(/Max-Age=34560000/)
+    b.take(res)
+    clock += 30 * DAY + 60_000
+    expect(b.cookie).toBeDefined()
+    expect(((await (await b.request('GET', '/auth/me')).json()) as { user: unknown }).user).toBeNull()
+    expect((await b.request('GET', '/state')).status).toBe(401)
+  })
+})
+
 describe('csrf', () => {
   it('rejects foreign or missing origins and non-JSON bodies', async () => {
     expect((await call('POST', '/auth/register', { body: { email: 'a@b.de', password: 'langes-passwort-1', consent: true }, origin: 'https://evil.test' })).status).toBe(403)
