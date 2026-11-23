@@ -118,6 +118,40 @@ describe('track', () => {
     expect(meta.tombstones).toEqual({ 'foods:b': 42 })
   })
 
+  const HOUR = 3_600_000
+  const T = Date.UTC(2026, 10, 2, 12)
+
+  it('an edit after a pull still wins on a device whose clock is an hour behind', () => {
+    // the account copy: the profile was last changed at T on a device with a correct clock
+    const server = doc({ profile: { name: 'Server' } }, { 's:profile': T })
+    // this device pulled it, then edits with its clock an hour behind
+    const prev = { profile: { name: 'Server' } }
+    const next = { profile: { name: 'Gerät' } }
+    const meta = track(prev, next, { stamps: server.stamps, tombstones: {} }, T - HOUR)!
+    expect(meta.stamps['s:profile']).toBeGreaterThan(T)
+    const device = doc(next, meta.stamps, meta.tombstones)
+    expect(merge(device, server).state.profile).toEqual({ name: 'Gerät' })
+    expect(merge(server, device).state.profile).toEqual({ name: 'Gerät' })
+  })
+
+  it('a delete with a lagging clock still deletes', () => {
+    const other = doc({ foods: [food('a')] }, { 'i:foods:a': T })
+    const meta = track({ foods: [food('a')] }, { foods: [] }, { stamps: other.stamps, tombstones: {} }, T - HOUR)!
+    expect(meta.tombstones['foods:a']).toBeGreaterThan(T)
+    const device = doc({ foods: [] }, meta.stamps, meta.tombstones)
+    expect(merge(other, device).state.foods).toEqual([])
+    expect(merge(device, other).state.foods).toEqual([])
+  })
+
+  it('re-adding a deleted date with a lagging clock brings it back', () => {
+    // deleted at T on a device whose clock runs ahead
+    const meta0 = { stamps: { 'i:weights:2026-11-02': T - 2 * HOUR }, tombstones: { 'weights:2026-11-02': T } }
+    const w = { date: '2026-11-02', kg: 80 }
+    const meta = track({ weights: [] }, { weights: [w] }, meta0, T - HOUR)!
+    const device = doc({ weights: [w] }, meta.stamps, meta.tombstones)
+    expect(merge(device, doc({ weights: [] }, meta0.stamps, meta0.tombstones)).state.weights).toEqual([w])
+  })
+
   it('returns null when nothing relevant changed', () => {
     const s = { foods: [food('a')], syncMeta: {} }
     expect(track(s, { ...s, syncMeta: { x: 1 } }, { stamps: {}, tombstones: {} }, 1, ['syncMeta'])).toBeNull()

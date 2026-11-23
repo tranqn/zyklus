@@ -137,11 +137,18 @@ export function merge(local: SyncDoc, remote: SyncDoc, opts: MergeOptions = {}):
 /** Same content, whatever the key order (canonical JSON). */
 export const sameDoc = (a: SyncDoc, b: SyncDoc) => canon(a) === canon(b)
 
-/** Record which values changed between two states (called on every local store change). */
+/**
+ * Record which values changed between two states (called on every local store change).
+ *
+ * Stamps are a hybrid logical clock: a change is stamped `max(now, previous + 1)`, so it always
+ * beats the stamp it replaces, even on a device whose clock runs behind the one that wrote the
+ * pulled value. An item counts its own tombstone as previous too (re-adding a deleted date), and a
+ * tombstone is `max(now, item stamp + 1)`, so a delete always beats the version it removes.
+ */
 export function track(prev: Record<string, unknown>, next: Record<string, unknown>, meta: { stamps: Stamps; tombstones: Stamps }, now: number, skip: string[] = []): { stamps: Stamps; tombstones: Stamps } | null {
   let stamps: Stamps | null = null
   let tombstones: Stamps | null = null
-  const stamp = (k: string) => ((stamps ??= { ...meta.stamps })[k] = now)
+  const stamp = (k: string, floor = 0) => ((stamps ??= { ...meta.stamps })[k] = Math.max(now, (meta.stamps[k] ?? 0) + 1, floor + 1))
   for (const key of Object.keys(next)) {
     if (skip.includes(key) || typeof next[key] === 'function' || prev[key] === next[key]) continue
     if (!isCollection(key)) {
@@ -150,8 +157,10 @@ export function track(prev: Record<string, unknown>, next: Record<string, unknow
     }
     const before = new Map(((prev[key] as Item[]) ?? []).map((it) => [itemId(key, it), it]))
     const after = new Map(((next[key] as Item[]) ?? []).map((it) => [itemId(key, it), it]))
-    for (const [id, it] of after) if (before.get(id) !== it) stamp(`i:${key}:${id}`)
-    for (const id of before.keys()) if (!after.has(id)) (tombstones ??= { ...meta.tombstones })[`${key}:${id}`] = now
+    for (const [id, it] of after) if (before.get(id) !== it) stamp(`i:${key}:${id}`, meta.tombstones[`${key}:${id}`] ?? 0)
+    for (const id of before.keys()) {
+      if (!after.has(id)) (tombstones ??= { ...meta.tombstones })[`${key}:${id}`] = Math.max(now, (meta.stamps[`i:${key}:${id}`] ?? 0) + 1)
+    }
   }
   return stamps || tombstones ? { stamps: stamps ?? meta.stamps, tombstones: tombstones ?? meta.tombstones } : null
 }
