@@ -266,7 +266,7 @@ describe('sync engine: first sync of a device', () => {
 const names = (foods: { name: string }[] | undefined) => (foods ?? []).map((f) => f.name)
 const docWith = (...foods: string[]) =>
   JSON.stringify({ v: 1, state: { foods: foods.map((name, i) => ({ id: `${name}-${i}`, ...meal(name) })) }, stamps: Object.fromEntries(foods.map((name, i) => [`i:foods:${name}-${i}`, T0 - 1000])), tombstones: {} })
-const stashOf = (storage: MemStorage) => JSON.parse(storage.getItem('zyklus-stash') ?? 'null') as { savedAt: number; owner?: unknown; doc: SyncDoc } | null
+const stashOf = (storage: MemStorage) => JSON.parse(storage.getItem('zyklus-stash') ?? 'null') as { savedAt: number; owner?: unknown; ownerId?: number; doc: SyncDoc } | null
 /** let a session check that api() started in the background run to its end */
 const settle = () => vi.advanceTimersByTimeAsync(10)
 
@@ -1006,5 +1006,30 @@ describe('sync engine: account requests wait for the binding', () => {
     expect(requests.length).toBeGreaterThan(0)
     for (const r of requests) expect(r.account).toBe(`${y.id}:${y.createdAt}`)
     expect(useSocial.getState()).toMatchObject({ userId: y.id, name: 'y@example.test' })
+  })
+})
+
+describe('sync engine: after the migration', () => {
+  it('ownerless data written later by an old bundle is never adopted through the legacy rule', async () => {
+    const y = server.add('y@example.test')
+    server.docs.set(y.id, { rev: 1, data: docWith('Y-Essen') })
+    const storage = new MemStorage()
+    const tab1 = await device(storage)
+    await tab1.engine.login('y@example.test', 'pw')
+    await tab1.sync()
+    // an old cached bundle in another tab writes its data, X's, without an owner
+    storage.setItem('zyklus-v1', JSON.stringify({ state: { foods: [{ id: 'x1', ...meal('X-Essen') }], syncMeta: { stamps: { 'i:foods:x1': T0 }, tombstones: {} } }, version: 1 }))
+    // a new tab: cached user and ownerId are Y's, the data has no owner
+    const tab2 = await device(storage)
+    await tab2.engine.checkSession()
+    await tab2.sync()
+    expect(names(server.doc(y)!.data.state.foods as never)).toEqual(['Y-Essen'])
+    expect(names(tab2.s.foods)).toEqual(['Y-Essen'])
+    // kept aside with the identity unknown: nobody can restore it, it can only be discarded
+    const stash = stashOf(storage)!
+    expect(names(stash.doc.state.foods as never)).toEqual(['X-Essen'])
+    expect(stash.owner).toBeUndefined()
+    expect(stash.ownerId).toBeUndefined()
+    expect(tab2.engine.canRestoreStash()).toBe(false)
   })
 })

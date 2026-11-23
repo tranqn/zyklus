@@ -63,6 +63,34 @@ function bound(): boolean {
 /** For account-scoped work outside the engine (friends): only once the binding is established. */
 export const isBound = bound
 
+/*
+ * Set on the first binding and never cleared, in a key older bundles never write: from then on,
+ * store data without an owner can only come from an older bundle still running in another tab
+ * (it drops `owner` on every write), so it never takes the legacy path again.
+ */
+const MIGRATED = 'zyklus-bound'
+const markerStorage: Storage | undefined = (() => {
+  try {
+    return globalThis.localStorage ?? undefined
+  } catch {
+    return undefined
+  }
+})()
+function migrated(): boolean {
+  try {
+    return markerStorage?.getItem(MIGRATED) === '1'
+  } catch {
+    return false
+  }
+}
+function markMigrated() {
+  try {
+    markerStorage?.setItem(MIGRATED, '1')
+  } catch {
+    /* storage blocked or full: the marker is set again on the next binding */
+  }
+}
+
 type Binding = Partial<Pick<State, 'owner' | 'rev'>>
 /** The server revision the local data was last merged with (stored with the data). */
 const storeRev = () => useStore.getState().rev ?? 0
@@ -340,6 +368,8 @@ export function startSync(): () => void {
  *   createdAt (an account re-created with the same id has another createdAt); then the binding is
  *   upgraded, otherwise it is ambiguous: stash and start clean
  * - not bound at all (used before signing in): the local data joins the account
+ * - after the migration, data without an owner was written by an older bundle: identity unknown,
+ *   so it is stashed (restorable by nobody) and the device starts clean
  */
 async function adopt(user: PublicUser) {
   const s = useSync.getState()
@@ -351,13 +381,15 @@ async function adopt(user: PublicUser) {
     // and createdAt prove the account (no device clock involved). Without it (an old logout that
     // kept the data) the case is ambiguous.
     const cached = s.user
-    const legacySame = !owner && s.ownerId === user.id && !!cached && cached.id === user.id && cached.createdAt === user.createdAt
-    const unbound = !owner && s.ownerId == null
+    const legacy = !owner && !migrated()
+    const legacySame = legacy && s.ownerId === user.id && !!cached && cached.id === user.id && cached.createdAt === user.createdAt
+    const unbound = legacy && s.ownerId == null
     window.clearTimeout(pushTimer)
-    if (!legacySame && !unbound) stashAndClean(owner, s.ownerId)
+    if (!legacySame && !unbound) stashAndClean(owner, legacy ? s.ownerId : undefined)
     // data kept from an older version: its revision is read once from zyklus-sync
     else if (useStore.getState().rev === undefined) setBinding({ rev: s.rev ?? 0 })
     setBinding({ owner: ownerOf(user) })
+    markMigrated()
   }
   useSync.setState({ user, ownerId: user.id, rev: undefined })
   await syncNow()
