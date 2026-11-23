@@ -63,6 +63,22 @@ describe('store: planned meals', () => {
     expect(useStore.getState().foods.map((f) => f.name)).toEqual(['Apfel', 'Nudeln'])
   })
 
+  it('eating a booked entry again (addFood/addFoods with its fields) gives an ordinary entry, re-booking keeps it', () => {
+    useStore.getState().setMealPlan([slot.date], [slot])
+    useStore.getState().logPlannedMeal(slot.id, entries('Reis', 'Huhn'))
+    const [reis, huhn] = useStore.getState().foods
+    // Nutrition "eat again" spreads the old entry
+    useStore.getState().addFood({ ...reis, date: '2026-11-03', grams: 80 })
+    useStore.getState().addFoods([{ ...huhn, date: '2026-11-04' }])
+    const again = useStore.getState().foods.filter((f) => f.date !== slot.date)
+    expect(again.map((f) => [f.planSlot, f.booking])).toEqual([
+      [undefined, undefined],
+      [undefined, undefined],
+    ])
+    useStore.getState().logPlannedMeal(slot.id, entries('Nudeln'))
+    expect(useStore.getState().foods.map((f) => f.name)).toEqual(['Reis', 'Huhn', 'Nudeln'])
+  })
+
   it('a copied planned meal is an ordinary entry, re-booking the slot keeps it', () => {
     useStore.getState().setMealPlan([slot.date], [slot])
     useStore.getState().logPlannedMeal(slot.id, entries('Reis'))

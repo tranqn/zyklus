@@ -159,7 +159,7 @@ const initial: State = {
   syncMeta: { stamps: {}, tombstones: {} },
 }
 
-function unbooked(f: FoodEntry): FoodEntry {
+function unbooked<T extends Partial<FoodEntry>>(f: T): T {
   const out = { ...f }
   delete out.planSlot
   delete out.booking
@@ -342,11 +342,13 @@ export const useStore = create<State & Actions>()(
         set((s) => ({ checkIns: [...s.checkIns.filter((x) => x.date !== c.date), c] }))
       },
 
+      // An added entry is never part of a planned meal's booking, even when it was spread from a
+      // booked one ("eat again"): only logPlannedMeal books, see normalize in sync/merge.ts.
       addFood(e) {
-        set((s) => ({ foods: [...s.foods, { ...e, id: uid() }] }))
+        set((s) => ({ foods: [...s.foods, { ...unbooked(e), id: uid() }] }))
       },
       addFoods(entries) {
-        set((s) => ({ foods: [...s.foods, ...entries.map((e) => ({ ...e, id: uid() }))] }))
+        set((s) => ({ foods: [...s.foods, ...entries.map((e) => ({ ...unbooked(e), id: uid() }))] }))
       },
       setMealPlan(dates, meals) {
         const days = new Set(dates)
