@@ -1,0 +1,338 @@
+{
+ "squat": {
+  "duration": 2.65,
+  "label": "Kniebeuge"
+ },
+ "squat_goblet": {
+  "duration": 2.65,
+  "label": "Goblet Squat"
+ },
+ "hinge": {
+  "duration": 2.65,
+  "label": "Hüftbeugen (Rumänisches Kreuzheben)"
+ },
+ "bench_press": {
+  "duration": 2.5,
+  "label": "Bankdrücken"
+ },
+ "push_up": {
+  "duration": 2.25,
+  "label": "Liegestütz"
+ },
+ "curl": {
+  "duration": 2.5,
+  "label": "Bizepscurl"
+ },
+ "squat_bw": {
+  "duration": 2.65,
+  "label": "Kniebeuge (Körpergewicht)"
+ },
+ "deadlift": {
+  "duration": 2.9,
+  "label": "Kreuzheben"
+ },
+ "kb_swing": {
+  "duration": 1.27,
+  "label": "Kettlebell Swing"
+ },
+ "hip_thrust": {
+  "duration": 2.35,
+  "label": "Hip Thrust"
+ },
+ "glute_bridge": {
+  "duration": 2.2,
+  "label": "Glute Bridge"
+ },
+ "lunge": {
+  "duration": 2.45,
+  "label": "Ausfallschritt / Split Squat"
+ },
+ "bulgarian": {
+  "duration": 2.45,
+  "label": "Bulgarische Split Squats"
+ },
+ "leg_press": {
+  "duration": 2.5,
+  "label": "Beinpresse"
+ },
+ "incline_press": {
+  "duration": 2.5,
+  "label": "Schrägbankdrücken"
+ },
+ "dips": {
+  "duration": 2.25,
+  "label": "Dips"
+ },
+ "shoulder_press": {
+  "duration": 2.55,
+  "label": "Schulterdrücken (sitzend)"
+ },
+ "row_bent": {
+  "duration": 2.4,
+  "label": "Vorgebeugtes Rudern"
+ },
+ "row_seated": {
+  "duration": 2.45,
+  "label": "Rudern sitzend (Kabel)"
+ },
+ "pullup": {
+  "duration": 2.65,
+  "label": "Klimmzug"
+ },
+ "lat_pulldown": {
+  "duration": 2.55,
+  "label": "Latzug"
+ },
+ "lateral_raise": {
+  "duration": 2.55,
+  "label": "Seitheben (Frontansicht)"
+ },
+ "triceps_pushdown": {
+  "duration": 2.35,
+  "label": "Trizepsdrücken"
+ },
+ "triceps_overhead": {
+  "duration": 2.45,
+  "label": "Überkopf-Trizepsstrecken"
+ },
+ "skullcrusher": {
+  "duration": 2.25,
+  "label": "Stirndrücken"
+ },
+ "leg_extension": {
+  "duration": 2.5,
+  "label": "Beinstrecker"
+ },
+ "leg_curl_lying": {
+  "duration": 2.45,
+  "label": "Beinbeuger liegend"
+ },
+ "calf_raise": {
+  "duration": 2.1,
+  "label": "Wadenheben"
+ },
+ "crunch": {
+  "duration": 2.05,
+  "label": "Crunch"
+ },
+ "leg_raise_hanging": {
+  "duration": 2.55,
+  "label": "Hängendes Beinheben"
+ },
+ "leg_raise_lying": {
+  "duration": 2.5,
+  "label": "Beinheben liegend"
+ },
+ "fly_front": {
+  "duration": 2.7,
+  "label": "Fliegende / Crossover (Frontansicht)"
+ },
+ "face_pull": {
+  "duration": 2.4,
+  "label": "Face Pulls"
+ },
+ "inverted_row": {
+  "duration": 2.5,
+  "label": "Umgekehrtes Rudern"
+ },
+ "pike": {
+  "duration": 2.2,
+  "label": "Pike-Liegestütz"
+ },
+ "bench_dips": {
+  "duration": 2.2,
+  "label": "Bankdips"
+ },
+ "sissy_squat": {
+  "duration": 2.7,
+  "label": "Sissy Squat"
+ },
+ "spanish_squat": {
+  "duration": 2.85,
+  "label": "Spanish Squat"
+ },
+ "leg_curl_seated": {
+  "duration": 2.6,
+  "label": "Beinbeuger sitzend"
+ },
+ "nordic_curl": {
+  "duration": 3.6,
+  "label": "Nordic Curl"
+ },
+ "slider_curl": {
+  "duration": 2.7,
+  "label": "Beinbeuger mit Handtuch"
+ },
+ "kickback": {
+  "duration": 2.3,
+  "label": "Kickbacks am Kabel"
+ },
+ "seated_calf": {
+  "duration": 2.2,
+  "label": "Wadenheben sitzend"
+ },
+ "cable_crunch": {
+  "duration": 2.55,
+  "label": "Kabel-Crunch"
+ },
+ "pallof": {
+  "duration": 2.4,
+  "label": "Pallof Press"
+ },
+ "dead_bug": {
+  "duration": 2.75,
+  "label": "Dead Bug"
+ },
+ "farmer_hold": {
+  "duration": 3,
+  "label": "Farmer Hold"
+ },
+ "dead_hang": {
+  "duration": 3.2,
+  "label": "Toter Hang"
+ },
+ "wrist_curl": {
+  "duration": 2.2,
+  "label": "Handgelenkcurls (sitzend, Unterarme auf den Oberschenkeln)"
+ },
+ "rear_fly": {
+  "duration": 2.55,
+  "label": "Reverse Butterfly (Frontansicht, sitzend)"
+ },
+ "pull_apart": {
+  "duration": 2.35,
+  "label": "Band Pull-Aparts (Frontansicht)"
+ },
+ "rear_raise_bent": {
+  "duration": 2.35,
+  "label": "Vorgebeugtes Seitheben (Frontansicht, Oberkörper zur Kamera geneigt)"
+ },
+ "hip_abduction_seated": {
+  "duration": 2.55,
+  "label": "Abduktorenmaschine (Frontansicht, Oberschenkel zeigen zur Kamera)"
+ },
+ "clamshell": {
+  "duration": 2.4,
+  "label": "Clamshell (Seitlage, Band über den Knien)"
+ },
+ "pistol": {
+  "duration": 3.15,
+  "label": "Pistol Squat"
+ },
+ "pistol_box": {
+  "duration": 3.15,
+  "label": "Pistol Squat auf Bank oder Stuhl"
+ },
+ "hip_hinge_kneeling": {
+  "duration": 2.65,
+  "label": "Hüftbeuge kniend"
+ },
+ "dragon_flag": {
+  "duration": 3.45,
+  "label": "Dragon Flag"
+ },
+ "dragon_flag_tuck": {
+  "duration": 3.25,
+  "label": "Dragon Flag mit angewinkelten Beinen"
+ },
+ "cat_cow": {
+  "duration": 3.6,
+  "label": "Katze-Kuh"
+ },
+ "child_pose": {
+  "duration": 4.8,
+  "label": "Kindhaltung"
+ },
+ "worlds_greatest": {
+  "duration": 3.5,
+  "label": "Weltbeste Dehnung"
+ },
+ "down_dog": {
+  "duration": 4.8,
+  "label": "Herabschauender Hund"
+ },
+ "deep_squat_hold": {
+  "duration": 4,
+  "label": "Tiefe Hocke"
+ },
+ "arm_circles": {
+  "duration": 2.4,
+  "label": "Armkreisen"
+ },
+ "hip_flexor_kneel": {
+  "duration": 4.1,
+  "label": "Hüftbeuger-Dehnung kniend"
+ },
+ "pigeon": {
+  "duration": 4.8,
+  "label": "Taube"
+ },
+ "frog": {
+  "duration": 4,
+  "label": "Froschdehnung (Knie weit auseinander)"
+ },
+ "cossack": {
+  "duration": 4.4,
+  "label": "Cossack Squat (Frontansicht)"
+ },
+ "thread_needle": {
+  "duration": 3.9,
+  "label": "Thread the Needle"
+ },
+ "wall_angels": {
+  "duration": 3.2,
+  "label": "Wandengel (Frontansicht)"
+ },
+ "doorway_chest": {
+  "duration": 4.2,
+  "label": "Brustdehnung im Türrahmen"
+ },
+ "band_dislocates": {
+  "duration": 4.6,
+  "label": "Schulter-Dislocates mit Band"
+ },
+ "knees_chest": {
+  "duration": 3.2,
+  "label": "Knie zur Brust"
+ },
+ "bird_dog": {
+  "duration": 6.2,
+  "label": "Bird Dog"
+ },
+ "hamstring_stretch": {
+  "duration": 4.3,
+  "label": "Beinbeuger-Dehnung"
+ },
+ "quad_stretch": {
+  "duration": 4.3,
+  "label": "Quadrizeps-Dehnung"
+ },
+ "lat_stretch": {
+  "duration": 4.1,
+  "label": "Latissimus-Dehnung"
+ },
+ "calf_wall": {
+  "duration": 4.2,
+  "label": "Waden-Dehnung an der Wand"
+ },
+ "standing_hip_flexor": {
+  "duration": 4.2,
+  "label": "Stehende Hüftbeuger-Dehnung"
+ },
+ "forward_fold": {
+  "duration": 4.5,
+  "label": "Vorbeuge hängen lassen"
+ },
+ "chest_opener": {
+  "duration": 3.7,
+  "label": "Brustöffner (Hände hinter dem Rücken)"
+ },
+ "knee_to_wall": {
+  "duration": 3.4,
+  "label": "Knie zur Wand"
+ },
+ "tibialis_raise": {
+  "duration": 2.1,
+  "label": "Tibialis heben (Rücken an der Wand)"
+ }
+}
