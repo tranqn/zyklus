@@ -65,10 +65,6 @@ Die erzeugten Lottie-Dateien liegen fertig in `public/anim/` im Repository. Dies
 also nur nötig, wenn die Animationen selbst geändert werden; für Bauen und Ausführen braucht man
 die CLI nicht. `tools/anim/sheet.py` braucht zusätzlich Pillow.
 
-## Vor dem öffentlichen Betrieb
-
-- In `src/pages/Legal.tsx` Anschrift und Kontakt-E-Mail eintragen (Platzhalter in eckigen Klammern).
-
 ## Lizenz
 
 Dieses Repository ist zum Lesen veröffentlicht, als Arbeitsprobe, und ist keine
